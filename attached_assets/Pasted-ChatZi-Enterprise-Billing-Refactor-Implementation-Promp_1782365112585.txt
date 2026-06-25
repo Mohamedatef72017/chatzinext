@@ -1,0 +1,655 @@
+ChatZi Enterprise Billing Refactor — Implementation Prompt
+
+You are a Principal SaaS Architect, Senior Backend Engineer, Billing Systems Engineer, and Security Engineer.
+
+Your task is to implement a major billing architecture refactor for ChatZi based on the billing audit findings.
+
+The goal is to transform the current billing system from a hardcoded AI-message-based billing system into a generic, configuration-driven, feature-based SaaS billing platform.
+
+You MUST work from the actual source code only.
+
+Do NOT rewrite the entire project.
+
+Do NOT remove existing working Stripe functionality.
+
+Do NOT break existing tenants.
+
+Do NOT introduce temporary hacks.
+
+Do NOT make unrelated changes.
+
+Every change must preserve:
+
+* Performance & Scalability
+* Security
+* Availability
+* Maintainability
+* Clean Code
+* Backward Compatibility
+* Tenant Isolation
+
+⸻
+
+Core Problem To Fix
+
+Currently, billing depends heavily on:
+
+* aiMessageLimit
+* monthlyMessageLimit
+* usedMessages
+* extraMessageCredits
+* PLAN_DEFAULTS
+* hardcoded entitlement keys
+* Stripe-specific logic inside billing service
+* non-generic quota logic
+
+This makes it hard to add future billable features like:
+
+* AI tokens
+* Knowledge storage
+* File storage
+* Channel limits
+* Telegram channel count
+* Messenger page count
+* WhatsApp number count
+* Team seats
+* API calls
+* Workflow executions
+* Voice minutes
+* OCR pages
+* Attachment storage
+* Model-specific AI pricing
+
+The target architecture must be generic and feature-driven.
+
+⸻
+
+Target Architecture
+
+Implement a clean billing domain model based on:
+
+Feature Definition
+
+A reusable feature that can be attached to any plan.
+
+Examples:
+
+* ai_messages
+* ai_tokens
+* knowledge_storage_mb
+* attachment_storage_mb
+* team_members
+* agents
+* bots
+* channels_total
+* telegram_channels
+* messenger_channels
+* whatsapp_channels
+* facebook_channels
+* instagram_channels
+* api_requests
+* workflow_runs
+* custom_domain
+* white_label
+* advanced_ai
+* qdrant_search
+* audit_logs
+
+Each feature must support:
+
+* key
+* name
+* description
+* type: boolean | quota | count | storage | metered
+* unit
+* resetPeriod: monthly | yearly | never
+* isActive
+* metadata
+
+⸻
+
+Plan Feature
+
+Each plan must contain its own features and limits.
+
+A plan must become the single source of truth.
+
+The system must not depend on hardcoded PLAN_DEFAULTS.
+
+Example:
+
+features: [
+  {
+    key: "ai_messages",
+    type: "quota",
+    limit: 10000,
+    resetPeriod: "monthly",
+    overageAllowed: false
+  },
+  {
+    key: "telegram_channels",
+    type: "count",
+    limit: 2
+  },
+  {
+    key: "knowledge_storage_mb",
+    type: "storage",
+    limit: 10240
+  },
+  {
+    key: "advanced_ai",
+    type: "boolean",
+    enabled: true
+  }
+]
+
+⸻
+
+Subscription
+
+Subscription must reference:
+
+* tenantId
+* planId
+* planVersionId or planSnapshot
+* status
+* currentPeriodStart
+* currentPeriodEnd
+* cancelAtPeriodEnd
+* trialEndsAt
+* graceEndsAt
+* provider
+* providerCustomerId
+* providerSubscriptionId
+* usage summary
+
+The subscription should not be the only place where limits live.
+
+Limits come from the plan or plan snapshot.
+
+⸻
+
+Usage Engine
+
+Create a generic usage engine.
+
+Replace usage logic that only supports AI messages.
+
+Required generic APIs:
+
+getFeatureLimit(tenantId, featureKey)
+canUseFeature(tenantId, featureKey, amount)
+reserveUsage(tenantId, featureKey, amount, options)
+commitUsage(tenantId, featureKey, amount, options)
+releaseUsage(tenantId, featureKey, amount, options)
+getUsageSnapshot(tenantId)
+resetUsageForPeriod(tenantId, period)
+
+Usage must support:
+
+* monthly reset
+* yearly reset
+* never reset
+* Redis atomic counters
+* MongoDB persistence
+* idempotency keys
+* sync from Redis to MongoDB
+* failure handling
+* tenant isolation
+
+⸻
+
+Required Implementation Phases
+
+Phase 1 — Safe Foundation
+
+Implement the new models without breaking the old system.
+
+Add or update models:
+
+* FeatureDefinition
+* PlanFeature
+* BillingPlan
+* PlanVersion or embedded plan snapshot
+* UsageRecord
+* UsageCounter
+* SubscriptionHistory
+* BillingAuditLog
+
+Keep existing models working.
+
+Add migrations or seed scripts to convert current plans into feature-based plans.
+
+Do not delete old fields yet.
+
+Map old fields:
+
+* aiMessageLimit → features.ai_messages.limit
+* monthlyMessageLimit → features.ai_messages.limit
+* usedMessages → usage.ai_messages
+* extraMessageCredits → optional credit feature or legacy credit support
+
+⸻
+
+Phase 2 — Entitlement Engine
+
+Replace hardcoded PLAN_DEFAULTS with a real entitlement resolver.
+
+Create:
+
+src/lib/billing/feature-registry.ts
+src/lib/billing/entitlement-engine.ts
+src/lib/billing/plan-resolver.ts
+src/lib/billing/usage-engine.ts
+src/lib/billing/billing-audit.ts
+
+The entitlement engine must:
+
+* resolve active tenant plan
+* resolve plan features
+* apply tenant-specific overrides
+* apply feature availability
+* apply limits
+* return consistent results
+* support unknown future features
+* never require code changes for new plan features
+
+Keep backward compatibility wrappers for existing functions.
+
+⸻
+
+Phase 3 — Generic Quota / Usage Metering
+
+Refactor src/lib/quota.ts.
+
+Current behavior must continue working for AI messages.
+
+But internally it should call:
+
+reserveUsage(tenantId, "ai_messages", 1)
+
+Add support for future features:
+
+reserveUsage(tenantId, "ai_tokens", tokenCount)
+reserveUsage(tenantId, "knowledge_storage_mb", sizeMb)
+reserveUsage(tenantId, "telegram_channels", 1)
+reserveUsage(tenantId, "team_members", 1)
+
+Requirements:
+
+* Redis atomic INCR or Lua script
+* idempotency key support
+* no double counting
+* safe rollback
+* Mongo sync
+* structured logging
+* tests for concurrency
+
+⸻
+
+Phase 4 — BillingPlan Becomes Source of Truth
+
+Refactor BillingPlan.
+
+It must support:
+
+* name
+* slug
+* description
+* currency
+* interval
+* priceCents
+* providerPriceId
+* providerProductId
+* features[]
+* version
+* isActive
+* isArchived
+* isHidden
+* isPopular
+* isCustom
+* tenantId
+* metadata
+
+Add support for:
+
+* plan cloning
+* plan editing
+* plan archiving
+* plan versioning
+* plan validation
+* tenant-specific plans
+* global plans
+
+Do not allow editing a plan in a way that silently changes active subscriptions unless versioning is handled safely.
+
+⸻
+
+Phase 5 — Super Admin Billing Panel
+
+Update Super Admin backend and frontend.
+
+Super Admin must be able to:
+
+* create plan
+* edit plan
+* clone plan
+* archive plan
+* disable plan
+* add feature to plan
+* remove feature from plan
+* edit feature limit
+* edit price
+* edit interval
+* mark plan popular
+* hide plan
+* create custom tenant plan
+* view subscriptions
+* view usage
+* override tenant feature
+* grant extra credits
+* view payment events
+* view billing audit logs
+
+Frontend must reflect backend state accurately.
+
+No fake buttons.
+
+No UI-only behavior.
+
+Every action must call a real backend endpoint.
+
+⸻
+
+Phase 6 — Subscription Lifecycle
+
+Add or improve lifecycle support:
+
+* free plan
+* trial
+* trial expiration
+* active subscription
+* past due
+* grace period
+* cancellation
+* cancel at period end
+* immediate cancellation
+* renewal
+* failed payment
+* reactivation
+* upgrade
+* downgrade
+* plan migration
+* subscription history
+
+Add:
+
+SubscriptionHistory
+
+Every subscription change must be logged.
+
+⸻
+
+Phase 7 — Payment Provider Abstraction
+
+Do not remove Stripe.
+
+Create a payment provider interface:
+
+interface PaymentProvider {
+  createCheckoutSession(input): Promise<CheckoutResult>;
+  createPortalSession(input): Promise<PortalResult>;
+  cancelSubscription(input): Promise<void>;
+  updateSubscription(input): Promise<void>;
+  verifyWebhook(input): Promise<ProviderWebhookEvent>;
+  handleWebhook(input): Promise<void>;
+}
+
+Implement:
+
+StripePaymentProvider
+
+Keep Stripe behavior working.
+
+Prepare architecture for future providers:
+
+* Paymob
+* MyFatoorah
+* Paddle
+* LemonSqueezy
+* PayPal
+* Moyasar
+* HyperPay
+* Fawry
+
+Business logic must not depend directly on Stripe.
+
+⸻
+
+Phase 8 — Wallet / Credits Foundation
+
+Create a clean wallet foundation, even if not fully exposed yet.
+
+Add:
+
+* Wallet
+* WalletTransaction
+* CreditGrant
+* CreditUsage
+* Adjustment
+
+Wallet must support:
+
+* balance
+* reserved balance
+* credit
+* debit
+* refund
+* adjustment
+* expiration
+* audit trail
+* idempotency key
+
+Avoid unsafe financial logic.
+
+Use atomic MongoDB operations or transactions where needed.
+
+⸻
+
+Phase 9 — Frontend Billing UX
+
+Frontend must display:
+
+* current plan
+* plan features
+* usage per feature
+* remaining limits
+* AI messages usage
+* AI tokens if available
+* storage usage if available
+* channel usage
+* user/agent limits
+* payment status
+* subscription status
+* trial status
+* grace period
+* failed payment
+* cancel at period end
+* upgrade/downgrade status
+
+Frontend must handle:
+
+* loading
+* success
+* failure
+* pending payment
+* webhook delay
+* retry
+* disabled feature
+* limit reached
+* upgrade required
+
+⸻
+
+Phase 10 — Security
+
+Add or verify:
+
+* Stripe webhook signature verification
+* idempotency for payment events
+* idempotency for wallet transactions
+* idempotency for usage events
+* tenant isolation in every billing query
+* super admin authorization
+* input validation with Zod
+* plan tampering protection
+* price tampering protection
+* negative balance prevention
+* negative quota prevention
+* coupon abuse prevention if coupons exist
+* replay attack protection
+* audit logs for admin changes
+
+⸻
+
+Phase 11 — Performance & Scalability
+
+Ensure:
+
+* usage validation is fast
+* Redis counters are used for hot paths
+* MongoDB writes are batched where possible
+* indexes are added for billing queries
+* admin queries are paginated
+* usage dashboards are cached when safe
+* no unbounded queries
+* no N+1 billing queries
+* no large payloads
+* no unnecessary populate calls
+
+Add indexes for:
+
+* tenant subscriptions
+* usage counters
+* usage records
+* payment events
+* wallet transactions
+* billing audit logs
+* plan slug/version
+* provider subscription id
+
+⸻
+
+Phase 12 — Tests
+
+Add tests for:
+
+* plan creation
+* plan editing
+* feature limits
+* entitlement resolution
+* usage reservation
+* usage idempotency
+* quota race conditions
+* subscription status transitions
+* Stripe webhook idempotency
+* admin authorization
+* tenant isolation
+* wallet transactions
+* negative balance prevention
+* upgrade/downgrade behavior
+* frontend API responses where possible
+
+⸻
+
+Mandatory Backward Compatibility
+
+Existing functions must continue to work:
+
+* assertAndReserveQuota
+* assertCanSendAiMessage
+* recordAiMessageUsage if still referenced
+* getBillingCatalog
+* createStripeCheckout
+* Stripe webhook handling
+* subscription analytics
+
+But internally they should migrate toward the new architecture.
+
+If a legacy function is deprecated, mark it clearly and route it to the new system.
+
+Do not leave two inconsistent usage paths.
+
+⸻
+
+Mandatory Documentation
+
+Create or update:
+
+docs/changes/DD-MM-YYYY.md
+docs/changes/CHANGELOG.md
+docs/billing-architecture.md
+docs/billing-migration-plan.md
+
+Documentation must include:
+
+* what changed
+* why it changed
+* files changed
+* data model changes
+* migration notes
+* backward compatibility notes
+* security considerations
+* performance considerations
+* future extension guide
+* how to add a new billable feature
+* how to add a new payment provider
+
+⸻
+
+Definition of Done
+
+The task is complete only when:
+
+1. BillingPlan is the source of truth.
+2. PLAN_DEFAULTS is removed or no longer controls real plan behavior.
+3. Entitlements are resolved from plan features.
+4. Usage metering is generic.
+5. AI messages still work.
+6. Future features can be added without code changes in core billing logic.
+7. Super Admin can manage plans and features.
+8. Stripe still works.
+9. Payment provider abstraction exists.
+10. Billing frontend reflects backend state.
+11. Tests are added or updated.
+12. Documentation is updated.
+13. Typecheck passes.
+14. Build passes.
+
+⸻
+
+Final Report Required
+
+At the end, provide:
+
+* files changed
+* models added
+* APIs added
+* APIs modified
+* frontend pages modified
+* migrations/seed scripts added
+* tests added
+* commands run
+* backward compatibility notes
+* remaining risks
+* next recommended steps
+
+Important:
+
+If any part cannot be safely implemented from the current source code, do not guess.
+
+Write:
+
+“Cannot safely implement without more context”
+
+and explain exactly why.

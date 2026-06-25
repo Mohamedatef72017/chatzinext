@@ -1,0 +1,893 @@
+Deep Enterprise Billing & Subscription Architecture Audit
+
+Role
+
+You are a Principal Software Architect, Enterprise SaaS Billing Expert, FinTech Architect, and Senior Security Engineer.
+
+You MUST inspect the actual source code only.
+
+Do NOT make assumptions.
+
+Every finding must reference the actual implementation.
+
+If something cannot be verified from the code, explicitly write:
+
+Cannot verify from source code.
+
+⸻
+
+Objective
+
+Perform an extremely deep audit of the entire Billing, Subscription, Plans, Wallet, Usage Metering, Entitlements, Payment Architecture, Frontend Integration, and Super Admin Management system.
+
+This is NOT a code review.
+
+This is an Enterprise Architecture Audit.
+
+The target is to reach enterprise-level quality similar to:
+
+* Stripe Billing
+* Chargebee
+* Paddle
+* LemonSqueezy
+* Chatwoot Cloud
+* Intercom
+* Zendesk
+* HubSpot
+
+⸻
+
+Deliverables
+
+Produce a professional engineering report with:
+
+* Executive Summary
+* Architecture Review
+* Risk Matrix
+* Scalability Analysis
+* Security Audit
+* Maintainability Review
+* Missing Features
+* Enterprise Readiness Score
+* Roadmap
+* Code References
+* Improvement Priority
+* Final Recommendations
+
+Every conclusion must be based on the real code.
+
+⸻
+
+SECTION 1 — Overall Billing Architecture
+
+Inspect the complete billing architecture.
+
+Evaluate:
+
+* Separation of concerns
+* Billing services
+* Payment services
+* Subscription services
+* Quota services
+* Usage tracking
+* Wallet logic
+* Invoice generation
+* Feature gating
+* Entitlements
+* Coupon system
+* Tax readiness
+* Refund flow
+* Billing events
+* Payment events
+* Retry mechanism
+* Audit logs
+
+Rate every section from:
+
+0 → 10
+
+⸻
+
+SECTION 2 — Subscription Lifecycle
+
+Verify the entire lifecycle.
+
+Including:
+
+* Free Trial
+* Trial expiration
+* Subscription creation
+* Upgrade
+* Downgrade
+* Renewal
+* Cancellation
+* Scheduled cancellation
+* Immediate cancellation
+* Grace Period
+* Expired subscription
+* Reactivation
+* Failed payments
+* Payment retries
+* Subscription recovery
+* Subscription migration
+* Subscription history
+
+Draw the entire lifecycle.
+
+Find missing transitions.
+
+⸻
+
+SECTION 3 — Billing Plans Architecture
+
+Audit the plan system.
+
+Verify:
+
+Plan Model
+
+Plan Versioning
+
+Plan Migration
+
+Default Plans
+
+Custom Plans
+
+Enterprise Plans
+
+Hidden Plans
+
+Archived Plans
+
+Deprecated Plans
+
+Feature Inheritance
+
+Feature Override
+
+Tenant-specific plans
+
+Global plans
+
+Plan cloning
+
+Plan rollback
+
+Plan validation
+
+Plan dependencies
+
+⸻
+
+SECTION 4 — Future Extensibility (Very Important)
+
+Determine whether the current architecture allows adding NEW BILLABLE FEATURES without rewriting the billing system.
+
+Examples:
+
+Today:
+
+* AI Messages
+* Knowledge Storage
+
+Tomorrow:
+
+* AI Tokens
+* GPT-5 Tokens
+* Claude Tokens
+* Vector Storage
+* Voice Minutes
+* Image Generation
+* Video Generation
+* OCR Pages
+* Email Credits
+* SMS Credits
+* WhatsApp Conversations
+* Telegram Channels
+* Facebook Channels
+* Instagram Channels
+* Custom Domains
+* Team Members
+* Seats
+* Storage
+* API Requests
+* Workflow Executions
+* Automation Runs
+* Scheduled Jobs
+* File Upload Size
+* Attachment Storage
+* Contacts
+* Companies
+* Tickets
+* Projects
+* Pipelines
+
+Question:
+
+Can all of these be added without changing the billing architecture?
+
+Or does the architecture require modification every time?
+
+Explain exactly why.
+
+⸻
+
+SECTION 5 — Entitlement System
+
+This is one of the most important sections.
+
+Verify if the project has a real Entitlement System.
+
+Each feature should ideally be represented as:
+
+Feature
+
+Limit
+
+Usage
+
+Validation
+
+Permission
+
+Availability
+
+Examples:
+
+AI Messages
+
+Knowledge Storage
+
+Knowledge Files
+
+Users
+
+Agents
+
+Channels
+
+Telegram Channels
+
+Facebook Pages
+
+WhatsApp Numbers
+
+Messenger Pages
+
+Bots
+
+Workflows
+
+Storage
+
+API Calls
+
+Voice
+
+Images
+
+Projects
+
+Companies
+
+Tickets
+
+Pipelines
+
+Tags
+
+Automations
+
+Scheduled Jobs
+
+Exports
+
+Imports
+
+Audit Logs
+
+Webhooks
+
+API Access
+
+If the current implementation is not generic enough, explain why.
+
+⸻
+
+SECTION 6 — Usage Metering
+
+Review every usage counter.
+
+Examples:
+
+AI Messages
+
+Knowledge Size
+
+Storage
+
+Users
+
+Channels
+
+Uploads
+
+Attachments
+
+API Calls
+
+Requests
+
+Vector Storage
+
+Token Consumption
+
+Questions:
+
+Where is usage stored?
+
+How is it updated?
+
+Is it atomic?
+
+Can race conditions occur?
+
+Can usage become inconsistent?
+
+Can it be cheated?
+
+How scalable is it?
+
+⸻
+
+SECTION 7 — Token-Based Billing
+
+The platform currently bills AI messages.
+
+Evaluate whether the architecture can evolve into:
+
+Token Billing
+
+Instead of:
+
+1 AI Message
+
+Support:
+
+Prompt Tokens
+
+Completion Tokens
+
+Embedding Tokens
+
+Image Tokens
+
+Audio Tokens
+
+Video Tokens
+
+Provider-specific pricing
+
+Dynamic pricing
+
+Multiple AI providers
+
+Per-model pricing
+
+GPT
+
+Claude
+
+Gemini
+
+OpenRouter
+
+Groq
+
+DeepSeek
+
+Ollama
+
+Can this be implemented without redesigning billing?
+
+Explain.
+
+⸻
+
+SECTION 8 — Wallet Architecture
+
+Inspect the Wallet.
+
+Evaluate:
+
+Recharge
+
+Balance
+
+Transactions
+
+Reserved Balance
+
+Pending Balance
+
+Refund
+
+Transfer
+
+Credit Notes
+
+Wallet Expiration
+
+Wallet Lock
+
+Negative Balance
+
+Fraud Protection
+
+Audit Trail
+
+Idempotency
+
+Ledger Design
+
+Double Entry Accounting
+
+Atomic Operations
+
+⸻
+
+SECTION 9 — Payment Providers
+
+Inspect payment integration.
+
+Current provider
+
+Architecture quality
+
+Provider abstraction
+
+Can future providers be added easily?
+
+Examples:
+
+Stripe
+
+PayPal
+
+Paddle
+
+LemonSqueezy
+
+MyFatoorah
+
+Paymob
+
+Moyasar
+
+HyperPay
+
+Fawry
+
+Amazon Payment Services
+
+Apple Pay
+
+Google Pay
+
+Can providers be added without changing business logic?
+
+⸻
+
+SECTION 10 — Super Admin
+
+Inspect the Super Admin Billing Panel.
+
+Verify capabilities.
+
+Can Super Admin:
+
+Create Plans
+
+Clone Plans
+
+Archive Plans
+
+Disable Plans
+
+Edit Features
+
+Edit Limits
+
+Edit Prices
+
+Edit Billing Period
+
+Manage Coupons
+
+Manage Wallet
+
+Grant Credits
+
+Refund Users
+
+View Usage
+
+View Billing History
+
+View Payment History
+
+Override Limits
+
+Suspend Subscription
+
+Resume Subscription
+
+Force Upgrade
+
+Force Downgrade
+
+Apply Discounts
+
+Create Enterprise Plans
+
+Tenant-specific Pricing
+
+Everything must be reflected immediately.
+
+⸻
+
+SECTION 11 — Frontend Billing UX
+
+Inspect frontend.
+
+Verify every billing action.
+
+The UI must always reflect backend state.
+
+Check:
+
+Loading
+
+Pending
+
+Retry
+
+Failed
+
+Expired
+
+Success
+
+Cancelled
+
+Refunded
+
+Payment Processing
+
+Subscription Active
+
+Grace Period
+
+Quota Warning
+
+Usage Progress
+
+Remaining Usage
+
+Storage Usage
+
+Channel Usage
+
+AI Usage
+
+Errors
+
+Realtime updates
+
+Polling
+
+Optimistic Updates
+
+⸻
+
+SECTION 12 — Validation
+
+Verify validation everywhere.
+
+No frontend validation only.
+
+Must exist on backend.
+
+Check:
+
+Plan validation
+
+Usage validation
+
+Feature validation
+
+Channel validation
+
+Seat validation
+
+Quota validation
+
+Wallet validation
+
+Subscription validation
+
+Payment validation
+
+Webhook validation
+
+⸻
+
+SECTION 13 — Security Audit
+
+Audit:
+
+Stripe Signature
+
+Webhook Verification
+
+Replay Protection
+
+Idempotency
+
+Duplicate Payments
+
+Race Conditions
+
+Coupon Abuse
+
+Wallet Abuse
+
+Subscription Bypass
+
+Plan Tampering
+
+Price Manipulation
+
+Hidden APIs
+
+Authorization
+
+Tenant Isolation
+
+Mass Assignment
+
+Replay Attack
+
+Timing Attack
+
+Fraud Scenarios
+
+⸻
+
+SECTION 14 — Database Review
+
+Review all billing-related collections.
+
+Indexes
+
+Relations
+
+Normalization
+
+Query performance
+
+Pagination
+
+Missing indexes
+
+Compound indexes
+
+TTL
+
+Growth estimation
+
+10K tenants
+
+100K tenants
+
+1M tenants
+
+⸻
+
+SECTION 15 — Performance
+
+Review:
+
+Payment latency
+
+Upgrade latency
+
+Quota validation
+
+Usage increment
+
+Usage reads
+
+Billing dashboard
+
+Invoice generation
+
+Wallet updates
+
+Concurrency
+
+Locks
+
+Caching
+
+Redis
+
+Queue usage
+
+⸻
+
+SECTION 16 — Availability
+
+What happens if:
+
+Stripe is down
+
+Redis is down
+
+MongoDB is slow
+
+Webhook delayed
+
+Webhook duplicated
+
+Payment provider timeout
+
+Worker crash
+
+Queue failure
+
+Network partition
+
+Clock drift
+
+⸻
+
+SECTION 17 — Maintainability
+
+Review:
+
+Clean Code
+
+SOLID
+
+DRY
+
+KISS
+
+Separation of Concerns
+
+DDD readiness
+
+Future extensibility
+
+God classes
+
+Duplicated logic
+
+Hidden coupling
+
+Configuration driven design
+
+Generic architecture
+
+⸻
+
+SECTION 18 — Comparison With Enterprise SaaS
+
+Compare against:
+
+Stripe Billing
+
+Chargebee
+
+Paddle
+
+LemonSqueezy
+
+Chatwoot
+
+Intercom
+
+HubSpot
+
+Zendesk
+
+Highlight missing enterprise capabilities.
+
+⸻
+
+SECTION 19 — Final Score
+
+Provide scores for:
+
+Billing Architecture
+
+Subscription Engine
+
+Usage Metering
+
+Wallet
+
+Payments
+
+Plans
+
+Frontend
+
+Security
+
+Performance
+
+Scalability
+
+Availability
+
+Maintainability
+
+Enterprise Readiness
+
+Overall Score
+
+⸻
+
+SECTION 20 — Improvement Roadmap
+
+Create a phased roadmap.
+
+Phase 1
+
+Critical production blockers.
+
+Phase 2
+
+Performance.
+
+Phase 3
+
+Architecture.
+
+Phase 4
+
+Enterprise readiness.
+
+Phase 5
+
+Future SaaS Billing Evolution.
+
+Prioritize by:
+
+Impact
+
+Difficulty
+
+Risk
+
+Estimated effort
+
+⸻
+
+Mandatory Rules
+
+* Use only the real source code.
+* Never assume implementation.
+* Every conclusion must reference files/functions/classes.
+* Highlight every hidden scalability issue.
+* Highlight every hidden security issue.
+* Highlight every architectural smell.
+* Highlight every missing enterprise feature.
+* Explain how to redesign only when necessary.
+* Focus heavily on generic feature entitlement architecture so future billable features can be added without rewriting the billing system.
+* Verify that the frontend always reflects backend state accurately for every billing-related action.
+* Evaluate whether the billing architecture is truly configuration-driven rather than hardcoded.
+* The final goal is an enterprise-grade billing system that can evolve for the next 10 years with minimal code changes.
