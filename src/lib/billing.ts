@@ -12,50 +12,20 @@ import {
   MessagePack,
   PaymentEvent,
   TenantSubscription,
-  SubscriptionHistory,
   type BillingPlanDocument,
   type MessagePackDocument
 } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 import { absoluteUrl } from "@/lib/strings";
 import { stripeProvider } from "@/lib/billing/providers/stripe.provider";
-import { publishRealtimeEvent } from "@/lib/realtime";
 import { writeBillingAudit } from "@/lib/billing/billing-audit";
-import { FEATURE_KEYS } from "@/lib/billing/feature-registry";
+import { appendSubscriptionHistory } from "@/lib/billing/subscription-history-helper";
 import type { Stripe } from "stripe";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function assertValidObjectId(value: string, label: string) {
   if (!Types.ObjectId.isValid(value)) throw new Error(`${label} is invalid.`);
-}
-
-async function appendSubscriptionHistory(params: {
-  tenantId: string;
-  planId?: string;
-  planName?: string;
-  fromStatus?: string;
-  toStatus: string;
-  transition: string;
-  actor?: "system" | "tenant" | "admin" | "stripe";
-  actorId?: string;
-  note?: string;
-}) {
-  try {
-    await SubscriptionHistory.create({
-      tenantId: new Types.ObjectId(params.tenantId),
-      planId: params.planId ? new Types.ObjectId(params.planId) : undefined,
-      planName: params.planName ?? "",
-      fromStatus: params.fromStatus ?? "",
-      toStatus: params.toStatus,
-      transition: params.transition,
-      actor: params.actor ?? "system",
-      actorId: params.actorId ?? "",
-      note: params.note ?? ""
-    });
-  } catch {
-    // History failures must never block the main operation
-  }
 }
 
 // ─── Catalog ──────────────────────────────────────────────────────────────────
@@ -143,55 +113,6 @@ export function serializePack(pack: MessagePackDocument & { _id: Types.ObjectId 
     sortOrder: pack.sortOrder,
     isActive: pack.isActive
   };
-}
-
-// ─── AI message guards (backward compat) ─────────────────────────────────────
-
-export async function assertCanSendAiMessage(tenantId: string) {
-  await connectToDatabase();
-  const subscription = await TenantSubscription.findOne({ tenantId });
-  if (!subscription) return;
-
-  const allowance = subscription.monthlyMessageLimit + subscription.extraMessageCredits;
-  if (allowance <= 0) return;
-
-  const grace = Number((subscription as any).graceMessageLimit ?? 20);
-  if (subscription.usedMessages >= allowance + Math.max(0, grace)) {
-    throw new Error("AI message limit exceeded. Add a message pack or upgrade the plan.");
-  }
-}
-
-export async function recordAiMessageUsage(tenantId: string) {
-  const subscription = await TenantSubscription.findOneAndUpdate(
-    { tenantId },
-    { $inc: { usedMessages: 1 } },
-    { new: true, upsert: false }
-  );
-  if (!subscription) return;
-
-  const allowance = subscription.monthlyMessageLimit + subscription.extraMessageCredits;
-  if (allowance <= 0) return;
-
-  const used = subscription.usedMessages || 0;
-  const grace = Number((subscription as any).graceMessageLimit ?? 20);
-  const percent = Math.round((used / allowance) * 100);
-  const remaining = Math.max(allowance - used, 0);
-  const graceRemaining = Math.max(allowance + grace - used, 0);
-
-  if (percent >= 80 || used >= allowance) {
-    await publishRealtimeEvent(tenantId, "billing.usage.updated", {
-      usage: {
-        usedMessages: used,
-        monthlyMessageLimit: subscription.monthlyMessageLimit,
-        extraMessageCredits: subscription.extraMessageCredits,
-        graceMessageLimit: grace,
-        percent,
-        remaining,
-        graceRemaining,
-        level: used >= allowance ? "grace" : percent >= 90 ? "danger" : "warning"
-      }
-    }).catch(() => undefined);
-  }
 }
 
 // ─── Checkout ─────────────────────────────────────────────────────────────────
@@ -481,12 +402,27 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   if (invoice.billing_reason === "subscription_cycle" && subscriptionId) {
     const sub = await TenantSubscription.findOne({ stripeSubscriptionId: subscriptionId });
     if (sub) {
+      // Refresh planSnapshot on renewal to pick up any plan changes made mid-cycle
+      const currentPlan = sub.planId
+        ? await BillingPlan.findById(sub.planId).lean()
+        : null;
+
       await TenantSubscription.updateOne(
         { _id: sub._id },
-        { $set: { usedMessages: 0, status: "active" } }
+        {
+          $set: {
+            usedMessages: 0,
+            status: "active",
+            ...(currentPlan
+              ? { planSnapshot: { name: currentPlan.name, features: (currentPlan as any).features ?? [] } }
+              : {})
+          }
+        }
       );
       await appendSubscriptionHistory({
         tenantId: sub.tenantId.toString(),
+        planId: sub.planId?.toString(),
+        planName: currentPlan?.name,
         fromStatus: sub.status,
         toStatus: "active",
         transition: "renewed",

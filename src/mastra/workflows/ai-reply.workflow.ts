@@ -10,6 +10,12 @@ import { AiSetting, Bot, Conversation, Message, Tenant } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/strings";
 import { buildUnifiedSystemPrompt } from "@/lib/ai/build-system-prompt";
+import {
+  hashSettingsForPrompt,
+  buildPromptCacheKey,
+  getCachedSystemPrompt,
+  setCachedSystemPrompt,
+} from "@/lib/ai/prompt-cache";
 import { buildSafeCustomerReply } from "@/lib/ai/safe-customer-reply";
 import { detectBusinessIntent, isDirectKnowledgeIntent } from "@/lib/ai/business-intent";
 import { buildEntitiesPrompt, searchKnowledgeEntities } from "@/lib/knowledge-entities";
@@ -395,17 +401,25 @@ const loadConversationStep = createStep({
         : null,
       tenantName: tenant.name,
       conversationMetadata: (conversation.metadata && typeof conversation.metadata === "object" ? conversation.metadata : {}) as Record<string, unknown>,
-      unifiedPrompt: buildUnifiedSystemPrompt({
-        businessName: tenant.name,
-        botName: bot.name || "Chatzi",
-        role: setting?.role || "CRM assistant",
-        tone: [setting?.tone, setting?.tonePreset, setting?.warmthLevel, setting?.salesStyle, setting?.supportStyle].filter(Boolean).join(", ") || "professional, warm, marketing-focused",
-        responseLength: setting?.responseLength || "short",
-        language: setting?.language || setting?.languageMode || "auto",
-        customInstructions: [setting?.categoryPromptEn, setting?.customInstructionsEn, setting?.systemPrompt].filter(Boolean).join("\n\n"),
-        useEmojis: setting?.useEmojis ?? undefined,
-        emojiStyle: setting?.emojiStyle || undefined,
-      }),
+      unifiedPrompt: await (async () => {
+        const settingsHash = hashSettingsForPrompt(setting ?? null);
+        const cacheKey = buildPromptCacheKey(inputData.tenantId, inputData.botId, settingsHash);
+        const cached = await getCachedSystemPrompt(cacheKey);
+        if (cached) return cached;
+        const built = buildUnifiedSystemPrompt({
+          businessName: tenant.name,
+          botName: bot.name || "Chatzi",
+          role: setting?.role || "CRM assistant",
+          tone: [setting?.tone, setting?.tonePreset, setting?.warmthLevel, setting?.salesStyle, setting?.supportStyle].filter(Boolean).join(", ") || "professional, warm, marketing-focused",
+          responseLength: setting?.responseLength || "short",
+          language: setting?.language || setting?.languageMode || "auto",
+          customInstructions: [setting?.categoryPromptEn, setting?.customInstructionsEn, setting?.systemPrompt].filter(Boolean).join("\n\n"),
+          useEmojis: setting?.useEmojis ?? undefined,
+          emojiStyle: setting?.emojiStyle || undefined,
+        });
+        await setCachedSystemPrompt(cacheKey, built);
+        return built;
+      })(),
       generated: false,
     };
   },

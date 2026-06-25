@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Plus, Save, Archive, Copy, Edit2, ChevronDown, ChevronUp,
   Trash2, CheckCircle, XCircle, Eye, EyeOff, Star, DollarSign,
-  Gift, Settings, BarChart3
+  Gift, Settings, BarChart3, History, ShieldCheck, RefreshCw
 } from "lucide-react";
 import { FEATURE_REGISTRY } from "@/lib/billing/feature-registry";
 
@@ -51,7 +51,7 @@ const BUILT_IN_FEATURES = Object.values(FEATURE_REGISTRY);
 
 export function BillingAdmin({ plans, packs }: { plans: PlanRow[]; packs: PackRow[] }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"plans" | "packs" | "audit">("plans");
+  const [tab, setTab] = useState<"plans" | "packs" | "audit" | "history" | "overrides">("plans");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [planList, setPlanList] = useState(plans);
@@ -182,11 +182,11 @@ export function BillingAdmin({ plans, packs }: { plans: PlanRow[]; packs: PackRo
       {error ? <p className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-400">{error}</p> : null}
       {success ? <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">{success}</p> : null}
 
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-1">
-        {(["plans", "packs", "audit"] as const).map(t => (
+      <div className="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-800 pb-1">
+        {(["plans", "packs", "audit", "history", "overrides"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors ${tab === t ? "bg-white dark:bg-slate-900 border border-b-white dark:border-slate-700 dark:border-b-slate-900 text-violet-600" : "text-slate-500 hover:text-ink"}`}>
-            {t === "plans" ? "الخطط" : t === "packs" ? "باقات الرسائل" : "سجل التدقيق"}
+            {t === "plans" ? "الخطط" : t === "packs" ? "باقات الرسائل" : t === "audit" ? "سجل التدقيق" : t === "history" ? "سجل الاشتراكات" : "تجاوزات الصلاحيات"}
           </button>
         ))}
         <button onClick={() => setGrantModal(true)}
@@ -246,6 +246,12 @@ export function BillingAdmin({ plans, packs }: { plans: PlanRow[]; packs: PackRo
 
       {/* ── AUDIT TAB ── */}
       {tab === "audit" && <AuditLogPanel />}
+
+      {/* ── SUBSCRIPTION HISTORY TAB ── */}
+      {tab === "history" && <SubscriptionHistoryPanel />}
+
+      {/* ── ENTITLEMENT OVERRIDES TAB ── */}
+      {tab === "overrides" && <EntitlementOverridesPanel onFlash={flash} />}
 
       {/* ── GRANT MODAL ── */}
       {grantModal && (
@@ -537,6 +543,218 @@ function FeatureRow({
           إلغاء
         </button>
       </div>
+    </div>
+  );
+}
+
+function SubscriptionHistoryPanel() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [tenantFilter, setTenantFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const LIMIT = 50;
+
+  async function load(p = 1, tid = tenantFilter) {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page: String(p), limit: String(LIMIT) });
+      if (tid.trim()) params.set("tenantId", tid.trim());
+      const res = await fetch(`/api/admin/billing/subscriptions/history?${params}`);
+      const data = await res.json();
+      setLogs(data.history ?? []);
+      setTotal(data.total ?? 0);
+      setPage(p);
+    } finally {
+      setLoading(false);
+      setLoaded(true);
+    }
+  }
+
+  const statusColor: Record<string, string> = {
+    active: "bg-emerald-100 text-emerald-700",
+    trialing: "bg-blue-100 text-blue-700",
+    past_due: "bg-amber-100 text-amber-700",
+    canceled: "bg-red-100 text-red-600",
+  };
+
+  return (
+    <div className="panel overflow-hidden">
+      <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+        <h2 className="flex items-center gap-2 text-lg font-bold text-ink"><History size={18} /> سجل الاشتراكات</h2>
+        <input
+          className="field w-56 text-sm"
+          placeholder="Tenant ID (اختياري)"
+          value={tenantFilter}
+          onChange={e => setTenantFilter(e.target.value)}
+        />
+        <button className="btn-secondary text-sm" onClick={() => load(1)} disabled={loading}>
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          {loading ? "جاري..." : "تحميل"}
+        </button>
+        {loaded && <span className="ms-auto text-xs text-slate-500">{total} سجل إجمالي</span>}
+      </div>
+      {loaded && (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800">
+                <tr>
+                  <th className="px-4 py-3 text-right font-medium">Tenant</th>
+                  <th className="px-4 py-3 text-right font-medium">الخطة</th>
+                  <th className="px-4 py-3 text-right font-medium">الانتقال</th>
+                  <th className="px-4 py-3 text-right font-medium">من → إلى</th>
+                  <th className="px-4 py-3 text-right font-medium">المنفذ</th>
+                  <th className="px-4 py-3 text-right font-medium">الوقت</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {logs.length === 0 && (
+                  <tr><td colSpan={6} className="p-5 text-center text-slate-500">لا توجد سجلات.</td></tr>
+                )}
+                {logs.map((log: any, i) => (
+                  <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-500 max-w-[140px] truncate">{String(log.tenantId)}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-ink">{log.planName || "-"}</td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">{log.transition}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1 text-xs">
+                        {log.fromStatus ? <span className={`rounded-full px-2 py-0.5 font-semibold ${statusColor[log.fromStatus] ?? "bg-slate-100 text-slate-600"}`}>{log.fromStatus}</span> : null}
+                        {log.fromStatus ? <span className="text-slate-400">→</span> : null}
+                        <span className={`rounded-full px-2 py-0.5 font-semibold ${statusColor[log.toStatus] ?? "bg-slate-100 text-slate-600"}`}>{log.toStatus}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-500">{log.actor}{log.actorId ? ` (${String(log.actorId).slice(0, 8)})` : ""}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400">{new Date(log.createdAt).toLocaleString("ar-EG")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {total > LIMIT && (
+            <div className="flex items-center justify-center gap-3 border-t border-slate-100 p-3 dark:border-slate-800">
+              <button className="btn-secondary text-xs" onClick={() => load(page - 1)} disabled={page <= 1 || loading}>السابق</button>
+              <span className="text-xs text-slate-500">صفحة {page} من {Math.ceil(total / LIMIT)}</span>
+              <button className="btn-secondary text-xs" onClick={() => load(page + 1)} disabled={page >= Math.ceil(total / LIMIT) || loading}>التالي</button>
+            </div>
+          )}
+        </>
+      )}
+      {!loaded && !loading && (
+        <p className="p-6 text-center text-sm text-slate-500">اضغط "تحميل" لعرض سجل الاشتراكات.</p>
+      )}
+    </div>
+  );
+}
+
+function EntitlementOverridesPanel({ onFlash }: { onFlash: (t: "ok" | "err", m: string) => void }) {
+  const [tenantId, setTenantId] = useState("");
+  const [key, setKey] = useState("");
+  const [valueType, setValueType] = useState<"number" | "boolean">("number");
+  const [numValue, setNumValue] = useState(0);
+  const [boolValue, setBoolValue] = useState(true);
+  const [expiresAt, setExpiresAt] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const FEATURE_OPTIONS = Object.values(FEATURE_REGISTRY).map(f => ({ key: f.key, name: f.name, type: f.type }));
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!tenantId.trim() || !key.trim()) return onFlash("err", "Tenant ID والمفتاح مطلوبان.");
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/billing/entitlements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenantId: tenantId.trim(),
+          key: key.trim(),
+          value: valueType === "boolean" ? boolValue : numValue,
+          expiresAt: expiresAt || undefined
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "خطأ غير متوقع");
+      onFlash("ok", `تم تطبيق التجاوز على "${key}" للمستأجر.`);
+      setTenantId(""); setKey(""); setNumValue(0); setBoolValue(true); setExpiresAt("");
+    } catch (e: any) {
+      onFlash("err", e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="panel p-5">
+      <div className="mb-5 flex items-center gap-2">
+        <ShieldCheck size={18} className="text-violet-500" />
+        <h2 className="text-lg font-bold text-ink">تجاوز صلاحية مستأجر</h2>
+      </div>
+      <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+        يُستخدم لتخصيص حدود خطة معينة لمستأجر بعينه دون تغيير الخطة الأصلية. يُطبَّق فوراً ويُخزَّن في Entitlement collection.
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="label">Tenant ID <span className="text-red-500">*</span></label>
+            <input className="field" value={tenantId} onChange={e => setTenantId(e.target.value)} placeholder="ObjectId الخاص بالمستأجر" required />
+          </div>
+          <div>
+            <label className="label">الميزة <span className="text-red-500">*</span></label>
+            <select className="field" value={key} onChange={e => {
+              const k = e.target.value;
+              setKey(k);
+              const meta = FEATURE_REGISTRY[k];
+              if (meta) setValueType(meta.type === "boolean" ? "boolean" : "number");
+            }}>
+              <option value="">اختر ميزة...</option>
+              {FEATURE_OPTIONS.map(f => (
+                <option key={f.key} value={f.key}>{f.name} ({f.key})</option>
+              ))}
+              <option value="__custom">مفتاح مخصص</option>
+            </select>
+            {key === "__custom" && (
+              <input className="field mt-2 text-sm" placeholder="مفتاح مخصص" onChange={e => setKey(e.target.value)} />
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <div>
+            <label className="label">نوع القيمة</label>
+            <select className="field" value={valueType} onChange={e => setValueType(e.target.value as any)}>
+              <option value="number">رقم (حد)</option>
+              <option value="boolean">منطقي (تفعيل/تعطيل)</option>
+            </select>
+          </div>
+          {valueType === "number" ? (
+            <div>
+              <label className="label">القيمة</label>
+              <input type="number" className="field" value={numValue} onChange={e => setNumValue(Number(e.target.value))} min={0} />
+            </div>
+          ) : (
+            <div className="flex items-end pb-2">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                <input type="checkbox" checked={boolValue} onChange={e => setBoolValue(e.target.checked)} className="h-4 w-4" />
+                مفعّل
+              </label>
+            </div>
+          )}
+          <div>
+            <label className="label">تنتهي في (اختياري)</label>
+            <input type="datetime-local" className="field text-sm" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
+          </div>
+        </div>
+
+        <button type="submit" disabled={saving}
+          className="flex items-center gap-2 rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50">
+          <ShieldCheck size={16} />
+          {saving ? "جاري الحفظ..." : "تطبيق التجاوز"}
+        </button>
+      </form>
     </div>
   );
 }

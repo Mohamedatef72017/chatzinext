@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DollarSign, Users, Activity, Trash2, ShieldAlert } from "lucide-react";
+import { DollarSign, Users, Activity, ShieldAlert, Clock, AlertTriangle } from "lucide-react";
 
 type Subscription = {
   id: string;
@@ -13,6 +13,9 @@ type Subscription = {
   monthlyLimit: number;
   extraCredits: number;
   currentPeriodEnd: string;
+  cancelAtPeriodEnd?: boolean;
+  trialEndsAt?: string | null;
+  graceEndsAt?: string | null;
 };
 
 type Analytics = {
@@ -91,41 +94,84 @@ export function SubscriptionsDashboard({ analytics, subscriptions }: { analytics
                   <td colSpan={6} className="p-5 text-center text-slate-500">لا يوجد مشتركون بعد.</td>
                 </tr>
               ) : null}
-              {subs.map((sub) => (
-                <tr key={sub.id} className="hover:bg-slate-50">
-                  <td className="px-5 py-4">
-                    <p className="font-bold text-ink">{sub.tenantName}</p>
-                    <p className="text-xs text-slate-500">{sub.tenantSlug}</p>
-                  </td>
-                  <td className="px-5 py-4 font-medium text-ink">{sub.planName}</td>
-                  <td className="px-5 py-4">
-                    <span className={`rounded-full px-2 py-1 text-xs font-semibold ${sub.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
-                      {sub.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex flex-col gap-1">
-                      <span>{sub.usedMessages} / {sub.monthlyLimit} <span className="text-xs text-slate-400">(أساسي)</span></span>
-                      {sub.extraCredits > 0 && <span className="text-xs text-violet-600">{sub.extraCredits} إضافي</span>}
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-slate-500">
-                    {sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd).toLocaleDateString("ar-EG") : "-"}
-                  </td>
-                  <td className="px-5 py-4">
-                    {sub.status === "active" ? (
-                      <button
-                        onClick={() => handleCancel(sub.id)}
-                        disabled={loading === sub.id}
-                        className="flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100 disabled:opacity-50"
-                      >
-                        <ShieldAlert size={14} />
-                        {loading === sub.id ? "جاري..." : "إلغاء"}
-                      </button>
-                    ) : "-"}
-                  </td>
-                </tr>
-              ))}
+              {subs.map((sub) => {
+                const statusMap: Record<string, string> = {
+                  active: "bg-emerald-100 text-emerald-700",
+                  trialing: "bg-blue-100 text-blue-700",
+                  past_due: "bg-amber-100 text-amber-700",
+                  canceled: "bg-slate-100 text-slate-500",
+                };
+                const statusLabel: Record<string, string> = {
+                  active: "نشط",
+                  trialing: "تجربة",
+                  past_due: "متأخر",
+                  canceled: "ملغى",
+                };
+                const now = new Date();
+                const trialEnds = sub.trialEndsAt ? new Date(sub.trialEndsAt) : null;
+                const graceEnds = sub.graceEndsAt ? new Date(sub.graceEndsAt) : null;
+                const trialDaysLeft = trialEnds ? Math.ceil((trialEnds.getTime() - now.getTime()) / 86_400_000) : null;
+                const graceDaysLeft = graceEnds ? Math.ceil((graceEnds.getTime() - now.getTime()) / 86_400_000) : null;
+
+                return (
+                  <tr key={sub.id} className="hover:bg-slate-50">
+                    <td className="px-5 py-4">
+                      <p className="font-bold text-ink">{sub.tenantName}</p>
+                      <p className="text-xs text-slate-500">{sub.tenantSlug}</p>
+                    </td>
+                    <td className="px-5 py-4 font-medium text-ink">
+                      {sub.planName}
+                      {sub.cancelAtPeriodEnd && (
+                        <span className="ms-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-xs text-orange-600">ينتهي</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusMap[sub.status] ?? "bg-slate-100 text-slate-700"}`}>
+                          {statusLabel[sub.status] ?? sub.status}
+                        </span>
+                        {trialEnds && sub.status === "trialing" && (
+                          <span className={`flex items-center gap-0.5 text-xs ${trialDaysLeft !== null && trialDaysLeft <= 3 ? "text-amber-600" : "text-blue-600"}`}>
+                            <Clock size={11} />
+                            {trialDaysLeft !== null && trialDaysLeft > 0
+                              ? `${trialDaysLeft} يوم متبقي`
+                              : "انتهت التجربة"}
+                          </span>
+                        )}
+                        {graceEnds && sub.status === "past_due" && (
+                          <span className={`flex items-center gap-0.5 text-xs ${graceDaysLeft !== null && graceDaysLeft <= 2 ? "text-red-600" : "text-amber-600"}`}>
+                            <AlertTriangle size={11} />
+                            {graceDaysLeft !== null && graceDaysLeft > 0
+                              ? `سماح: ${graceDaysLeft} يوم`
+                              : "انتهت السماح"}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span>{sub.usedMessages} / {sub.monthlyLimit} <span className="text-xs text-slate-400">(أساسي)</span></span>
+                        {sub.extraCredits > 0 && <span className="text-xs text-violet-600">{sub.extraCredits} إضافي</span>}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-slate-500">
+                      {sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd).toLocaleDateString("ar-EG") : "-"}
+                    </td>
+                    <td className="px-5 py-4">
+                      {["active", "trialing", "past_due"].includes(sub.status) ? (
+                        <button
+                          onClick={() => handleCancel(sub.id)}
+                          disabled={loading === sub.id}
+                          className="flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100 disabled:opacity-50"
+                        >
+                          <ShieldAlert size={14} />
+                          {loading === sub.id ? "جاري..." : "إلغاء"}
+                        </button>
+                      ) : "-"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
