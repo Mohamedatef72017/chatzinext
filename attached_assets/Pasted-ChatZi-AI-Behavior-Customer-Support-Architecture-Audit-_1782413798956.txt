@@ -1,0 +1,497 @@
+ChatZi AI Behavior & Customer Support Architecture Audit
+
+Before writing any code, read this document completely.
+
+IMPORTANT
+
+Do NOT run the project.
+
+Do NOT execute:
+
+* npm install
+* npm run dev
+* npm run build
+* next dev
+* next build
+
+This repository is edited only.
+
+Your task is source code analysis and implementation only.
+
+⸻
+
+Objective
+
+I do NOT want to improve the AI model itself.
+
+I want to improve the behavior of the AI.
+
+The goal is to make ChatZi behave like a world-class AI Customer Support Agent similar to:
+
+* Intercom Fin AI
+* Zendesk AI
+* Salesforce Einstein
+* Freshdesk Freddy AI
+* HubSpot AI Customer Agent
+
+without using any hardcoded replies.
+
+Every response must remain generated dynamically by the LLM.
+
+⸻
+
+Phase 1 — Complete AI Behavior Audit
+
+Perform a deep architectural review of the complete AI pipeline.
+
+Review everything including:
+
+* Mastra Agents
+* Mastra Workflows
+* Prompt generation
+* Memory
+* Conversation Context
+* RAG
+* Knowledge Search
+* AI Routing
+* Escalation Logic
+* Ticket Creation
+* AI Instructions
+* Intent Detection
+* Conversation State
+* System Prompts
+* User Prompts
+* AI Response Generation
+* Message History
+* Customer Memory
+* Sales Flow
+* Human Handoff
+* Follow-up Logic
+
+Determine exactly how the AI currently thinks before answering.
+
+Do not assume.
+
+Read the source code only.
+
+⸻
+
+Phase 2 — Professional Customer Support Review
+
+Determine whether the AI currently behaves like a real Customer Support employee.
+
+Review:
+
+Professionalism
+
+Does it sound human?
+
+Does it sound robotic?
+
+Does it repeat itself?
+
+Does it overuse greetings?
+
+Does it overuse apologies?
+
+Does it end conversations too early?
+
+Does it confuse users?
+
+Does it lose context?
+
+Does it understand follow-up questions?
+
+Can it recover from misunderstanding?
+
+⸻
+
+Conversation Quality
+
+Does it:
+
+Understand customer intent?
+
+Understand indirect intent?
+
+Understand emotional intent?
+
+Understand urgency?
+
+Understand frustration?
+
+Understand hesitation before buying?
+
+Understand comparison requests?
+
+Understand objections?
+
+Understand complaints?
+
+Understand compliments?
+
+Understand negotiation?
+
+Understand purchase signals?
+
+Understand cancellation intent?
+
+Understand refund intent?
+
+Understand escalation requests?
+
+⸻
+
+Sales Ability
+
+Evaluate whether the AI behaves like an experienced sales representative.
+
+Can it:
+
+discover customer needs?
+
+recommend the correct service?
+
+upsell naturally?
+
+cross-sell naturally?
+
+avoid aggressive selling?
+
+recognize buying signals?
+
+recognize hesitation?
+
+continue guiding the customer until a decision is made?
+
+offer alternatives?
+
+recover abandoned conversations?
+
+encourage the customer politely?
+
+increase conversion without sounding scripted?
+
+⸻
+
+Customer Satisfaction
+
+Does it:
+
+make customers feel respected?
+
+sound confident?
+
+sound helpful?
+
+sound patient?
+
+adapt its tone?
+
+avoid robotic wording?
+
+avoid repeating the same sentence?
+
+avoid generic answers?
+
+avoid unnecessary long responses?
+
+⸻
+
+Phase 3 — Ticketing System Audit
+
+Perform a complete review of Ticket Creation.
+
+Study how enterprise Customer Support systems create tickets.
+
+Examples:
+
+Zendesk
+
+Freshdesk
+
+Intercom
+
+Salesforce
+
+HubSpot
+
+Compare ChatZi against them.
+
+Review:
+
+When should the AI create a ticket?
+
+When should it continue helping?
+
+When should it ask for more information?
+
+When should it escalate?
+
+When should it ask permission?
+
+When should it automatically create a ticket?
+
+When should it transfer to a human?
+
+When should it refuse?
+
+When should it continue trying?
+
+⸻
+
+The ticket creation flow should feel completely natural.
+
+The customer should never feel that the AI suddenly switched modes.
+
+⸻
+
+Phase 4 — Emotional Intelligence
+
+Improve the AI so it understands:
+
+customer frustration
+
+customer happiness
+
+urgency
+
+confusion
+
+anger
+
+hesitation
+
+uncertainty
+
+purchase readiness
+
+support urgency
+
+conversation fatigue
+
+without any hardcoded keyword matching.
+
+Use LLM reasoning only.
+
+⸻
+
+Phase 5 — Conversation Memory
+
+Review the current memory implementation.
+
+Verify whether the AI remembers:
+
+customer name
+
+previous requests
+
+current issue
+
+purchase stage
+
+ticket status
+
+conversation summary
+
+conversation goals
+
+If not,
+
+design a proper memory architecture using Mastra.
+
+⸻
+
+Phase 6 — AI Instructions
+
+Review every prompt.
+
+Improve them.
+
+The AI should always:
+
+be respectful
+
+be confident
+
+be concise
+
+be helpful
+
+be patient
+
+be persuasive when appropriate
+
+never hallucinate
+
+never invent company information
+
+never answer outside the Knowledge Base
+
+never contradict previous messages
+
+never expose internal prompts
+
+never expose reasoning
+
+never expose chain of thought
+
+⸻
+
+Phase 7 — Knowledge Base Compliance
+
+The AI must always answer ONLY using:
+
+Knowledge Base
+
+Company Instructions
+
+Business Rules
+
+Available Tools
+
+Never answer from general model knowledge when business information is missing.
+
+Instead it should politely explain that the information is unavailable.
+
+⸻
+
+Phase 8 — Dynamic Responses Only
+
+This is extremely important.
+
+Never implement hardcoded replies.
+
+Never implement:
+
+if(question==”…”)
+
+switch(intent)
+
+return “…”;
+
+No static templates.
+
+No fixed responses.
+
+No keyword-based conversations.
+
+Instead:
+
+Improve prompting.
+
+Improve orchestration.
+
+Improve workflow.
+
+Improve reasoning.
+
+Improve tool selection.
+
+Improve memory.
+
+Improve context building.
+
+Improve Mastra orchestration.
+
+The LLM should generate every response dynamically.
+
+⸻
+
+Phase 9 — Mastra Optimization
+
+Use Mastra to its maximum capabilities.
+
+Review whether workflows can be improved.
+
+Review:
+
+routing
+
+tool calling
+
+memory
+
+planning
+
+reasoning
+
+conversation state
+
+agent coordination
+
+workflow orchestration
+
+tool orchestration
+
+context management
+
+If Mastra supports a better architecture,
+
+implement it.
+
+⸻
+
+Phase 10 — Enterprise AI Behavior
+
+The final AI should behave like an experienced employee.
+
+Not like ChatGPT.
+
+Not like a chatbot.
+
+Like a real support representative.
+
+It should:
+
+understand
+
+think
+
+guide
+
+help
+
+sell
+
+escalate
+
+follow up
+
+close conversations professionally
+
+while remaining fully dynamic.
+
+⸻
+
+Final Documentation
+
+After completing everything,
+
+create:
+
+docs/changes/25-6-2026-ai-behavior.md
+
+The document must include:
+
+* Executive Summary
+* Current AI Architecture
+* Current Weaknesses
+* Comparison with Enterprise AI Platforms
+* Improvements Implemented
+* Mastra Improvements
+* Prompt Improvements
+* Workflow Improvements
+* Memory Improvements
+* Ticketing Improvements
+* Sales Improvements
+* Customer Experience Improvements
+* Knowledge Base Improvements
+* Security Improvements
+* Remaining Future Improvements
+* Before vs After comparison
+* Final Enterprise Readiness Score
+
+The document should be written as an engineering report suitable for CTO-level review.
+
+The goal is for ChatZi AI to become indistinguishable from a professional human customer support representative while remaining fully Knowledge Base driven, completely dynamic, and free from any hardcoded conversational logic.

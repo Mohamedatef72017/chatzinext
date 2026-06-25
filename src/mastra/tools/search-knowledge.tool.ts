@@ -26,8 +26,15 @@ const searchKnowledgeOutputSchema = z.object({
 
 export const searchKnowledgeTool = createTool({
   id: "search-knowledge",
-  description:
-    "Search the tenant-isolated knowledge base for customer support context.",
+  description: [
+    "Search the business knowledge base for information relevant to the customer's question.",
+    "Use this tool whenever the customer asks about: services, products, prices, availability, booking, hours, location, policies, procedures, offers, or any business-specific fact.",
+    "Also use this tool before answering complaints, support requests, or objections — to ensure the answer is grounded in accurate business information.",
+    "Always search BEFORE answering a business question. Never answer from general knowledge when business-specific information is available.",
+    "Pass the customer's original question or a rephrased version of it as the 'question' field.",
+    "The tool returns ranked results with confidence scores. Use the highest-confidence results to ground your response.",
+    "If the confidence is below 40, acknowledge that you have limited information and offer to escalate to the team.",
+  ].join(" "),
   inputSchema: searchKnowledgeInputSchema,
   outputSchema: searchKnowledgeOutputSchema,
   execute: async (input) => {
@@ -58,4 +65,3 @@ export const searchKnowledgeTool = createTool({
     };
   },
 });
-
