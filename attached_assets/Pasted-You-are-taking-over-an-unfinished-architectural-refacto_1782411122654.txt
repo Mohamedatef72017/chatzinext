@@ -1,0 +1,299 @@
+You are taking over an unfinished architectural refactor of the ChatZi Billing System.
+
+Read this carefully before making any modification.
+
+Important
+
+DO NOT RUN THE APPLICATION.
+
+Do NOT execute:
+
+* npm run dev
+* next dev
+* npm start
+* npm run start
+* npm run preview
+* any development server
+
+Also do NOT waste time trying to fix local node_modules or runtime issues.
+
+This repository is edited only on GitHub.
+
+The application is built and tested later on my production server.
+
+Your job is code architecture and source-code verification only.
+
+⸻
+
+First Objective
+
+Before writing any code, perform a complete audit of what was actually implemented.
+
+The previous agent claimed to have completed a massive Billing Architecture refactor.
+
+I do NOT trust progress messages.
+
+I only trust the source code.
+
+You MUST verify everything from the actual code.
+
+⸻
+
+Compare Documentation Against Reality
+
+Read completely:
+
+docs/
+
+including:
+
+* Billing Architecture
+* Billing Migration Plan
+* every new document inside docs
+* change logs
+* daily reports
+
+Then compare every documented feature against the real implementation.
+
+For every documented feature answer:
+
+✅ Implemented correctly
+
+⚠ Partially implemented
+
+❌ Documentation says implemented but code does not exist
+
+⸻
+
+Produce Verification Report
+
+Create a report containing:
+
+Models
+
+Verify every new model exists.
+
+Example:
+
+* BillingPlan
+* FeatureDefinition
+* UsageRecord
+* Wallet
+* WalletTransaction
+* BillingAuditLog
+* SubscriptionHistory
+
+Check:
+
+* schema
+* indexes
+* relations
+* validation
+* backward compatibility
+
+⸻
+
+Billing Engine
+
+Verify:
+
+* Feature Registry
+* Plan Resolver
+* Entitlement Engine
+* Usage Engine
+* Payment Provider abstraction
+* Wallet Service
+* Billing Audit
+* Subscription History
+
+Does every service actually exist?
+
+Does it compile logically?
+
+Are imports correct?
+
+⸻
+
+BillingPlan
+
+This is the most important point.
+
+Verify that:
+
+BillingPlan became the SINGLE SOURCE OF TRUTH.
+
+Confirm whether runtime decisions now come from:
+
+BillingPlan.features[]
+
+or whether the project is still depending on:
+
+PLAN_DEFAULTS
+
+If PLAN_DEFAULTS is still making runtime decisions, explain exactly where and why.
+
+⸻
+
+Migration
+
+The documentation mentions:
+
+Billing Migration Plan.
+
+Determine exactly what this means.
+
+Answer:
+
+Is the old billing system still being used?
+
+Or is it kept ONLY for backward compatibility?
+
+List every Legacy component still alive.
+
+For each one answer:
+
+* temporary compatibility
+* still used in production
+* should be removed later
+
+⸻
+
+Usage Metering
+
+Verify:
+
+reserveUsage()
+
+quota.ts
+
+assertAndReserveQuota()
+
+recordAiMessageUsage()
+
+Confirm there is NO double counting.
+
+⸻
+
+Payment Providers
+
+Verify:
+
+Stripe Provider
+
+PaymentProvider Interface
+
+billing.ts
+
+Confirm that adding Paymob or MyFatoorah would only require implementing a new provider.
+
+⸻
+
+Super Admin
+
+Verify every endpoint mentioned in the docs actually exists.
+
+Verify:
+
+* create plan
+* edit plan
+* archive
+* clone
+* features
+* credits
+* audit
+* subscription history
+
+⸻
+
+Frontend
+
+Verify whether UI actually reflects the new backend.
+
+Identify missing screens.
+
+Identify fake buttons.
+
+Identify incomplete pages.
+
+⸻
+
+Backward Compatibility
+
+Verify whether existing APIs still work.
+
+Verify no existing integrations were silently broken.
+
+⸻
+
+Security
+
+Verify:
+
+tenant isolation
+
+audit logging
+
+wallet integrity
+
+negative balances
+
+idempotency
+
+webhook validation
+
+authorization
+
+⸻
+
+Code Quality
+
+Check:
+
+dead code
+
+duplicate code
+
+unused imports
+
+broken exports
+
+wrong abstractions
+
+architectural violations
+
+God files
+
+tight coupling
+
+⸻
+
+IMPORTANT
+
+Do NOT modify anything during this audit.
+
+Do NOT refactor.
+
+Do NOT optimize.
+
+Only inspect.
+
+Only compare.
+
+Only verify.
+
+⸻
+
+Final Deliverable
+
+Produce one final report containing:
+
+1. What the previous agent REALLY completed.
+2. What is partially completed.
+3. What documentation claims but code does not.
+4. What still depends on the old billing architecture.
+5. Whether the migration strategy is correct.
+6. Whether BillingPlan is truly the single source of truth.
+7. Every remaining blocker before continuing development.
+8. Recommended execution plan for the remaining work.
+
+Only after this verification report is complete should we continue implementing the remaining tasks.

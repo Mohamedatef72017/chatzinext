@@ -1,0 +1,167 @@
+# ChatZi Billing Refactor Continuation & Verification Prompt
+
+You are continuing work from a previous Replit session where credits/quota ended before final verification.
+
+Important context:
+
+This repository is edited through GitHub/Replit, but the application is deployed and run on my own server.
+
+DO NOT run the application server.
+DO NOT start `next dev`.
+DO NOT start PM2.
+DO NOT start socket server.
+DO NOT start workers.
+DO NOT run long-running processes.
+
+You may only inspect code, modify files, run static checks if available, and prepare commits/patches.
+
+Allowed commands:
+- git status
+- git diff
+- git log
+- npm run typecheck
+- npm run lint
+- npm test
+- npm run build if it does not require starting a server
+- grep / rg / find / ls
+- tsc checks
+- unit tests
+
+If any command tries to start a server or blocks, stop it.
+
+---
+
+# What Was Supposed To Be Done
+
+The previous task was to refactor ChatZi billing from a hardcoded AI-message-only system into an enterprise-grade, feature-based, configuration-driven billing architecture.
+
+The target architecture:
+
+1. BillingPlan must become the single source of truth.
+2. Plan features must be stored in `BillingPlan.features[]`.
+3. Runtime billing and entitlements must NOT depend on hardcoded `PLAN_DEFAULTS`.
+4. `PLAN_DEFAULTS` may remain only as a migration fallback or seed helper, not as the real runtime decision source.
+5. Usage metering must become generic.
+6. AI message quota must work through the generic usage engine.
+7. Future billable features must be addable without rewriting core billing logic.
+8. Super Admin must be able to manage plans, features, limits, and billing controls.
+9. Stripe must keep working.
+10. Payment provider abstraction must exist for future providers.
+11. Wallet/Credits foundation must exist safely.
+12. Documentation must be updated in docs.
+
+---
+
+# Previous Session Claimed To Have Added
+
+The previous session claimed it created or updated:
+
+## Billing Domain Files
+
+- `src/lib/billing/feature-registry.ts`
+- `src/lib/billing/plan-resolver.ts`
+- `src/lib/billing/entitlement-engine.ts`
+- `src/lib/billing/usage-engine.ts`
+- `src/lib/billing/billing-audit.ts`
+- `src/lib/billing/payment-provider.ts`
+- `src/lib/billing/wallet-service.ts`
+- `src/lib/billing/subscription-history-helper.ts`
+- `src/lib/billing/providers/stripe.provider.ts`
+- `src/lib/billing/index.ts`
+
+## Legacy Wrapper Files
+
+- `src/lib/billing.ts`
+- `src/lib/entitlements.ts`
+- `src/lib/quota.ts`
+- `src/lib/stripe.ts`
+
+## Models
+
+- `src/lib/models/billing-plan.ts`
+- `src/lib/models/tenant-subscription.ts`
+- `src/lib/models/feature-definition.ts`
+- `src/lib/models/usage-record.ts`
+- `src/lib/models/subscription-history.ts`
+- `src/lib/models/billing-audit-log.ts`
+- `src/lib/models/wallet.ts`
+- `src/lib/models/wallet-transaction.ts`
+
+## Admin APIs
+
+- Admin billing plan APIs
+- Admin plan feature APIs
+- Admin billing audit APIs
+- Admin credits/wallet APIs
+- Admin subscription history APIs
+
+## Documentation
+
+- `docs/billing-architecture.md`
+- `docs/billing-migration-plan.md`
+- `docs/changes/DD-MM-YYYY.md`
+- `docs/changes/CHANGELOG.md`
+
+## Tests
+
+- usage engine tests
+- entitlement engine tests
+- wallet service tests
+
+---
+
+# Your Mission
+
+Do NOT blindly continue coding.
+
+First perform a strict verification audit.
+
+Compare:
+
+1. What the documentation claims.
+2. What the code actually implements.
+3. What was originally required.
+
+Then produce a gap report.
+
+Only after the gap report, fix missing or broken items if they are safe and isolated.
+
+---
+
+# Important Suspicious Statement To Investigate
+
+The previous session said:
+
+> "I am documenting the billing migration plan. This will help us track the transition from the old system to the new system step by step."
+
+Investigate what this means in the actual code.
+
+Specifically verify:
+
+1. Is the old billing system still the real runtime system?
+2. Is the new billing system actually used by runtime code?
+3. Is `PLAN_DEFAULTS` still controlling entitlement decisions?
+4. Is `BillingPlan.features[]` actually used as the source of truth?
+5. Are legacy functions just wrappers over the new engine?
+6. Or are there now two inconsistent systems running side by side?
+
+Answer clearly:
+
+- OLD SYSTEM STILL ACTIVE
+- NEW SYSTEM ACTIVE
+- HYBRID BUT SAFE
+- HYBRID AND DANGEROUS
+
+Explain with file references.
+
+---
+
+# Required Verification Checklist
+
+## 1. Git Status
+
+Run:
+
+```bash
+git status --short
+git diff --stat

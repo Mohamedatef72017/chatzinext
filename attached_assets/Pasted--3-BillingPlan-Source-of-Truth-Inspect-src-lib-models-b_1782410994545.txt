@@ -1,0 +1,211 @@
+⸻
+
+3. BillingPlan Source of Truth
+
+Inspect:
+
+* src/lib/models/billing-plan.ts
+* src/lib/billing/plan-resolver.ts
+* src/lib/billing/entitlement-engine.ts
+* src/lib/entitlements.ts
+* src/lib/billing.ts
+
+Verify:
+
+* Does BillingPlan have features[]?
+* Are features typed and validated?
+* Does runtime entitlement resolution read from BillingPlan.features[]?
+* Does runtime still use PLAN_DEFAULTS?
+* If PLAN_DEFAULTS exists, is it only seed/migration fallback?
+* Can a new plan created from Super Admin have real entitlements without code changes?
+
+⸻
+
+4. Usage Engine Verification
+
+Inspect:
+
+* src/lib/billing/usage-engine.ts
+* src/lib/quota.ts
+* src/lib/billing.ts
+* any AI message usage call sites
+
+Verify:
+
+* Does assertAndReserveQuota() call reserveUsage(tenantId, "ai_messages", 1)?
+* Is usage generic by feature key?
+* Is Redis used atomically?
+* Is there idempotency support?
+* Is there rollback/release support?
+* Can double counting happen between recordAiMessageUsage, assertAndReserveQuota, and reserveUsage?
+* Are old usage paths deprecated or still active?
+
+⸻
+
+5. Entitlement Engine Verification
+
+Inspect:
+
+* src/lib/billing/entitlement-engine.ts
+* src/lib/billing/feature-registry.ts
+* src/lib/entitlements.ts
+* all uses of getEntitlement
+* all uses of assertEntitlement
+
+Verify:
+
+* Does it support boolean, quota, count, storage, metered features?
+* Does it support tenant overrides?
+* Does it enforce limits?
+* Does it fail safely?
+* Are unknown features handled correctly?
+* Is tenant isolation enforced?
+
+⸻
+
+6. Payment Provider Abstraction
+
+Inspect:
+
+* src/lib/billing/payment-provider.ts
+* src/lib/billing/providers/stripe.provider.ts
+* src/lib/billing.ts
+* Stripe webhook routes
+
+Verify:
+
+* Does a provider interface exist?
+* Does Stripe implement it?
+* Does business logic depend on the interface or still directly on Stripe?
+* Does checkout use the provider abstraction?
+* Does portal use it?
+* Does cancellation use it?
+* Does webhook handling still work?
+* Is provider selection future-ready?
+
+⸻
+
+7. Wallet / Credits
+
+Inspect:
+
+* src/lib/models/wallet.ts
+* src/lib/models/wallet-transaction.ts
+* src/lib/billing/wallet-service.ts
+* admin credits API
+
+Verify:
+
+* Is wallet real or only partial?
+* Are transactions append-only?
+* Is idempotency enforced?
+* Can balance go negative?
+* Are Mongo atomic operations used?
+* Are admin credit grants audited?
+* Is tenant isolation present?
+
+⸻
+
+8. Super Admin
+
+Inspect all admin billing routes and frontend admin pages.
+
+Verify Super Admin can actually:
+
+* create plan
+* edit plan
+* clone plan
+* archive plan
+* disable plan
+* add feature to plan
+* remove feature from plan
+* edit feature limit
+* edit price
+* edit interval
+* hide plan
+* create custom tenant plan
+* view subscriptions
+* view usage
+* override tenant feature
+* grant credits
+* view payment events
+* view billing audit logs
+
+Important:
+
+Do not accept fake UI buttons.
+Every UI action must have a real backend endpoint.
+
+⸻
+
+9. Frontend Billing UX
+
+Inspect tenant billing UI.
+
+Verify it reflects:
+
+* current plan
+* plan features
+* usage per feature
+* remaining limits
+* AI messages usage
+* storage usage if implemented
+* channel usage if implemented
+* user/agent limits
+* payment status
+* subscription status
+* trial status
+* grace period
+* failed payment
+* cancel at period end
+* upgrade/downgrade state
+* pending payment/webhook delay
+
+⸻
+
+10. Subscription Lifecycle
+
+Inspect:
+
+* tenant-subscription.ts
+* subscription update logic
+* webhook handling
+* admin cancel route
+* subscription history helper
+
+Verify support for:
+
+* free plan
+* trial
+* trial expiration
+* active
+* past_due
+* grace period
+* cancellation
+* cancel at period end
+* renewal
+* failed payment
+* reactivation
+* upgrade
+* downgrade
+* plan migration
+* subscription history
+
+⸻
+
+11. Security
+
+Verify:
+
+* Stripe webhook signature verification
+* payment event idempotency
+* wallet idempotency
+* usage idempotency
+* tenant isolation in billing queries
+* super admin authorization
+* Zod validation
+* price tampering protection
+* plan tampering protection
+* negative balance prevention
+* replay attack protection
+* audit logs for admin changes
