@@ -645,22 +645,28 @@ const generateReplyStep = createStep({
     if (!inputData.conversationId) throw new Error("تعذر تحديد المحادثة.");
 
     const runtimeContext = buildRuntimeContext(inputData);
+    const basePrompt = inputData.unifiedPrompt || buildUnifiedSystemPrompt({
+      businessName: inputData.tenantName || inputData.bot?.name,
+      botName: inputData.bot?.name || "Chatzi",
+      role: inputData.setting?.role,
+      tone: [inputData.setting?.tone, inputData.setting?.tonePreset, inputData.setting?.warmthLevel, inputData.setting?.salesStyle, inputData.setting?.supportStyle].filter(Boolean).join(", "),
+      responseLength: inputData.setting?.responseLength,
+      language: inputData.setting?.language || inputData.setting?.languageMode || "auto",
+      customInstructions: [inputData.setting?.categoryPromptEn, inputData.setting?.customInstructionsEn, inputData.setting?.systemPrompt || DEFAULT_SYSTEM_PROMPT].filter(Boolean).join("\n\n"),
+      useEmojis: inputData.setting?.useEmojis ?? undefined,
+      emojiStyle: inputData.setting?.emojiStyle || undefined,
+    });
     const instructions = [
-      buildUnifiedSystemPrompt({
-        businessName: inputData.tenantName || inputData.bot?.name,
-        botName: inputData.bot?.name || "Chatzi",
-        role: inputData.setting?.role,
-        tone: [inputData.setting?.tone, inputData.setting?.tonePreset, inputData.setting?.warmthLevel, inputData.setting?.salesStyle, inputData.setting?.supportStyle].filter(Boolean).join(", "),
-        responseLength: inputData.setting?.responseLength,
-        language: inputData.setting?.language || inputData.setting?.languageMode || "auto",
-        customInstructions: [inputData.setting?.categoryPromptEn, inputData.setting?.customInstructionsEn, inputData.setting?.systemPrompt || DEFAULT_SYSTEM_PROMPT].filter(Boolean).join("\n\n"),
-        knowledgeInstructions: inputData.knowledgePrompt,
-        contextSummary: runtimeContext,
-        useEmojis: inputData.setting?.useEmojis ?? undefined,
-        emojiStyle: inputData.setting?.emojiStyle || undefined,
-        enableTicketMarkers: false,
-        needsLeadInfo: inputData.needsLeadInfo,
-      }),
+      basePrompt,
+      inputData.needsLeadInfo
+        ? "CRM FIELD COLLECTION ACTIVE: The runtime context contains a list of fields that are still missing. Ask only for those specific missing fields in a single natural message. Do not mention internal field names. Do not list them as a form. Do not claim the ticket is created yet."
+        : "",
+      inputData.knowledgePrompt
+        ? `Available business knowledge for this conversation:\n${inputData.knowledgePrompt}`
+        : "",
+      runtimeContext
+        ? `Runtime context:\n${runtimeContext}`
+        : "",
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -884,9 +890,9 @@ const persistResultStep = createStep({
             mode: "human",
             aiPaused: true,
             aiPausedAt: new Date(),
-            aiPausedReason: inputData.reason || "ticket_created",
+            aiPausedReason: "human_handoff_requested",
             aiStatus: "escalated",
-            handoffReason: inputData.reason || "ticket_created",
+            handoffReason: "human_handoff_requested",
           },
         }
       );

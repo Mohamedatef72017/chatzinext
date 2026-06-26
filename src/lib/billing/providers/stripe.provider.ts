@@ -22,6 +22,13 @@ import type {
 function makeStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY is required.");
+  if (!key.startsWith("sk_test_") && !key.startsWith("sk_live_")) {
+    throw new Error(
+      "STRIPE_SECRET_KEY is invalid: key must start with sk_test_ or sk_live_. " +
+      "Verify that the correct Stripe secret key is configured in environment variables. " +
+      `Current key prefix: ${key.slice(0, 8)}...`
+    );
+  }
   return new Stripe(key);
 }
 

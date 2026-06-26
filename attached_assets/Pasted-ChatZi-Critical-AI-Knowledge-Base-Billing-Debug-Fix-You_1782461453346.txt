@@ -1,0 +1,453 @@
+ChatZi Critical AI + Knowledge Base + Billing Debug & Fix
+
+You are taking over a partially refactored ChatZi codebase.
+
+Your task is to perform a deep source-code investigation, compare all documentation with the actual code, find the real root causes, and fix the issues safely.
+
+Very Important
+
+Do NOT run the application.
+
+Do NOT execute:
+
+* npm install
+* npm update
+* npm run dev
+* npm run build
+* next dev
+* next build
+* npm start
+
+This repository is edited only.
+
+The application is built and tested later on my production server.
+
+You may inspect files, edit code, run static checks only if available without installing dependencies, and update documentation.
+
+Do NOT guess.
+
+Do NOT make cosmetic changes.
+
+Do NOT create hardcoded chatbot replies.
+
+Every fix must be based on actual source code.
+
+بعد إجراء أي تعديل يجب عليك إضافته في ملف docs/changes/26-6-2026.md
+
+⸻
+
+Context
+
+A new tenant/account was created.
+
+The tenant was given its own Knowledge Base data.
+
+However, the AI bot does NOT appear to use the Knowledge Base.
+
+Instead it always replies like:
+
+“أنا شاتزي، المساعد الافتراضي لشركة مواتف. كيف يمكنني مساعدتك اليوم؟”
+
+Problems observed:
+
+1. The bot seems to use tenant/account name instead of Knowledge Base content.
+2. It transliterates or Arabizes names incorrectly:
+    * bot name should remain: chatzi
+    * account name should remain: moatef
+    * It should NOT translate or Arabize brand/account names unless explicitly configured.
+3. The AI frequently pauses/stops itself.
+4. The bot must NEVER stop itself except in exactly two cases:
+    * a human agent sends a message in the conversation
+    * the user manually disables/pauses the bot using the UI button if such button exists
+5. AI replies are very slow.
+6. The AI docs and the actual AI implementation may be out of sync after the recent billing and architecture refactors.
+7. Billing upgrade fails with:
+    Invalid API Key provided: sk_test_*******************************************************************************************************mhKW
+8. This is very suspicious because billing should use Stripe keys, not AI provider keys.
+9. The system may have hidden conflicts introduced by recent refactors.
+
+⸻
+
+Step 1 — Read All Documentation First
+
+Before changing any code, read all relevant docs.
+
+Review:
+
+* docs/
+* docs/changes/
+* docs/billing-architecture.md
+* docs/billing-migration-plan.md
+* any AI architecture docs
+* any knowledge base docs
+* any Mastra docs
+* any billing docs
+* any environment/config docs
+
+Understand:
+
+* how the AI is supposed to work
+* how the Knowledge Base is supposed to be used
+* how Mastra is supposed to orchestrate replies
+* how bot pause/handoff should work
+* how billing should work after refactor
+* what changes were made recently
+
+Then compare documentation against source code.
+
+If docs and code disagree, source code wins, but document the mismatch.
+
+⸻
+
+Step 2 — Investigate Knowledge Base Not Being Used
+
+Find the complete AI response path.
+
+Trace:
+
+incoming message
+→ conversation
+→ bot
+→ AI settings
+→ knowledge retrieval
+→ prompt construction
+→ Mastra workflow or legacy AI path
+→ LLM call
+→ outbound message
+
+Inspect:
+
+* src/lib/ai.ts
+* src/lib/knowledge.ts
+* src/lib/ai/mastra-orchestrator.ts
+* src/mastra/workflows/ai-reply.workflow.ts
+* src/mastra/agents/
+* src/mastra/tools/
+* knowledge models
+* bot models
+* AI settings models
+* tenant models
+* ingestion/indexing code
+* retrieval/search code
+
+Find why the tenant Knowledge Base is not being used.
+
+Possible causes to check:
+
+* tenantId mismatch
+* botId mismatch
+* knowledge documents not approved
+* knowledge chunks not created
+* embeddings not generated
+* Qdrant fallback not working
+* Mongo fallback not working
+* wrong source type
+* wrong namespace
+* searchKnowledge not called
+* knowledgeEnabled false
+* Mastra path skipping knowledge
+* prompt cache using stale prompt
+* AI settings not linked to bot
+* new tenant missing defaults
+* knowledge data exists but not visible to runtime
+* wrong environment variable
+* feature entitlement blocking knowledge
+* billing entitlement blocking knowledge access
+* plan feature missing knowledge_enabled
+* plan feature missing storage/knowledge limits
+* PLAN_DEFAULTS removed but tenant plan has no features
+* BillingPlan.features[] empty for new tenant
+* retrieval returning zero results silently
+* query too weak
+* language mismatch
+* status filters blocking docs
+
+Fix the root cause.
+
+Do NOT add fake fallback text.
+
+Do NOT hardcode knowledge answers.
+
+⸻
+
+Step 3 — Brand and Name Handling
+
+Fix incorrect translation/transliteration of names.
+
+Requirements:
+
+* Brand names must be preserved exactly as stored.
+* Bot name chatzi must remain chatzi.
+* Tenant/account name moatef must remain moatef.
+* Do not Arabize, translate, transliterate, or decorate brand/account names.
+* If the user speaks Arabic, the answer may be Arabic, but brand/account names stay unchanged.
+* This must be enforced by prompts/instructions, not hardcoded per-name conditions.
+
+Update AI instructions dynamically so all tenant names, brand names, bot names, product names, and proper nouns remain unchanged unless Knowledge Base explicitly defines a localized name.
+
+⸻
+
+Step 4 — Bot Must Not Pause Itself
+
+Investigate every path that changes bot/AI status.
+
+Search for:
+
+* pause
+* paused
+* resume
+* aiStatus
+* handoff
+* human
+* escalat
+* takeover
+* disable bot
+* stop bot
+* assign agent
+* manual
+* botEnabled
+
+Rules:
+
+The bot may pause ONLY when:
+
+1. A human agent sends a message in the conversation.
+2. A human user/admin explicitly pauses/disables the bot from the UI/API.
+
+The bot must NOT pause itself because:
+
+* it did not know the answer
+* it created a ticket
+* it escalated
+* it detected sentiment
+* it failed to retrieve knowledge
+* it reached a fallback
+* it misunderstood intent
+* it asked for human help
+* the customer asked a difficult question
+
+If the customer asks for a human:
+
+* the AI may create a ticket or mark handoff requested
+* but the bot should not permanently pause unless a human actually replies or the manual pause endpoint is used.
+
+Fix all incorrect pause/handoff behavior.
+
+Preserve valid human takeover behavior.
+
+⸻
+
+Step 5 — Improve AI Speed
+
+Perform a performance review of the AI response path.
+
+Identify:
+
+* sequential DB queries
+* repeated prompt building
+* unused prompt cache
+* slow knowledge retrieval
+* duplicated LLM calls
+* Mastra + legacy double calls
+* unnecessary ConversationInsight refresh
+* expensive population
+* synchronous ticket creation
+* synchronous analytics
+* missing Redis cache
+* missing Promise.all
+* too-large transcript
+* too-large knowledge context
+
+Fix safe high-impact issues.
+
+Priorities:
+
+1. Avoid duplicate LLM calls.
+2. Connect prompt cache correctly.
+3. Parallelize independent queries.
+4. Cache hot AI settings/bot/tenant reads if infrastructure exists.
+5. Avoid blocking response on non-critical side effects.
+6. Ensure knowledge retrieval is efficient and visible in logs.
+7. Keep answers accurate and knowledge-grounded.
+
+Do not sacrifice correctness for speed.
+
+⸻
+
+Step 6 — Billing Upgrade Invalid API Key
+
+Investigate the billing upgrade error:
+
+Invalid API Key provided: sk_test_*******************************************************************************************************mhKW
+
+This happens when pressing Upgrade Plan.
+
+Find the actual root cause.
+
+Check:
+
+* src/lib/stripe.ts
+* src/lib/billing/providers/stripe.provider.ts
+* src/lib/billing.ts
+* billing checkout route
+* Stripe webhook route
+* env variable names
+* AI provider env variables
+* payment provider env variables
+* recent billing refactor
+* accidental use of OpenAI/AI key where Stripe key is expected
+* wrong config mapping
+* wrong provider factory
+* wrong secret passed to Stripe constructor
+* frontend sending secret
+* admin plan providerPriceId misconfigured
+* stripePriceId vs providerPriceId mismatch
+* server-side env validation missing
+
+Rules:
+
+* Billing must use Stripe secret key only from STRIPE_SECRET_KEY.
+* AI keys must never be used in Stripe.
+* The frontend must never send any secret key.
+* Checkout must only receive planId or priceId references.
+* Stripe provider must validate key prefix and fail with a clear config error if STRIPE_SECRET_KEY is missing or invalid.
+* Do not expose full keys in logs or responses.
+
+Fix the root cause.
+
+Add configuration validation to prevent this class of error.
+
+⸻
+
+Step 7 — Full Conflict Scan
+
+Because multiple refactors happened recently, scan for hidden conflicts.
+
+Check:
+
+* duplicate functions
+* duplicate imports
+* wrong exports
+* broken model exports
+* billing old/new conflicts
+* AI old/new conflicts
+* Mastra old/new conflicts
+* entitlement conflicts
+* quota conflicts
+* prompt cache unused
+* docs mismatch
+* dead code
+* broken environment variable usage
+* incorrect feature gating
+* missing tenant filters
+* unsafe fallbacks
+* accidental hardcoded behavior
+
+Fix high-priority issues only.
+
+Do not start unrelated refactors.
+
+⸻
+
+Step 8 — Logging and Observability
+
+Add useful structured logs only where needed.
+
+For AI KB debugging, log:
+
+* tenantId
+* botId
+* knowledgeEnabled
+* number of knowledge results
+* whether Qdrant or Mongo fallback was used
+* whether prompt cache hit/miss occurred
+* whether Mastra or legacy path was used
+
+Do NOT log:
+
+* full user messages
+* secrets
+* API keys
+* full prompt
+* private customer data
+
+For billing checkout, log:
+
+* provider name
+* planId
+* providerPriceId presence
+* configuration status
+* sanitized error code
+
+Do NOT log full Stripe key.
+
+⸻
+
+Step 9 — Tests
+
+Add or update tests where possible.
+
+Focus on:
+
+* Knowledge retrieval is called for eligible tenants
+* Empty KB does not hallucinate company facts
+* Brand names are preserved
+* Bot does not pause itself
+* Human message pauses bot
+* Manual pause pauses bot
+* Upgrade checkout uses STRIPE_SECRET_KEY only
+* Invalid Stripe config returns safe error
+* Prompt cache is used if connected
+* Entitlement/plan features do not block KB incorrectly for fresh tenants
+
+⸻
+
+Step 10 — Documentation
+
+After fixes, update:
+
+docs/changes/26-6-2026.md
+
+Include:
+
+* Summary
+* Root causes found
+* Files inspected
+* Files changed
+* Knowledge Base fixes
+* AI behavior fixes
+* Bot pause/handoff fixes
+* Performance fixes
+* Billing upgrade fix
+* Security notes
+* Remaining risks
+* Manual verification steps for my server
+
+Also update any existing AI/Billing docs if they are now inaccurate.
+
+⸻
+
+Final Report Required
+
+At the end, provide:
+
+1. What was broken.
+2. Why it was broken.
+3. What was fixed.
+4. Exact files changed.
+5. Whether Knowledge Base is now used correctly.
+6. Whether bot name/account name preservation is fixed.
+7. Whether bot self-pause is fixed.
+8. Whether AI response speed was improved.
+9. Whether Stripe upgrade error was fixed.
+10. Remaining risks.
+11. Manual test checklist for my production server.
+
+Remember:
+
+* Do NOT run the app.
+* Do NOT install packages.
+* Do NOT hardcode replies.
+* Do NOT use static chatbot responses.
+* Do NOT hide failures.
+* Fix root causes only.
