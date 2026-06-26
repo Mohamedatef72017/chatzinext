@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Lead } from "@/lib/models";
-import { requireAuth } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   let session: any;
-  try { session = await requireAuth(); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  try { session = await requirePermission(permissions.contactsRead); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
   const { id } = await params;
   await connectToDatabase();
   const lead = await Lead.findOne({ _id: id, tenantId: session.user.tenantId }).lean();
@@ -17,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function PATCH(req: NextRequest, { params }: Params) {
   let session: any;
-  try { session = await requireAuth(); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  try { session = await requirePermission(permissions.contactsWrite); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
   const { id } = await params;
   await connectToDatabase();
   const body = await req.json();
@@ -32,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   let session: any;
-  try { session = await requireAuth(); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  try { session = await requirePermission(permissions.contactsDelete); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
   const { id } = await params;
   await connectToDatabase();
   const lead = await Lead.findOneAndDelete({ _id: id, tenantId: session.user.tenantId });

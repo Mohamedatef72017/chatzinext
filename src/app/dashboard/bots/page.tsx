@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { Plus, Pencil } from "lucide-react";
-import { requireSession } from "@/lib/auth";
 import { getBots } from "@/lib/dashboard-data";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { getTranslations } from "@/lib/i18n";
+import { requireDashboardPermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export default async function BotsPage() {
-  const session = await requireSession();
+  const session = await requireDashboardPermission(permissions.aiRead);
   const bots = await getBots(session.user.tenantId);
   const t = await getTranslations();
 

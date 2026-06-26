@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Conversation } from "@/lib/models";
 import { uploadConversationAttachment } from "@/lib/attachments";
+import { requirePermission } from "@/server/auth/guards";
+import { shouldScopeToAssignedConversations } from "@/server/permissions/effective";
+import { permissions } from "@/server/permissions/permissions";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireSession();
+    const session = await requirePermission(permissions.inboxReply);
     const { id } = await params;
     const formData = await request.formData();
     const file = formData.get("file");
@@ -22,6 +24,9 @@ export async function POST(
     const conversation = await Conversation.findOne({
       _id: id,
       tenantId: session.user.tenantId,
+      ...(shouldScopeToAssignedConversations(session.user.permissions)
+        ? { $or: [{ assignedAgentId: session.user.id }, { assigneeId: session.user.id }] }
+        : {})
     }).lean();
 
     if (!conversation) {
@@ -40,4 +45,3 @@ export async function POST(
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
-

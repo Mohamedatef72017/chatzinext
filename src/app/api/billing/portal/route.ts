@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth";
 import { createStripePortalSession } from "@/lib/billing";
+import { requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export async function POST(request: Request) {
   try {
-    const session = await requireSession();
+    const session = await requirePermission(permissions.billingManage);
     const url = await createStripePortalSession(session.user.tenantId);
     
     return NextResponse.json({ url });

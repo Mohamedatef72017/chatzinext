@@ -1,25 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Ticket } from "@/lib/models";
+import { Conversation, Ticket } from "@/lib/models";
 import { syncLeadFromTicket } from "@/lib/leads-from-tickets";
 import { publishRealtimeEvent } from "@/lib/realtime";
-import { requireAuth } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
+import { shouldScopeToAssignedTickets } from "@/server/permissions/effective";
+import { permissions } from "@/server/permissions/permissions";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   let session: any;
-  try { session = await requireAuth(); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  try { session = await requirePermission(permissions.ticketsRead); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
   const { id } = await params;
   await connectToDatabase();
   const ticket = await Ticket.findOne({ _id: id, tenantId: session.user.tenantId }).lean();
   if (!ticket) return NextResponse.json({ error: "Ticket not found." }, { status: 404 });
+  if (shouldScopeToAssignedTickets(session.user.permissions)) {
+    const allowedConversation = ticket.conversationId
+      ? await Conversation.exists({
+          _id: ticket.conversationId,
+          tenantId: session.user.tenantId,
+          $or: [{ assignedAgentId: session.user.id }, { assigneeId: session.user.id }],
+        })
+      : null;
+    if (!allowedConversation) return NextResponse.json({ error: "Ticket not found." }, { status: 404 });
+  }
   return NextResponse.json({ ticket });
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
   let session: any;
-  try { session = await requireAuth(); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  try { session = await requirePermission(permissions.ticketsManage); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
   const { id } = await params;
   await connectToDatabase();
   const body = await req.json();
@@ -64,7 +76,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   let session: any;
-  try { session = await requireAuth(); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  try { session = await requirePermission(permissions.ticketsManage); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
   const { id } = await params;
   await connectToDatabase();
   const ticket = await Ticket.findOneAndDelete({ _id: id, tenantId: session.user.tenantId });

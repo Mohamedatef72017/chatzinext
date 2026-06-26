@@ -1,10 +1,11 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/authz";
 import { Bot, Channel } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 import { encryptSecret } from "@/lib/crypto";
+import { requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 const schema = z.object({
   botId: z.string().min(1),
@@ -16,7 +17,7 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const session = await requireAdmin();
+    const session = await requirePermission(permissions.settingsManage);
     const body = schema.parse(await request.json());
     await connectToDatabase();
 

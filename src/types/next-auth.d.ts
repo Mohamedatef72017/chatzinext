@@ -1,4 +1,5 @@
 import type { DefaultSession } from "next-auth";
+import type { Permission, PermissionMode } from "@/server/permissions/permissions";
 import type { Role } from "@/server/permissions/roles";
 
 declare module "next-auth" {
@@ -9,6 +10,8 @@ declare module "next-auth" {
       tenantId: string;
       isActive: boolean;
       isSuperAdmin: boolean;
+      permissionMode?: PermissionMode;
+      permissions?: Permission[];
     } & DefaultSession["user"];
   }
 
@@ -17,6 +20,8 @@ declare module "next-auth" {
     tenantId: string;
     isActive: boolean;
     isSuperAdmin: boolean;
+    permissionMode?: PermissionMode;
+    permissions?: Permission[];
   }
 }
 
@@ -27,5 +32,7 @@ declare module "next-auth/jwt" {
     tenantId: string;
     isActive: boolean;
     isSuperAdmin: boolean;
+    permissionMode?: PermissionMode;
+    permissions?: Permission[];
   }
 }

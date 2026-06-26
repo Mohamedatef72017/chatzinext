@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth";
 import { createStripeCheckout } from "@/lib/billing";
+import { requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 const schema = z.object({
   kind: z.enum(["plan", "pack"]),
@@ -10,7 +11,7 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const session = await requireSession();
+    const session = await requirePermission(permissions.billingManage);
     const body = schema.parse(await request.json());
     const url = await createStripeCheckout({
       tenantId: session.user.tenantId,

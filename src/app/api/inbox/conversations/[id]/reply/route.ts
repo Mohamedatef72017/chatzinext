@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/server/auth/guards";
 import { permissions } from "@/server/permissions/permissions";
+import { shouldScopeToAssignedConversations } from "@/server/permissions/effective";
 import { sendInboxReply } from "@/lib/inbox/service";
 
 const schema = z.object({
@@ -17,13 +18,15 @@ export async function POST(
     const session = await requirePermission(permissions.inboxReply);
     const { id } = await params;
     const body = schema.parse(await request.json());
+    const assignedOnly = shouldScopeToAssignedConversations(session.user.permissions);
 
     const message = await sendInboxReply({
       tenantId: session.user.tenantId,
       userId: session.user.id,
       conversationId: id,
       content: body.content,
-      attachments: body.attachments || []
+      attachments: body.attachments || [],
+      assignedOnly
     });
 
     return NextResponse.json({ success: true, message });

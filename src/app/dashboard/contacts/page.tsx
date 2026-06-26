@@ -14,10 +14,11 @@ import {
   UserRound,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { requireSession } from "@/lib/auth";
 import { getLocale } from "@/lib/i18n";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Contact, Conversation, Message } from "@/lib/models";
+import { requireDashboardPermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -222,7 +223,7 @@ export default async function ContactsPage({
 }: {
   searchParams: Promise<{ contactId?: string; q?: string }>;
 }) {
-  const session = await requireSession();
+  const session = await requireDashboardPermission(permissions.contactsRead);
   const params = await searchParams;
   const locale = await getLocale();
   const labels = copy[locale];

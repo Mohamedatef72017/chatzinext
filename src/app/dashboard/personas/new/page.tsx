@@ -1,8 +1,11 @@
 import { PageHeader } from "@/components/dashboard/page-header";
 import { getLocale } from "@/lib/i18n";
 import { PersonaForm } from "@/components/dashboard/persona-form";
+import { requireDashboardPermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export default async function NewPersonaPage() {
+  await requireDashboardPermission(permissions.aiManage);
   const locale = await getLocale();
   const isAr = locale === "ar";
 

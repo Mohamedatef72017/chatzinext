@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/authz";
 import { User } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 import {
@@ -8,15 +7,20 @@ import {
   isSupportAgentRole,
   SUPPORT_AGENT_ROLES,
 } from "@/lib/support-agents";
+import { normalizePermissions } from "@/server/permissions/effective";
+import { isPermissionMode, permissionModes, permissions } from "@/server/permissions/permissions";
+import { requirePermission } from "@/server/auth/guards";
 
 const updateSupportAgentSchema = z.object({
   isActive: z.boolean().optional(),
   role: z.enum(SUPPORT_AGENT_ROLES).optional(),
+  permissionMode: z.enum(permissionModes).optional(),
+  permissions: z.array(z.string()).optional(),
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await requireAdmin();
+    const session = await requirePermission(permissions.usersManage);
     const { id } = await params;
     const body = updateSupportAgentSchema.parse(await request.json());
     await connectToDatabase();
@@ -35,6 +39,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       target.isActive = body.isActive;
     }
 
+    if (isPermissionMode(body.permissionMode)) {
+      target.permissionMode = body.permissionMode as any;
+      target.permissions = body.permissionMode === "custom" ? normalizePermissions(body.permissions || []) as any : [];
+    } else if (Array.isArray(body.permissions)) {
+      target.permissions = normalizePermissions(body.permissions) as any;
+      if (target.permissionMode !== "custom") target.permissionMode = "custom";
+    }
+
     await target.save();
     return NextResponse.json({ ok: true });
   } catch (error) {
@@ -45,7 +57,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await requireAdmin();
+    const session = await requirePermission(permissions.usersManage);
     const { id } = await params;
     await connectToDatabase();
 

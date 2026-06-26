@@ -21,7 +21,8 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { getLocale } from "@/lib/i18n";
 import { Channel, Conversation, WebhookEvent, WebhookLog } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
-import { requireAdmin } from "@/lib/authz";
+import { requireDashboardPermission, requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 type ChannelType = "website" | "telegram" | "whatsapp" | "facebook" | "instagram" | "email" | "api" | "webhook";
 
@@ -93,14 +94,14 @@ const channelDefinitions: ChannelDefinition[] = [
 ];
 
 export default async function ChannelsPage() {
-  const session = await requireAdmin();
+  const session = await requireDashboardPermission(permissions.settingsManage);
   const locale = await getLocale();
   const isAr = locale === "ar";
   const data = await getChannelsOverview(session.user.tenantId);
 
   async function disconnectChannel(formData: FormData) {
     "use server";
-    const session = await requireAdmin();
+    const session = await requirePermission(permissions.settingsManage);
     const type = String(formData.get("type") || "");
     const botId = String(formData.get("botId") || "");
     if (!channelDefinitions.some((channel) => channel.type === type)) return;

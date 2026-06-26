@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { Bot, Plus, Sparkles } from "lucide-react";
-import { requireSession } from "@/lib/auth";
 import { getPersonas } from "@/lib/dashboard-data";
 import { getLocale } from "@/lib/i18n";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { requireDashboardPermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export default async function PersonasPage() {
-  const session = await requireSession();
+  const session = await requireDashboardPermission(permissions.aiRead);
   const personas = await getPersonas(session.user.tenantId);
   const locale = await getLocale();
   const isAr = locale === "ar";

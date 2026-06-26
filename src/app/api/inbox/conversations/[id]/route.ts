@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/server/auth/guards";
 import { permissions } from "@/server/permissions/permissions";
+import { shouldScopeToAssignedConversations } from "@/server/permissions/effective";
 import { deleteInboxConversation, getConversationDetail, markConversationRead } from "@/lib/inbox/service";
 
 export async function GET(
@@ -11,17 +12,21 @@ export async function GET(
     const session = await requirePermission(permissions.inboxRead);
     const { id } = await params;
     const forceAi = request.nextUrl.searchParams.get("forceAi") === "1";
+    const assignedOnly = shouldScopeToAssignedConversations(session.user.permissions);
 
     const detail = await getConversationDetail({
       tenantId: session.user.tenantId,
+      userId: session.user.id,
       conversationId: id,
+      assignedOnly,
       forceAi
     });
 
     await markConversationRead({
       tenantId: session.user.tenantId,
       userId: session.user.id,
-      conversationId: id
+      conversationId: id,
+      assignedOnly
     }).catch(() => undefined);
 
     return NextResponse.json(detail);

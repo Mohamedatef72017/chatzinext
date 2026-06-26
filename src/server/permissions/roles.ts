@@ -19,6 +19,8 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
     permissions.inboxReply,
     permissions.inboxAssign,
     permissions.inboxManage,
+    permissions.ticketsRead,
+    permissions.ticketsManage,
     permissions.teamsRead,
     permissions.teamsWrite,
     permissions.aiRead,
@@ -32,15 +34,13 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
     permissions.companiesRead,
     permissions.inboxRead,
     permissions.inboxReply,
-    permissions.knowledgeRead,
-    permissions.knowledgeManage,
-    permissions.aiRead,
-    permissions.settingsRead
+    permissions.ticketsRead
   ],
   viewer: [
     permissions.contactsRead,
     permissions.companiesRead,
     permissions.inboxRead,
+    permissions.ticketsRead,
     permissions.teamsRead,
     permissions.aiRead,
     permissions.knowledgeRead,

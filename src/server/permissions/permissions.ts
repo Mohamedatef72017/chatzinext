@@ -12,6 +12,12 @@ export const permissions = {
   inboxAssign: "inbox.assign",
   inboxManage: "inbox.manage",
 
+  ticketsRead: "tickets.read",
+  ticketsManage: "tickets.manage",
+
+  usersRead: "users.read",
+  usersManage: "users.manage",
+
   teamsRead: "teams.read",
   teamsWrite: "teams.write",
 
@@ -34,3 +40,16 @@ export const permissions = {
 } as const;
 
 export type Permission = (typeof permissions)[keyof typeof permissions];
+
+export const permissionValues = Object.values(permissions) as Permission[];
+
+export const permissionModes = ["role", "custom", "full"] as const;
+export type PermissionMode = (typeof permissionModes)[number];
+
+export function isPermission(value: unknown): value is Permission {
+  return typeof value === "string" && permissionValues.includes(value as Permission);
+}
+
+export function isPermissionMode(value: unknown): value is PermissionMode {
+  return typeof value === "string" && permissionModes.includes(value as PermissionMode);
+}

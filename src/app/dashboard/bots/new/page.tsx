@@ -1,10 +1,11 @@
 import { PageHeader } from "@/components/dashboard/page-header";
 import { BotForm } from "@/components/dashboard/bot-form";
-import { requireAdmin } from "@/lib/authz";
 import { getLocale } from "@/lib/i18n";
+import { requireDashboardPermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export default async function NewBotPage() {
-  await requireAdmin();
+  await requireDashboardPermission(permissions.aiManage);
   const locale = await getLocale();
   const isAr = locale === "ar";
 

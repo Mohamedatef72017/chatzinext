@@ -1,17 +1,25 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Message } from "@/lib/models";
-import { isAdminRole } from "@/lib/authz";
+import { Conversation, Message } from "@/lib/models";
+import { requirePermission } from "@/server/auth/guards";
+import { shouldScopeToAssignedConversations } from "@/server/permissions/effective";
+import { permissions } from "@/server/permissions/permissions";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const session = await requireSession();
+    const session = await requirePermission(permissions.inboxRead);
     await connectToDatabase();
 
     const query: any = { tenantId: session.user.tenantId };
+    if (shouldScopeToAssignedConversations(session.user.permissions)) {
+      const conversations = await Conversation.find({
+        tenantId: session.user.tenantId,
+        $or: [{ assignedAgentId: session.user.id }, { assigneeId: session.user.id }]
+      }).select("_id").lean();
+      query.conversationId = { $in: conversations.map((conversation) => conversation._id) };
+    }
     
     // Restrict main website notifications to 'admin' role ONLY (excluding owner/others)
     if (

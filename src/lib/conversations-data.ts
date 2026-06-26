@@ -10,11 +10,15 @@ type ConversationFilters = {
   mode?: string;
   unreadOnly?: boolean;
   priority?: string;
+  userId?: string;
+  assignedOnly?: boolean;
 };
 
 type MessageFilters = {
   limit?: number;
   since?: string;
+  userId?: string;
+  assignedOnly?: boolean;
 };
 
 function createSearchRegex(q?: string) {
@@ -27,6 +31,11 @@ export async function listConversationsForTenant(tenantId: string, filters: Conv
   const limit = Math.min(Math.max(filters.limit || 20, 1), 50);
   const offset = Math.max(filters.offset || 0, 0);
   const query: FilterQuery<any> = { tenantId };
+  const and: FilterQuery<any>[] = [];
+
+  if (filters.assignedOnly && filters.userId) {
+    and.push({ $or: [{ assignedAgentId: filters.userId }, { assigneeId: filters.userId }] });
+  }
 
   if (filters.status && filters.status !== "all") {
     query.status = filters.status;
@@ -58,13 +67,15 @@ export async function listConversationsForTenant(tenantId: string, filters: Conv
       .lean();
 
     const contactIds = matchingContacts.map((contact) => contact._id);
-    query.$or = [
+    and.push({ $or: [
       { externalUserId: searchRegex },
       { externalThreadId: searchRegex },
       { labels: searchRegex },
       ...(contactIds.length ? [{ contactId: { $in: contactIds } }] : []),
-    ];
+    ] });
   }
+
+  if (and.length) query.$and = and;
 
   const total = await Conversation.countDocuments(query);
   const conversations = await Conversation.find(query)
@@ -198,6 +209,16 @@ export async function listMessagesForConversation(tenantId: string, conversation
   await connectToDatabase();
 
   if (!Types.ObjectId.isValid(conversationId)) return [];
+
+  if (filters.assignedOnly) {
+    if (!filters.userId) return [];
+    const conversation = await Conversation.exists({
+      _id: conversationId,
+      tenantId,
+      $or: [{ assignedAgentId: filters.userId }, { assigneeId: filters.userId }],
+    });
+    if (!conversation) return [];
+  }
 
   const limit = Math.min(Math.max(filters.limit || 120, 1), 250);
   const query: FilterQuery<any> = { tenantId, conversationId };

@@ -76,7 +76,7 @@ const categoryLabels: Record<string, string> = {
   general: "عام",
 };
 
-export function TicketDetailClient({ ticket }: { ticket: TicketDetail }) {
+export function TicketDetailClient({ ticket, canManage = false }: { ticket: TicketDetail; canManage?: boolean }) {
   const [form, setForm] = useState({
     subject: ticket.subject,
     description: ticket.description,
@@ -114,6 +114,7 @@ export function TicketDetailClient({ ticket }: { ticket: TicketDetail }) {
               <select
                 className="field"
                 value={form.status}
+                disabled={!canManage}
                 onChange={(event) => setForm((value) => ({ ...value, status: event.target.value }))}
               >
                 {Object.entries(statusLabels).map(([value, label]) => (
@@ -126,6 +127,7 @@ export function TicketDetailClient({ ticket }: { ticket: TicketDetail }) {
               <select
                 className="field"
                 value={form.priority}
+                disabled={!canManage}
                 onChange={(event) => setForm((value) => ({ ...value, priority: event.target.value }))}
               >
                 {Object.entries(priorityLabels).map(([value, label]) => (
@@ -138,6 +140,7 @@ export function TicketDetailClient({ ticket }: { ticket: TicketDetail }) {
               <select
                 className="field"
                 value={form.category}
+                disabled={!canManage}
                 onChange={(event) => setForm((value) => ({ ...value, category: event.target.value }))}
               >
                 {Object.entries(categoryLabels).map(([value, label]) => (
@@ -152,6 +155,7 @@ export function TicketDetailClient({ ticket }: { ticket: TicketDetail }) {
             <input
               className="field"
               value={form.subject}
+              disabled={!canManage}
               onChange={(event) => setForm((value) => ({ ...value, subject: event.target.value }))}
             />
           </label>
@@ -161,6 +165,7 @@ export function TicketDetailClient({ ticket }: { ticket: TicketDetail }) {
             <textarea
               className="field min-h-32"
               value={form.description}
+              disabled={!canManage}
               onChange={(event) => setForm((value) => ({ ...value, description: event.target.value }))}
             />
           </label>
@@ -170,17 +175,18 @@ export function TicketDetailClient({ ticket }: { ticket: TicketDetail }) {
             <textarea
               className="field min-h-32"
               value={form.aiSummary}
+              disabled={!canManage}
               onChange={(event) => setForm((value) => ({ ...value, aiSummary: event.target.value }))}
             />
           </label>
 
-          <div className="mt-5 flex items-center gap-3">
+          {canManage ? <div className="mt-5 flex items-center gap-3">
             <button className="btn-primary" onClick={saveTicket} disabled={saving}>
               <Save size={16} />
               حفظ التذكرة
             </button>
             {saved ? <span className="text-sm font-medium text-emerald-600">تم الحفظ</span> : null}
-          </div>
+          </div> : null}
         </div>
 
         <div className="panel overflow-hidden">

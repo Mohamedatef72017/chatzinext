@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Conversation } from "@/lib/models";
+import { requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await requireSession();
+    const session = await requirePermission(permissions.inboxManage);
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
     await connectToDatabase();

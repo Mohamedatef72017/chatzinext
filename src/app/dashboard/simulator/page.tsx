@@ -1,4 +1,3 @@
-import { requireSession } from "@/lib/auth";
 import { Bot } from "@/lib/models";
 export const dynamic = "force-dynamic";
 
@@ -6,11 +5,13 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { SimulatorClient } from "./client";
 import { getLocale } from "@/lib/i18n";
+import { requireDashboardPermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export const metadata = { title: "محاكي البوت | ChatZi" };
 
 export default async function SimulatorPage() {
-  const session = await requireSession();
+  const session = await requireDashboardPermission(permissions.aiRead);
   await connectToDatabase();
   const locale = await getLocale();
   const isAr = locale === "ar";

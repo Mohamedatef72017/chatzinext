@@ -84,8 +84,44 @@ export async function buildSafeCustomerReply(input: {
       intent: input.intent,
       error: error instanceof Error ? error.message : String(error),
     });
-    return "";
+    return buildOperationalFallbackReply(input);
   }
+}
+
+export function buildOperationalFallbackReply(input: {
+  customerMessage?: string;
+  language?: string;
+  intent?: SafeReplyIntent | string;
+}): string {
+  const language = String(input.language || "auto").toLowerCase();
+  const message = String(input.customerMessage || "");
+  const isArabic =
+    language.startsWith("ar") ||
+    language.includes("arabic") ||
+    /[\u0600-\u06FF]/.test(message);
+  const intent = String(input.intent || "fallback");
+
+  if (intent === "ticket_created") {
+    return isArabic
+      ? "تم استلام طلبك، والفريق هيتابع معك قريبًا لتأكيد التفاصيل."
+      : "Your request has been received, and the team will follow up soon to confirm the details.";
+  }
+
+  if (intent === "handoff") {
+    return isArabic
+      ? "تمام، هنخلي الفريق يتابع معك في أقرب وقت."
+      : "Understood. The team will follow up with you as soon as possible.";
+  }
+
+  if (intent === "moderation" || intent === "out_of_scope") {
+    return isArabic
+      ? "أقدر أساعدك في خدماتنا وطلباتك، ابعت طلبك بشكل واضح وأنا هتابع معك."
+      : "I can help with our services and requests. Send your request clearly and we will follow up.";
+  }
+
+  return isArabic
+    ? "وصلت رسالتك، وفيه تأخير مؤقت في الرد. هنراجعها ونتابع معك قريبًا."
+    : "Your message was received, but replies are temporarily delayed. We will review it and follow up soon.";
 }
 
 function buildIntentInstruction(intent: SafeReplyIntent | string, hasKnowledge?: boolean): string {

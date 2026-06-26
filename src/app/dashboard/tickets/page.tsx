@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Eye, Layers3, MessageCircle, PlusCircle, TicketCheck } from "lucide-react";
-import { requireSession } from "@/lib/auth";
 import { getTicketsPage } from "@/lib/dashboard-data";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { TicketDeleteButton } from "@/components/dashboard/ticket-delete-button";
+import { requireDashboardPermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
+import { shouldScopeToAssignedTickets } from "@/server/permissions/effective";
 
 const statusLabels: Record<string, string> = {
   open: "Open",
@@ -55,15 +57,18 @@ function pageHref(page: number, searchParams: Record<string, string | undefined>
 }
 
 export default async function TicketsPage({ searchParams }: { searchParams: Promise<{ page?: string; status?: string; category?: string; q?: string }> }) {
-  const session = await requireSession();
+  const session = await requireDashboardPermission(permissions.ticketsRead);
   const params = await searchParams;
   const page = Math.max(1, Number(params.page || "1"));
+  const canManageTickets = Boolean(session.user.permissions?.includes(permissions.ticketsManage));
   const data = await getTicketsPage(session.user.tenantId, {
     page,
     limit: 10,
     status: params.status,
     category: params.category,
     q: params.q,
+    userId: session.user.id,
+    assignedOnly: shouldScopeToAssignedTickets(session.user.permissions),
   });
 
   return (
@@ -134,7 +139,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
               {ticket.conversationId ? (
                 <Link className="btn-secondary px-3 py-2 text-xs" href={`/dashboard/conversations/${ticket.conversationId}`}><MessageCircle size={15} /> Conversation</Link>
               ) : null}
-              <TicketDeleteButton ticketId={ticket.id} />
+              {canManageTickets ? <TicketDeleteButton ticketId={ticket.id} /> : null}
             </div>
           </article>
         )) : (

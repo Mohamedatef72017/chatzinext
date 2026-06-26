@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Ticket } from "@/lib/models";
+import { Conversation, Ticket } from "@/lib/models";
 import { syncLeadFromTicket } from "@/lib/leads-from-tickets";
 import { publishRealtimeEvent } from "@/lib/realtime";
-import { requireAuth } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
+import { shouldScopeToAssignedTickets } from "@/server/permissions/effective";
+import { permissions } from "@/server/permissions/permissions";
+
+async function getAssignedConversationIds(tenantId: string, userId: string, assignedOnly: boolean) {
+  if (!assignedOnly) return null;
+  const conversations = await Conversation.find({
+    tenantId,
+    $or: [{ assignedAgentId: userId }, { assigneeId: userId }]
+  }).select("_id").lean();
+  return conversations.map((conversation) => conversation._id);
+}
 
 export async function GET(req: NextRequest) {
   let session: any;
-  try { session = await requireAuth(); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  try { session = await requirePermission(permissions.ticketsRead); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
 
   await connectToDatabase();
   const { searchParams } = new URL(req.url);
@@ -15,6 +26,12 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") || "25")));
   const skip = (page - 1) * limit;
   const filter: Record<string, any> = { tenantId: session.user.tenantId };
+  const scopedConversationIds = await getAssignedConversationIds(
+    session.user.tenantId,
+    session.user.id,
+    shouldScopeToAssignedTickets(session.user.permissions)
+  );
+  if (scopedConversationIds) filter.conversationId = { $in: scopedConversationIds };
   const status = searchParams.get("status");
   if (status) filter.status = status;
   const priority = searchParams.get("priority");
@@ -39,7 +56,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   let session: any;
-  try { session = await requireAuth(); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  try { session = await requirePermission(permissions.ticketsManage); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
   await connectToDatabase();
   const body = await req.json();
   if (!body.title?.trim()) return NextResponse.json({ error: "Ticket title is required." }, { status: 400 });

@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
 
-import { requirePermission } from "@/server/auth/guards";
+import { requireDashboardPermission } from "@/server/auth/guards";
 import { permissions } from "@/server/permissions/permissions";
+import { shouldScopeToAssignedConversations } from "@/server/permissions/effective";
 import { getConversationDetail, getInboxConversations } from "@/lib/inbox/service";
 import { AIInboxClient } from "@/components/inbox/ai-inbox-client";
 
@@ -10,8 +11,9 @@ export default async function InboxPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const session = await requirePermission(permissions.inboxRead);
+  const session = await requireDashboardPermission(permissions.inboxRead);
   const params = await searchParams;
+  const assignedOnly = shouldScopeToAssignedConversations(session.user.permissions);
 
   const value = (key: string) => {
     const raw = params[key];
@@ -21,6 +23,7 @@ export default async function InboxPage({
   const initialData = await getInboxConversations({
     tenantId: session.user.tenantId,
     userId: session.user.id,
+    assignedOnly,
     filters: {
       view: value("view") || "inbox",
       q: value("q"),
@@ -38,7 +41,9 @@ export default async function InboxPage({
   const initialDetail = activeConversationId
     ? await getConversationDetail({
         tenantId: session.user.tenantId,
-        conversationId: activeConversationId
+        userId: session.user.id,
+        conversationId: activeConversationId,
+        assignedOnly
       }).catch(() => null)
     : null;
 

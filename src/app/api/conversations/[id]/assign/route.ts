@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Conversation, User } from "@/lib/models";
+import { requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 const schema = z.object({
   assigneeId: z.string().min(1).optional(),
@@ -13,7 +14,7 @@ const schema = z.object({
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await requireSession();
+    const session = await requirePermission(permissions.inboxAssign);
     const { id } = await params;
     const body = schema.parse(await request.json());
     const assigneeId = body.assigneeId || body.assignedAgentId;

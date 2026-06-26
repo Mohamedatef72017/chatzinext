@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { mergeContacts } from "@/server/channels/merge";
+import { requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireSession();
+    const session = await requirePermission(permissions.contactsWrite);
     const { id } = await params;
     const body = await request.json();
     const { targetContactId } = body;

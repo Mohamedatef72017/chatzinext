@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getCurrentSession } from "@/lib/auth";
-import { isAdminRole } from "@/lib/authz";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { SignOutButton } from "@/components/dashboard/sign-out";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
@@ -8,6 +7,7 @@ import { NotificationsMenu } from "@/components/dashboard/notifications-menu";
 import { RealtimeBridge } from "@/components/dashboard/realtime-bridge";
 import { getBillingCatalog } from "@/lib/billing";
 import { BillingProvider } from "@/components/providers/billing-provider";
+import { getEffectivePermissionsForUser } from "@/server/permissions/effective";
 
 export const dynamic = "force-dynamic";
 
@@ -15,13 +15,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await getCurrentSession();
   if (!session?.user?.tenantId) redirect("/login");
 
-  const catalog = await getBillingCatalog(session.user.tenantId);
+  const [catalog, effectivePermissions] = await Promise.all([
+    getBillingCatalog(session.user.tenantId),
+    getEffectivePermissionsForUser(session.user.id, session.user.tenantId),
+  ]);
 
   return (
     <BillingProvider initialData={catalog}>
       <div className="dashboard-shell theme-rescue flex h-[100dvh] bg-slate-100 p-0 dark:bg-slate-900">
         <div className="flex flex-1 overflow-hidden bg-[#0B0C1E] shadow-2xl relative w-full">
-          <Sidebar role={session.user.role} />
+          <Sidebar permissions={effectivePermissions} />
           <div className="flex flex-1 flex-col min-w-0 bg-white dark:bg-slate-950 shadow-[-10px_0_30px_rgba(0,0,0,0.1)] relative z-10">
             <header className="safe-top sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 ">
               <div className="flex min-h-16 items-center justify-between gap-3 px-4 py-2 rtl:pl-16 ltr:pr-16 lg:px-8">

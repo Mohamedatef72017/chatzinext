@@ -31,6 +31,7 @@ import { useI18n } from "@/components/i18n-provider";
 import { usePathname, useRouter } from "next/navigation";
 import { SignOutButton } from "@/components/dashboard/sign-out";
 import { useSidebarCounts } from "@/components/dashboard/sidebar-counts";
+import { permissions as permissionKeys, type Permission } from "@/server/permissions/permissions";
 
 declare global {
   interface BeforeInstallPromptEvent extends Event {
@@ -43,13 +44,14 @@ type NavLink = {
   href: string;
   label: string;
   icon: typeof Gauge;
+  permission?: Permission;
 };
 
 function isLinkActive(pathname: string, href: string) {
   return pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
 }
 
-export function Sidebar({ role }: { role?: string }) {
+export function Sidebar({ permissions: effectivePermissions = [] }: { permissions?: Permission[] }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
@@ -59,46 +61,47 @@ export function Sidebar({ role }: { role?: string }) {
   const currentPath = pathname || "";
   const router = useRouter();
   const counts = useSidebarCounts();
-  const canManageSupportAgents = role === "super-admin" || role === "owner" || role === "admin";
+  const can = (permission?: Permission) => !permission || effectivePermissions.includes(permission);
+  const canManageSupportAgents = can(permissionKeys.usersManage);
 
   const primaryLinks: NavLink[] = [
     { href: "/dashboard", label: t.nav.home, icon: Gauge },
-    { href: "/dashboard/conversations", label: t.nav.conversations, icon: MessageSquare },
-    { href: "/dashboard/tickets", label: locale === "ar" ? "التذاكر" : "Tickets", icon: ClipboardCheck },
-    ...(canManageSupportAgents ? [{ href: "/dashboard/support-agents", label: locale === "ar" ? "وكلاء الدعم" : "Support agents", icon: UsersRound }] : []),
-    { href: "/dashboard/leads", label: locale === "ar" ? "العملاء المحتملون" : "Leads", icon: UserPlus },
-    { href: "/dashboard/contacts", label: locale === "ar" ? "جهات الاتصال" : "Contacts", icon: ContactRound },
-    { href: "/dashboard/ai-settings", label: t.nav.aiSettings, icon: Brain },
-    { href: "/dashboard/settings", label: t.nav.settings, icon: Settings },
-  ];
+    { href: "/dashboard/conversations", label: t.nav.conversations, icon: MessageSquare, permission: permissionKeys.inboxRead },
+    { href: "/dashboard/tickets", label: locale === "ar" ? "التذاكر" : "Tickets", icon: ClipboardCheck, permission: permissionKeys.ticketsRead },
+    ...(canManageSupportAgents ? [{ href: "/dashboard/support-agents", label: locale === "ar" ? "وكلاء الدعم" : "Support agents", icon: UsersRound, permission: permissionKeys.usersManage }] : []),
+    { href: "/dashboard/leads", label: locale === "ar" ? "العملاء المحتملون" : "Leads", icon: UserPlus, permission: permissionKeys.contactsRead },
+    { href: "/dashboard/contacts", label: locale === "ar" ? "جهات الاتصال" : "Contacts", icon: ContactRound, permission: permissionKeys.contactsRead },
+    { href: "/dashboard/ai-settings", label: t.nav.aiSettings, icon: Brain, permission: permissionKeys.aiManage },
+    { href: "/dashboard/settings", label: t.nav.settings, icon: Settings, permission: permissionKeys.settingsRead },
+  ].filter((item) => can(item.permission));
 
   const bottomNavLinks: NavLink[] = [
     { href: "/dashboard", label: t.nav.home, icon: Gauge },
-    { href: "/dashboard/conversations", label: t.nav.conversations, icon: MessageSquare },
-    { href: "/dashboard/tickets", label: locale === "ar" ? "التذاكر" : "Tickets", icon: ClipboardCheck },
+    { href: "/dashboard/conversations", label: t.nav.conversations, icon: MessageSquare, permission: permissionKeys.inboxRead },
+    { href: "/dashboard/tickets", label: locale === "ar" ? "التذاكر" : "Tickets", icon: ClipboardCheck, permission: permissionKeys.ticketsRead },
     { href: "/dashboard/notifications", label: locale === "ar" ? "الإشعارات" : "Notifications", icon: Bell },
-    { href: "/dashboard/settings", label: t.nav.settings, icon: Settings },
-  ];
+    { href: "/dashboard/settings", label: t.nav.settings, icon: Settings, permission: permissionKeys.settingsRead },
+  ].filter((item) => can(item.permission));
 
   const drawerLinks: NavLink[] = [
     { href: "/dashboard", label: t.nav.home, icon: Gauge },
-    { href: "/dashboard/conversations", label: t.nav.conversations, icon: MessageSquare },
-    { href: "/dashboard/tickets", label: locale === "ar" ? "التذاكر" : "Tickets", icon: ClipboardCheck },
-    ...(canManageSupportAgents ? [{ href: "/dashboard/support-agents", label: locale === "ar" ? "وكلاء الدعم" : "Support agents", icon: UsersRound }] : []),
-    { href: "/dashboard/leads", label: locale === "ar" ? "العملاء المحتملون" : "Leads", icon: UserPlus },
-    { href: "/dashboard/contacts", label: locale === "ar" ? "جهات الاتصال" : "Contacts", icon: ContactRound },
-    { href: "/dashboard/channels", label: t.nav.channels, icon: PlugZap },
-    { href: "/dashboard/knowledge", label: t.nav.knowledge, icon: BookOpenText },
-    { href: "/dashboard/simulator", label: locale === "ar" ? "محاكي البوت" : "Bot Simulator", icon: PlaySquare },
-    { href: "/dashboard/billing", label: t.nav.billing, icon: CreditCard },
-    { href: "/dashboard/settings", label: t.nav.settings, icon: Settings },
-  ];
+    { href: "/dashboard/conversations", label: t.nav.conversations, icon: MessageSquare, permission: permissionKeys.inboxRead },
+    { href: "/dashboard/tickets", label: locale === "ar" ? "التذاكر" : "Tickets", icon: ClipboardCheck, permission: permissionKeys.ticketsRead },
+    ...(canManageSupportAgents ? [{ href: "/dashboard/support-agents", label: locale === "ar" ? "وكلاء الدعم" : "Support agents", icon: UsersRound, permission: permissionKeys.usersManage }] : []),
+    { href: "/dashboard/leads", label: locale === "ar" ? "العملاء المحتملون" : "Leads", icon: UserPlus, permission: permissionKeys.contactsRead },
+    { href: "/dashboard/contacts", label: locale === "ar" ? "جهات الاتصال" : "Contacts", icon: ContactRound, permission: permissionKeys.contactsRead },
+    { href: "/dashboard/channels", label: t.nav.channels, icon: PlugZap, permission: permissionKeys.settingsManage },
+    { href: "/dashboard/knowledge", label: t.nav.knowledge, icon: BookOpenText, permission: permissionKeys.knowledgeRead },
+    { href: "/dashboard/simulator", label: locale === "ar" ? "محاكي البوت" : "Bot Simulator", icon: PlaySquare, permission: permissionKeys.aiRead },
+    { href: "/dashboard/billing", label: t.nav.billing, icon: CreditCard, permission: permissionKeys.billingRead },
+    { href: "/dashboard/settings", label: t.nav.settings, icon: Settings, permission: permissionKeys.settingsRead },
+  ].filter((item) => can(item.permission));
 
   const quickActions = [
-    { href: "/dashboard/conversations", label: locale === "ar" ? "محادثة جديدة" : "New Conversation", icon: MessageSquare },
-    { href: "/dashboard/contacts", label: locale === "ar" ? "عميل جديد" : "New Contact", icon: ContactRound },
-    { href: "/dashboard/channels", label: locale === "ar" ? "قناة جديدة" : "New Channel", icon: PlugZap },
-  ];
+    { href: "/dashboard/conversations", label: locale === "ar" ? "محادثة جديدة" : "New Conversation", icon: MessageSquare, permission: permissionKeys.inboxReply },
+    { href: "/dashboard/contacts", label: locale === "ar" ? "عميل جديد" : "New Contact", icon: ContactRound, permission: permissionKeys.contactsWrite },
+    { href: "/dashboard/channels", label: locale === "ar" ? "قناة جديدة" : "New Channel", icon: PlugZap, permission: permissionKeys.settingsManage },
+  ].filter((item) => can(item.permission));
 
   useEffect(() => {
     const onBeforeInstallPrompt = (event: Event) => {

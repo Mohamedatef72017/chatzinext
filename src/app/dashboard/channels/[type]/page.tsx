@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requirePermission } from "@/server/auth/guards";
+import { requireDashboardPermission } from "@/server/auth/guards";
 import { permissions } from "@/server/permissions/permissions";
 import { getChannelPageData } from "@/lib/dashboard-data";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -18,7 +18,7 @@ const titles = {
 } as const;
 
 export default async function ChannelTypePage({ params }: { params: Promise<{ type: string }> }) {
-  const session = await requirePermission(permissions.settingsManage);
+  const session = await requireDashboardPermission(permissions.settingsManage);
   const { type } = await params;
   if (!(type in titles)) notFound();
   const locale = await getLocale();

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { AiPersona } from "@/lib/models/ai-persona";
 import { z } from "zod";
+import { requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 const personaSchema = z.object({
   personaType: z.string().default("general"),
@@ -22,7 +23,7 @@ const personaSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireSession();
+    const session = await requirePermission(permissions.aiRead);
     await connectToDatabase();
 
     const personas = await AiPersona.find({ tenantId: session.user.tenantId, isActive: true })
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireSession();
+    const session = await requirePermission(permissions.aiManage);
     const body = await request.json();
 
     const parsed = personaSchema.safeParse(body);

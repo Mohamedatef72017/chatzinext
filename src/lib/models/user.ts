@@ -5,6 +5,7 @@ import {
   type InferSchemaType,
   type Model,
 } from "mongoose";
+import { permissionModes, permissionValues } from "@/server/permissions/permissions";
 
 const userSchema = new Schema(
   {
@@ -51,6 +52,20 @@ const userSchema = new Schema(
       default: "admin",
       index: true,
     },
+
+    permissionMode: {
+      type: String,
+      enum: permissionModes,
+      default: "role",
+      index: true,
+    },
+
+    permissions: [
+      {
+        type: String,
+        enum: permissionValues,
+      },
+    ],
 
     tenantId: {
       type: Schema.Types.ObjectId,

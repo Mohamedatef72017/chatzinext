@@ -822,6 +822,13 @@ const persistResultStep = createStep({
     let validation = validateCustomerReply(reply);
     if (!reply || !validation.valid) {
       action = "fallback";
+      logger.warn("ai.reply_validation_repair", {
+        tenantId: inputData.tenantId,
+        botId: inputData.botId,
+        conversationId: inputData.conversationId,
+        reason: validation.reason || "empty_reply",
+        originalAction: inputData.action || "fallback",
+      });
       reply = await buildSafeCustomerReply({
         tenantId: inputData.tenantId,
         botId: inputData.botId,
@@ -840,6 +847,12 @@ const persistResultStep = createStep({
     }
 
     if (!reply || !validation.valid) {
+      logger.warn("ai.reply_skipped_no_safe_reply", {
+        tenantId: inputData.tenantId,
+        botId: inputData.botId,
+        conversationId: inputData.conversationId,
+        reason: validation.reason || "no_safe_customer_reply_generated",
+      });
       return {
         generated: false,
         action: "skip" as const,

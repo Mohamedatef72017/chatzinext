@@ -97,12 +97,13 @@ export async function ensureInboxDefaults(tenantId: string, userId?: string) {
 export async function getInboxConversations(input: {
   tenantId: string;
   userId: string;
+  assignedOnly?: boolean;
   filters: InboxFilters;
 }) {
   await connectToDatabase();
 
   const limit = Math.min(Math.max(Number(input.filters.limit || 40), 10), 80);
-  const query = await buildConversationQuery(input.tenantId, input.userId, input.filters);
+  const query = await buildConversationQuery(input.tenantId, input.userId, input.filters, input.assignedOnly === true);
 
   const conversations = await Conversation.find(query)
     .sort({ lastMessageAt: -1, updatedAt: -1 })
@@ -121,7 +122,7 @@ export async function getInboxConversations(input: {
   }).lean();
   const insightByConversation = new Map(insights.map((insight) => [insight.conversationId.toString(), insight]));
 
-  const analytics = await getInboxAnalytics(input.tenantId);
+  const analytics = await getInboxAnalytics(input.tenantId, input.userId, input.assignedOnly === true);
 
   return {
     conversations: page.map((conversation) => mapConversationListItem(conversation, insightByConversation.get(conversation._id.toString()))),
@@ -132,7 +133,9 @@ export async function getInboxConversations(input: {
 
 export async function getConversationDetail(input: {
   tenantId: string;
+  userId?: string;
   conversationId: string;
+  assignedOnly?: boolean;
   forceAi?: boolean;
 }) {
   await connectToDatabase();
@@ -140,7 +143,8 @@ export async function getConversationDetail(input: {
 
   const conversation = await Conversation.findOne({
     _id: input.conversationId,
-    tenantId: input.tenantId
+    tenantId: input.tenantId,
+    ...assignedAccessFilter(input.userId, input.assignedOnly === true)
   })
     .populate("contactId", "name email phone avatarUrl company country tags notes lastSeenAt totalOrders customerValue lifecycleStage customAttributes")
     .populate("assignedAgentId", "name email")
@@ -218,6 +222,7 @@ export async function sendInboxReply(input: {
   conversationId: string;
   content: string;
   attachments?: unknown[];
+  assignedOnly?: boolean;
 }) {
   await connectToDatabase();
   if (!Types.ObjectId.isValid(input.conversationId)) throw new Error("Invalid conversation id.");
@@ -226,7 +231,8 @@ export async function sendInboxReply(input: {
 
   const conversation = await Conversation.findOne({
     _id: input.conversationId,
-    tenantId: input.tenantId
+    tenantId: input.tenantId,
+    ...assignedAccessFilter(input.userId, input.assignedOnly === true)
   });
   if (!conversation) throw new Error("Conversation not found.");
 
@@ -344,13 +350,18 @@ export async function createInboxNote(input: {
   content: string;
   visibility?: "internal" | "team";
   mentions?: string[];
+  assignedOnly?: boolean;
 }) {
   await connectToDatabase();
   if (!Types.ObjectId.isValid(input.conversationId)) throw new Error("Invalid conversation id.");
   const content = input.content.trim();
   if (!content) throw new Error("Note content is required.");
 
-  const conversation = await Conversation.findOne({ _id: input.conversationId, tenantId: input.tenantId }).select("_id");
+  const conversation = await Conversation.findOne({
+    _id: input.conversationId,
+    tenantId: input.tenantId,
+    ...assignedAccessFilter(input.userId, input.assignedOnly === true)
+  }).select("_id");
   if (!conversation) throw new Error("Conversation not found.");
 
   const mentions = (input.mentions || []).filter((id) => Types.ObjectId.isValid(id));
@@ -526,18 +537,28 @@ export async function markConversationRead(input: {
   tenantId: string;
   userId: string;
   conversationId: string;
+  assignedOnly?: boolean;
 }) {
   await connectToDatabase();
   if (!Types.ObjectId.isValid(input.conversationId)) throw new Error("Invalid conversation id.");
 
   const conversation = await Conversation.findOneAndUpdate(
-    { _id: input.conversationId, tenantId: input.tenantId, unreadCount: { $gt: 0 } },
+    {
+      _id: input.conversationId,
+      tenantId: input.tenantId,
+      unreadCount: { $gt: 0 },
+      ...assignedAccessFilter(input.userId, input.assignedOnly === true)
+    },
     { $set: { unreadCount: 0 } },
     { new: false }
   ).select("_id unreadCount");
 
   if (!conversation) {
-    const exists = await Conversation.exists({ _id: input.conversationId, tenantId: input.tenantId });
+    const exists = await Conversation.exists({
+      _id: input.conversationId,
+      tenantId: input.tenantId,
+      ...assignedAccessFilter(input.userId, input.assignedOnly === true)
+    });
     if (!exists) throw new Error("Conversation not found.");
     return { changed: false };
   }
@@ -555,15 +576,16 @@ export async function markConversationRead(input: {
   return { changed: true };
 }
 
-export async function getInboxRealtimeSnapshot(tenantId: string, since?: Date) {
+export async function getInboxRealtimeSnapshot(tenantId: string, since?: Date, userId?: string, assignedOnly = false) {
   await connectToDatabase();
-  const match: Record<string, unknown> = { tenantId };
+  const match: Record<string, unknown> = { tenantId, ...assignedAccessFilter(userId, assignedOnly) };
   if (since) match.updatedAt = { $gt: since };
+  const base = { tenantId, ...assignedAccessFilter(userId, assignedOnly) };
 
   const [latestConversation, unreadCount, aiEscalations] = await Promise.all([
-    Conversation.findOne({ tenantId }).sort({ updatedAt: -1 }).select("_id updatedAt").lean(),
-    Conversation.countDocuments({ tenantId, unreadCount: { $gt: 0 }, status: { $nin: ["resolved", "closed", "archived"] } }),
-    Conversation.countDocuments({ tenantId, aiStatus: "escalated", status: { $nin: ["resolved", "closed", "archived"] } })
+    Conversation.findOne(match).sort({ updatedAt: -1 }).select("_id updatedAt").lean(),
+    Conversation.countDocuments({ ...base, unreadCount: { $gt: 0 }, status: { $nin: ["resolved", "closed", "archived"] } }),
+    Conversation.countDocuments({ ...base, aiStatus: "escalated", status: { $nin: ["resolved", "closed", "archived"] } })
   ]);
 
   return {
@@ -582,7 +604,16 @@ async function ensureFreshInsight(tenantId: string, conversationId: string, forc
   return insight;
 }
 
-async function buildConversationQuery(tenantId: string, userId: string, filters: InboxFilters) {
+function assignedAccessFilter(userId?: string, assignedOnly = false) {
+  if (!assignedOnly || !userId) return {};
+  return { $or: [{ assignedAgentId: userId }, { assigneeId: userId }] };
+}
+
+function applyAssignedScope(and: Record<string, unknown>[], userId: string, assignedOnly = false) {
+  if (assignedOnly) and.push({ $or: [{ assignedAgentId: userId }, { assigneeId: userId }] });
+}
+
+async function buildConversationQuery(tenantId: string, userId: string, filters: InboxFilters, assignedOnly = false) {
   const and: Record<string, unknown>[] = [{ tenantId }];
 
   if (filters.cursor) {
@@ -590,6 +621,7 @@ async function buildConversationQuery(tenantId: string, userId: string, filters:
     if (!Number.isNaN(cursorDate.getTime())) and.push({ lastMessageAt: { $lt: cursorDate } });
   }
 
+  applyAssignedScope(and, userId, assignedOnly);
   applyView(and, userId, filters.view);
   applyCsvFilter(and, "provider", filters.channel);
   applyCsvFilter(and, "status", filters.status);
@@ -719,8 +751,10 @@ async function searchNotes(tenantId: string, search: string, regex: RegExp) {
 
 const ANALYTICS_CACHE_TTL_SECONDS = Number(process.env.INBOX_ANALYTICS_CACHE_TTL_SECONDS || 90);
 
-async function getInboxAnalytics(tenantId: string) {
-  const cacheKey = `cache:inbox:analytics:${tenantId}`;
+async function getInboxAnalytics(tenantId: string, userId?: string, assignedOnly = false) {
+  const cacheKey = assignedOnly && userId
+    ? `cache:inbox:analytics:${tenantId}:${userId}:assigned`
+    : `cache:inbox:analytics:${tenantId}`;
 
   try {
     const cached = await redis.get(cacheKey);
@@ -729,7 +763,7 @@ async function getInboxAnalytics(tenantId: string) {
     // Cache miss or Redis error — fall through to DB query
   }
 
-  const result = await computeInboxAnalytics(tenantId);
+  const result = await computeInboxAnalytics(tenantId, userId, assignedOnly);
 
   try {
     await redis.set(cacheKey, JSON.stringify(result), "EX", ANALYTICS_CACHE_TTL_SECONDS);
@@ -740,17 +774,25 @@ async function getInboxAnalytics(tenantId: string) {
   return result;
 }
 
-async function computeInboxAnalytics(tenantId: string) {
+async function computeInboxAnalytics(tenantId: string, userId?: string, assignedOnly = false) {
   const tenantObjectId = Types.ObjectId.isValid(tenantId) ? new Types.ObjectId(tenantId) : tenantId;
+  const scopedMatch = assignedAccessFilter(userId, assignedOnly);
+  const scopedMatchWithTenant = { tenantId, ...scopedMatch };
+  const scopedAggregateMatch = {
+    tenantId: tenantObjectId,
+    ...(assignedOnly && userId
+      ? { $or: [{ assignedAgentId: new Types.ObjectId(userId) }, { assigneeId: new Types.ObjectId(userId) }] }
+      : {})
+  };
   const [openCount, resolvedCount, aiEscalations, responseAgg, aiResolved] = await Promise.all([
-    Conversation.countDocuments({ tenantId, status: { $in: ["open", "pending", "snoozed"] } }),
-    Conversation.countDocuments({ tenantId, status: { $in: ["resolved", "closed"] } }),
-    Conversation.countDocuments({ tenantId, aiStatus: "escalated", status: { $nin: ["resolved", "closed", "archived"] } }),
+    Conversation.countDocuments({ ...scopedMatchWithTenant, status: { $in: ["open", "pending", "snoozed"] } }),
+    Conversation.countDocuments({ ...scopedMatchWithTenant, status: { $in: ["resolved", "closed"] } }),
+    Conversation.countDocuments({ ...scopedMatchWithTenant, aiStatus: "escalated", status: { $nin: ["resolved", "closed", "archived"] } }),
     Conversation.aggregate<{ avgMs: number }>([
-      { $match: { tenantId: tenantObjectId, firstResponseMs: { $gt: 0 } } },
+      { $match: { ...scopedAggregateMatch, firstResponseMs: { $gt: 0 } } },
       { $group: { _id: null, avgMs: { $avg: "$firstResponseMs" } } }
     ]).catch(() => []),
-    Conversation.countDocuments({ tenantId, status: { $in: ["resolved", "closed"] }, mode: "ai" })
+    Conversation.countDocuments({ ...scopedMatchWithTenant, status: { $in: ["resolved", "closed"] }, mode: "ai" })
   ]);
 
   const totalResolved = Math.max(resolvedCount, 1);

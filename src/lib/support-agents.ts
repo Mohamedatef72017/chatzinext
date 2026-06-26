@@ -1,6 +1,10 @@
 import { User } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 import { TENANT_USER_LIMITS } from "@/lib/user-admin";
+import {
+  getEffectivePermissionsFromRecord,
+  getPermissionModeFromRecord,
+} from "@/server/permissions/effective";
 
 export const SUPPORT_AGENT_ROLES = ["manager", "agent"] as const;
 export type SupportAgentRole = (typeof SUPPORT_AGENT_ROLES)[number];
@@ -19,7 +23,7 @@ export async function getSupportAgentsData(tenantId: string) {
 
   const [users, managerCount, agentCount] = await Promise.all([
     User.find({ tenantId, role: { $in: SUPPORT_AGENT_ROLES } })
-      .select("_id name email role isActive lastLoginAt createdAt updatedAt")
+      .select("_id name email role isActive lastLoginAt createdAt updatedAt permissionMode permissions isSuperAdmin")
       .sort({ role: 1, createdAt: -1 })
       .lean(),
     User.countDocuments({ tenantId, role: "manager" }),
@@ -38,6 +42,9 @@ export async function getSupportAgentsData(tenantId: string) {
       email: user.email || "",
       role: user.role as SupportAgentRole,
       isActive: user.isActive !== false,
+      permissionMode: getPermissionModeFromRecord(user),
+      permissions: Array.isArray(user.permissions) ? user.permissions : [],
+      effectivePermissions: getEffectivePermissionsFromRecord(user),
       lastLoginAt: user.lastLoginAt?.toISOString?.() || "",
       createdAt: user.createdAt?.toISOString?.() || "",
     })),

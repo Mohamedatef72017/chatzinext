@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth";
+import { requirePermission } from "@/server/auth/guards";
+import { shouldScopeToAssignedConversations } from "@/server/permissions/effective";
+import { permissions } from "@/server/permissions/permissions";
 import { listConversationsForTenant } from "@/lib/conversations-data";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await requireSession();
+    const session = await requirePermission(permissions.inboxRead);
     // NOTE: This endpoint is deprecated. Use /api/inbox/conversations instead.
     const { searchParams } = new URL(request.url);
 
@@ -18,6 +20,8 @@ export async function GET(request: NextRequest) {
       mode: searchParams.get("mode") || "all",
       priority: searchParams.get("priority") || "all",
       unreadOnly: searchParams.get("unread") === "1",
+      userId: session.user.id,
+      assignedOnly: shouldScopeToAssignedConversations(session.user.permissions),
     });
 
     const response = NextResponse.json(data);

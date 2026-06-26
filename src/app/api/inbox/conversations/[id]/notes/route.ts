@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/server/auth/guards";
 import { permissions } from "@/server/permissions/permissions";
+import { shouldScopeToAssignedConversations } from "@/server/permissions/effective";
 import { createInboxNote } from "@/lib/inbox/service";
 
 const schema = z.object({
@@ -18,6 +19,7 @@ export async function POST(
     const session = await requirePermission(permissions.inboxReply);
     const { id } = await params;
     const body = schema.parse(await request.json());
+    const assignedOnly = shouldScopeToAssignedConversations(session.user.permissions);
 
     const note = await createInboxNote({
       tenantId: session.user.tenantId,
@@ -25,7 +27,8 @@ export async function POST(
       conversationId: id,
       content: body.content,
       visibility: body.visibility,
-      mentions: body.mentions
+      mentions: body.mentions,
+      assignedOnly
     });
 
     return NextResponse.json({ success: true, note });

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { ArrowLeft, BadgeDollarSign, Mail, Phone, Search, Sparkles, UserRound } from "lucide-react";
-import { requireSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Lead } from "@/lib/models";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { requireDashboardPermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ function pageHref(page: number, q?: string) {
 }
 
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<{ page?: string; q?: string }> }) {
-  const session = await requireSession();
+  const session = await requireDashboardPermission(permissions.contactsRead);
   const params = await searchParams;
   const tenantId = session.user.tenantId;
   const page = Math.max(1, Number(params.page || "1"));

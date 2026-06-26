@@ -1,9 +1,15 @@
 import { Types } from "mongoose";
+import { redirect } from "next/navigation";
 import { getCurrentSession } from "@/lib/auth";
 import { Tenant, TenantSubscription, User } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 import { type Permission } from "@/server/permissions/permissions";
-import { isRole, roleHasPermission, type Role } from "@/server/permissions/roles";
+import {
+  getEffectivePermissionsFromRecord,
+  getPermissionModeFromRecord,
+  hasPermission,
+} from "@/server/permissions/effective";
+import { isRole, type Role } from "@/server/permissions/roles";
 
 export async function requireSuperAdmin() {
   const session = await getCurrentSession();
@@ -56,10 +62,42 @@ export async function requireActiveUser() {
 
 export async function requirePermission(permission: Permission) {
   const session = await requireActiveUser();
-  if (!roleHasPermission(session.user.role, permission)) {
+  await connectToDatabase();
+
+  const user = await User.findOne({
+    _id: session.user.id,
+    tenantId: session.user.tenantId,
+    isActive: true
+  }).select("role isSuperAdmin permissionMode permissions").lean();
+
+  if (!user) {
+    throw new Error("Active user access is required.");
+  }
+
+  const effectivePermissions = getEffectivePermissionsFromRecord(user as any);
+  if (!hasPermission(effectivePermissions, permission)) {
     throw new Error(`Permission required: ${permission}`);
   }
+
+  session.user.permissionMode = getPermissionModeFromRecord(user as any);
+  session.user.permissions = effectivePermissions;
   return session;
+}
+
+export async function requireDashboardPermission(permission: Permission) {
+  try {
+    return await requirePermission(permission);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    const isAccessError =
+      message.startsWith("Permission required:") ||
+      message.includes("Authentication is required") ||
+      message.includes("Tenant access is required") ||
+      message.includes("Active user access is required");
+
+    if (!isAccessError) throw error;
+    redirect(`/dashboard/unauthorized?permission=${encodeURIComponent(permission)}`);
+  }
 }
 
 export async function requireRole(role: Role | Role[]) {

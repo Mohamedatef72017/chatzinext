@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/authz";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/lib/models/user";
 import { safeJsonError } from "@/lib/api-security";
+import { requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export async function GET() {
   try {
-    const session = await requireAdmin();
+    const session = await requirePermission(permissions.usersRead);
     await connectToDatabase();
 
     const users = await User.find({ tenantId: session.user.tenantId })

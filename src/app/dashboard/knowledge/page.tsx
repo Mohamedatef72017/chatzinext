@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Activity } from "lucide-react";
-import { requirePermission } from "@/server/auth/guards";
+import { requireDashboardPermission } from "@/server/auth/guards";
 import { permissions } from "@/server/permissions/permissions";
 import { getKnowledgeDashboardData } from "@/lib/knowledge";
 import { getLocale } from "@/lib/i18n";
@@ -10,7 +10,7 @@ import { KnowledgeManager } from "@/components/dashboard/knowledge-manager";
 export const dynamic = "force-dynamic";
 
 export default async function KnowledgePage() {
-  const session = await requirePermission(permissions.knowledgeManage);
+  const session = await requireDashboardPermission(permissions.knowledgeManage);
   const [data, locale] = await Promise.all([getKnowledgeDashboardData(session.user.tenantId), getLocale()]);
   const isAr = locale === "ar";
 

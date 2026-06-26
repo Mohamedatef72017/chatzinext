@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Database, FileText, Layers3, RefreshCcw, ShieldAlert, Sparkles } from "lucide-react";
-import { requirePermission } from "@/server/auth/guards";
+import { requireDashboardPermission } from "@/server/auth/guards";
 import { permissions } from "@/server/permissions/permissions";
 import { getKnowledgeHealth } from "@/lib/knowledge";
 import { getLocale } from "@/lib/i18n";
@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 export const dynamic = "force-dynamic";
 
 export default async function KnowledgeHealthPage() {
-  const session = await requirePermission(permissions.knowledgeManage);
+  const session = await requireDashboardPermission(permissions.knowledgeManage);
   const [health, locale] = await Promise.all([getKnowledgeHealth(session.user.tenantId), getLocale()]);
   const isAr = locale === "ar";
   const stats = [

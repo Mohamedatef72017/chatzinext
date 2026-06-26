@@ -1,13 +1,14 @@
-import { requireAdmin } from "@/lib/authz";
 import { getLocale } from "@/lib/i18n";
 import { getSupportAgentsData } from "@/lib/support-agents";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { SupportAgentsManager } from "@/components/dashboard/support-agents-manager";
+import { requireDashboardPermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export const dynamic = "force-dynamic";
 
 export default async function SupportAgentsPage() {
-  const session = await requireAdmin();
+  const session = await requireDashboardPermission(permissions.usersManage);
   const [data, locale] = await Promise.all([
     getSupportAgentsData(session.user.tenantId),
     getLocale(),

@@ -94,9 +94,15 @@ export async function getConversations(tenantId: string) {
   );
 }
 
-export async function getConversationDetail(tenantId: string, id: string) {
+export async function getConversationDetail(tenantId: string, id: string, options: { userId?: string; assignedOnly?: boolean } = {}) {
   await connectToDatabase();
-  const conversation = await Conversation.findOne({ _id: id, tenantId }).lean();
+  const conversation = await Conversation.findOne({
+    _id: id,
+    tenantId,
+    ...(options.assignedOnly && options.userId
+      ? { $or: [{ assignedAgentId: options.userId }, { assigneeId: options.userId }] }
+      : {})
+  }).lean();
   if (!conversation) return null;
   const [bot, messages, ticket] = await Promise.all([
     Bot.findById(conversation.botId).lean(),
@@ -341,12 +347,31 @@ export async function getDashboardChannels(tenantId: string) {
   });
 }
 
-export async function getTicketsPage(tenantId: string, options: { page?: number; limit?: number; status?: string; category?: string; q?: string } = {}) {
+async function getAssignedConversationIds(tenantId: string, userId?: string, assignedOnly = false) {
+  if (!assignedOnly || !userId) return null;
+  const conversations = await Conversation.find({
+    tenantId,
+    $or: [{ assignedAgentId: userId }, { assigneeId: userId }]
+  }).select("_id").lean();
+  return conversations.map((conversation) => conversation._id);
+}
+
+function applyAssignedTicketScope(filter: Record<string, any>, conversationIds: unknown[] | null) {
+  if (!conversationIds) return;
+  filter.conversationId = { $in: conversationIds };
+}
+
+export async function getTicketsPage(
+  tenantId: string,
+  options: { page?: number; limit?: number; status?: string; category?: string; q?: string; userId?: string; assignedOnly?: boolean } = {}
+) {
   await connectToDatabase();
   const page = Math.max(1, Number(options.page || 1));
   const limit = Math.min(50, Math.max(5, Number(options.limit || 15)));
   const skip = (page - 1) * limit;
   const filter: Record<string, any> = { tenantId };
+  const scopedConversationIds = await getAssignedConversationIds(tenantId, options.userId, options.assignedOnly === true);
+  applyAssignedTicketScope(filter, scopedConversationIds);
   if (options.status) filter.status = options.status;
   if (options.category) filter.category = options.category;
   if (options.q?.trim()) {
@@ -364,17 +389,17 @@ export async function getTicketsPage(tenantId: string, options: { page?: number;
   const [tickets, total, openCount, newCount, pendingCount, resolvedCount] = await Promise.all([
     Ticket.find(filter).sort({ updatedAt: -1, createdAt: -1 }).skip(skip).limit(limit).lean(),
     Ticket.countDocuments(filter),
-    Ticket.countDocuments({ tenantId, status: { $in: ["open", "in_progress", "pending"] } }),
-    Ticket.countDocuments({ tenantId, status: { $in: ["open", "in_progress", "pending"] }, createdAt: { $gte: new Date(new Date().setHours(0,0,0,0)) } }),
-    Ticket.countDocuments({ tenantId, status: "pending" }),
-    Ticket.countDocuments({ tenantId, status: { $in: ["resolved", "closed"] } }),
+    Ticket.countDocuments({ tenantId, ...(scopedConversationIds ? { conversationId: { $in: scopedConversationIds } } : {}), status: { $in: ["open", "in_progress", "pending"] } }),
+    Ticket.countDocuments({ tenantId, ...(scopedConversationIds ? { conversationId: { $in: scopedConversationIds } } : {}), status: { $in: ["open", "in_progress", "pending"] }, createdAt: { $gte: new Date(new Date().setHours(0,0,0,0)) } }),
+    Ticket.countDocuments({ tenantId, ...(scopedConversationIds ? { conversationId: { $in: scopedConversationIds } } : {}), status: "pending" }),
+    Ticket.countDocuments({ tenantId, ...(scopedConversationIds ? { conversationId: { $in: scopedConversationIds } } : {}), status: { $in: ["resolved", "closed"] } }),
   ]);
 
   const rows = await Promise.all(
     tickets.map(async (ticket) => {
       const [bot, conversation] = await Promise.all([
         ticket.botId ? Bot.findById(ticket.botId).lean() : null,
-        ticket.conversationId ? Conversation.findById(ticket.conversationId).lean() : null,
+        ticket.conversationId ? Conversation.findOne({ _id: ticket.conversationId, tenantId }).lean() : null,
       ]);
       const metadata = ticket.metadata && typeof ticket.metadata === "object" ? ticket.metadata as Record<string, any> : {};
       const issueTopics = Array.isArray(metadata.issueTopics) ? metadata.issueTopics : [];
@@ -409,15 +434,18 @@ export async function getTicketsPage(tenantId: string, options: { page?: number;
   };
 }
 
-export async function getTickets(tenantId: string) {
+export async function getTickets(tenantId: string, options: { userId?: string; assignedOnly?: boolean } = {}) {
   await connectToDatabase();
-  const tickets = await Ticket.find({ tenantId }).sort({ updatedAt: -1 }).limit(100).lean();
+  const filter: Record<string, any> = { tenantId };
+  const scopedConversationIds = await getAssignedConversationIds(tenantId, options.userId, options.assignedOnly === true);
+  applyAssignedTicketScope(filter, scopedConversationIds);
+  const tickets = await Ticket.find(filter).sort({ updatedAt: -1 }).limit(100).lean();
 
   return Promise.all(
     tickets.map(async (ticket) => {
       const [bot, conversation] = await Promise.all([
         ticket.botId ? Bot.findById(ticket.botId).lean() : null,
-        ticket.conversationId ? Conversation.findById(ticket.conversationId).lean() : null
+        ticket.conversationId ? Conversation.findOne({ _id: ticket.conversationId, tenantId }).lean() : null
       ]);
 
       return {
@@ -440,10 +468,20 @@ export async function getTickets(tenantId: string) {
   );
 }
 
-export async function getTicketDetail(tenantId: string, id: string) {
+export async function getTicketDetail(tenantId: string, id: string, options: { userId?: string; assignedOnly?: boolean } = {}) {
   await connectToDatabase();
   const ticket = await Ticket.findOne({ _id: id, tenantId }).lean();
   if (!ticket) return null;
+
+  if (options.assignedOnly) {
+    if (!options.userId || !ticket.conversationId) return null;
+    const allowedConversation = await Conversation.exists({
+      _id: ticket.conversationId,
+      tenantId,
+      $or: [{ assignedAgentId: options.userId }, { assigneeId: options.userId }]
+    });
+    if (!allowedConversation) return null;
+  }
 
   const [bot, conversation, messages] = await Promise.all([
     ticket.botId ? Bot.findById(ticket.botId).lean() : null,

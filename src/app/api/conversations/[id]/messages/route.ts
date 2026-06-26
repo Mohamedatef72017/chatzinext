@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth";
 import { requirePermission } from "@/server/auth/guards";
 import { permissions } from "@/server/permissions/permissions";
+import { shouldScopeToAssignedConversations } from "@/server/permissions/effective";
 import { listMessagesForConversation } from "@/lib/conversations-data";
 import { sendInboxReply } from "@/lib/inbox/service";
 import { z } from "zod";
@@ -16,8 +16,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireSession();
+    const session = await requirePermission(permissions.inboxRead);
     const { id } = await params;
+    const assignedOnly = shouldScopeToAssignedConversations(session.user.permissions);
     const { searchParams } = new URL(request.url);
     const rawLimit = searchParams.get("limit") || "120";
     const limit = Number(rawLimit);
@@ -36,6 +37,8 @@ export async function GET(
     const messages = await listMessagesForConversation(session.user.tenantId, id, {
       limit,
       since,
+      userId: session.user.id,
+      assignedOnly,
     });
 
     return NextResponse.json({ messages });
@@ -52,6 +55,7 @@ export async function POST(
   try {
     const session = await requirePermission(permissions.inboxReply);
     const { id } = await params;
+    const assignedOnly = shouldScopeToAssignedConversations(session.user.permissions);
     const body = await request.json();
     
     const parsed = messageSchema.safeParse(body);
@@ -70,7 +74,8 @@ export async function POST(
       userId: session.user.id,
       conversationId: id,
       content: content || "مرفق",
-      attachments
+      attachments,
+      assignedOnly
     });
 
     return NextResponse.json({

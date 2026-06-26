@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { requirePermission } from "@/server/auth/guards";
 import { permissions } from "@/server/permissions/permissions";
+import { shouldScopeToAssignedConversations } from "@/server/permissions/effective";
 import { getInboxRealtimeSnapshot } from "@/lib/inbox/service";
 import {
   createTenantSubscriber,
@@ -63,6 +64,7 @@ function normalizeRawEnvelope(rawMessage: string): RealtimeEnvelope {
 export async function GET(request: NextRequest) {
   const session = await requirePermission(permissions.inboxRead);
   const tenantId = session.user.tenantId;
+  const assignedOnly = shouldScopeToAssignedConversations(session.user.permissions);
 
   if (!incrementConnection(tenantId)) {
     return new Response("Too many realtime connections for this tenant.", { status: 429 });
@@ -112,7 +114,7 @@ export async function GET(request: NextRequest) {
       });
 
       try {
-        const snapshot = await getInboxRealtimeSnapshot(tenantId, lastUpdatedAt);
+        const snapshot = await getInboxRealtimeSnapshot(tenantId, lastUpdatedAt, session.user.id, assignedOnly);
         send("inbox.snapshot", snapshot, snapshot.updatedAt);
       } catch {
         send("sync.required", { reason: "initial_snapshot_failed", ts: new Date().toISOString() });
@@ -140,6 +142,10 @@ export async function GET(request: NextRequest) {
           sub.on("message", (ch: string, rawMessage: string) => {
             if (ch !== channel) return;
             try {
+              if (assignedOnly) {
+                send("sync.required", { reason: "scoped_realtime_event", ts: new Date().toISOString() });
+                return;
+              }
               const event = normalizeRawEnvelope(rawMessage);
               send(event.type, event.payload, event.id);
             } catch {
@@ -156,7 +162,7 @@ export async function GET(request: NextRequest) {
 
           const safetySync = setInterval(async () => {
             try {
-              const snapshot = await getInboxRealtimeSnapshot(tenantId, lastUpdatedAt);
+              const snapshot = await getInboxRealtimeSnapshot(tenantId, lastUpdatedAt, session.user.id, assignedOnly);
               const nextUpdatedAt = new Date(snapshot.updatedAt);
               if (!Number.isNaN(nextUpdatedAt.getTime()) && nextUpdatedAt > lastUpdatedAt) {
                 lastUpdatedAt = nextUpdatedAt;
@@ -179,7 +185,7 @@ export async function GET(request: NextRequest) {
       // Redis unavailable fallback: low-frequency reconciliation only.
       const fallback = setInterval(async () => {
         try {
-          const snapshot = await getInboxRealtimeSnapshot(tenantId, lastUpdatedAt);
+          const snapshot = await getInboxRealtimeSnapshot(tenantId, lastUpdatedAt, session.user.id, assignedOnly);
           const nextUpdatedAt = new Date(snapshot.updatedAt);
           if (!Number.isNaN(nextUpdatedAt.getTime()) && nextUpdatedAt > lastUpdatedAt) {
             lastUpdatedAt = nextUpdatedAt;

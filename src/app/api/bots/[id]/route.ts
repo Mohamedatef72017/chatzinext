@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/authz";
 import { Bot } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
+import { requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -13,7 +14,7 @@ const schema = z.object({
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await requireAdmin();
+    const session = await requirePermission(permissions.aiManage);
     const { id } = await params;
     const body = schema.parse(await request.json());
     await connectToDatabase();

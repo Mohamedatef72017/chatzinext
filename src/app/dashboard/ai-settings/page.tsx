@@ -1,11 +1,12 @@
-import { requireAdmin } from "@/lib/authz";
 import { getAiSettings } from "@/lib/dashboard-data";
 import { getLocale } from "@/lib/i18n";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { AiSettingsForm } from "@/components/dashboard/ai-settings-form";
+import { requireDashboardPermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export default async function AiSettingsPage() {
-  const session = await requireAdmin();
+  const session = await requireDashboardPermission(permissions.aiManage);
   const data = await getAiSettings(session.user.tenantId);
   const locale = await getLocale();
   const isAr = locale === "ar";

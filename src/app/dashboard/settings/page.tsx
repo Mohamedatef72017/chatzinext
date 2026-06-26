@@ -1,11 +1,12 @@
-import { requireSession } from "@/lib/auth";
 import { getTenantSummary } from "@/lib/dashboard-data";
 import { getLocale } from "@/lib/i18n";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { SettingsForm } from "@/components/dashboard/settings-form";
+import { requireDashboardPermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export default async function SettingsPage() {
-  const session = await requireSession();
+  const session = await requireDashboardPermission(permissions.settingsRead);
   const summary = await getTenantSummary(session.user.tenantId);
   const locale = await getLocale();
   const isAr = locale === "ar";

@@ -94,7 +94,7 @@ async function callProvider(options: {
   model: string;
   systemPrompt: string;
   userInput: string;
-  temperature: number;
+  temperature?: number;
 }): Promise<{ reply: string; responseId: string }> {
   
   if (options.providerId === "gemini") {
@@ -102,7 +102,7 @@ async function callProvider(options: {
     const geminiModel = genAI.getGenerativeModel({
       model: options.model,
       systemInstruction: options.systemPrompt,
-      generationConfig: { temperature: options.temperature },
+      generationConfig: typeof options.temperature === "number" ? { temperature: options.temperature } : undefined,
     });
     const result = await geminiModel.generateContent(options.userInput);
     return {
@@ -133,9 +133,9 @@ async function callProvider(options: {
         body: JSON.stringify({
             model: options.model,
             max_tokens: 4096,
-            temperature: options.temperature,
             system: options.systemPrompt,
-            messages: [{ role: "user", content: options.userInput }]
+            messages: [{ role: "user", content: options.userInput }],
+            ...(typeof options.temperature === "number" ? { temperature: options.temperature } : {})
         })
       });
       const data = await res.json();
@@ -151,17 +151,40 @@ async function callProvider(options: {
     baseURL: clientBaseUrl,
   });
 
-  const response = await client.chat.completions.create({
-    model: options.model,
-    messages: [
-      { role: "system", content: options.systemPrompt },
-      { role: "user",   content: options.userInput },
-    ],
-    temperature: options.temperature,
-  });
+  const createCompletion = (temperature?: number) => {
+    const request: any = {
+      model: options.model,
+      messages: [
+        { role: "system", content: options.systemPrompt },
+        { role: "user",   content: options.userInput },
+      ],
+    };
+    if (typeof temperature === "number") request.temperature = temperature;
+    return client.chat.completions.create(request);
+  };
+
+  let response;
+  try {
+    response = await createCompletion(options.temperature);
+  } catch (error) {
+    if (typeof options.temperature === "number" && isTemperatureUnsupportedError(error)) {
+      logger.warn("ai.provider_temperature_retry", {
+        providerId: options.providerId,
+        model: options.model,
+      });
+      response = await createCompletion(undefined);
+    } else {
+      throw error;
+    }
+  }
 
   return {
     reply: response.choices[0]?.message?.content?.trim() || "",
     responseId: response.id || `${options.providerId}-${Date.now()}`,
   };
+}
+
+function isTemperatureUnsupportedError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return /temperature/i.test(message) && /(unsupported|does not support|only the default)/i.test(message);
 }

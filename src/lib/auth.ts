@@ -10,6 +10,10 @@ import { BillingPlan, Bot, Tenant, TenantSubscription, User } from "@/lib/models
 import { slugifyArabic } from "@/lib/strings";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logSystemEvent } from "@/lib/system-logger";
+import {
+  getEffectivePermissionsFromRecord,
+  getPermissionModeFromRecord,
+} from "@/server/permissions/effective";
 
 function getAuthRequestIp(req?: { headers?: Record<string, string | string[] | undefined> }) {
   const forwardedFor = req?.headers?.["x-forwarded-for"];
@@ -51,6 +55,8 @@ async function provisionOAuthUser(nextAuthUser: any, profile: any) {
     nextAuthUser.tenantId = user.tenantId.toString();
     nextAuthUser.isActive = true;
     nextAuthUser.isSuperAdmin = (user as any).isSuperAdmin === true || user.role === "super-admin";
+    nextAuthUser.permissionMode = getPermissionModeFromRecord(user as any);
+    nextAuthUser.permissions = getEffectivePermissionsFromRecord(user as any);
     return true;
   }
 
@@ -109,6 +115,8 @@ async function provisionOAuthUser(nextAuthUser: any, profile: any) {
   nextAuthUser.tenantId = tenant._id.toString();
   nextAuthUser.isActive = true;
   nextAuthUser.isSuperAdmin = user.role === "super-admin";
+  nextAuthUser.permissionMode = getPermissionModeFromRecord(user as any);
+  nextAuthUser.permissions = getEffectivePermissionsFromRecord(user as any);
   return true;
 }
 
@@ -169,7 +177,9 @@ export const authOptions: AuthOptions = {
           role: user.role,
           tenantId: user.tenantId.toString(),
           isActive: true,
-          isSuperAdmin: (user as any).isSuperAdmin === true || user.role === "super-admin"
+          isSuperAdmin: (user as any).isSuperAdmin === true || user.role === "super-admin",
+          permissionMode: getPermissionModeFromRecord(user as any),
+          permissions: getEffectivePermissionsFromRecord(user as any)
         };
       }
     }),
@@ -195,6 +205,8 @@ export const authOptions: AuthOptions = {
         token.tenantId = user.tenantId;
         token.isActive = user.isActive;
         token.isSuperAdmin = user.isSuperAdmin === true || user.role === "super-admin";
+        token.permissionMode = user.permissionMode;
+        token.permissions = user.permissions;
       }
       return token;
     },
@@ -205,6 +217,8 @@ export const authOptions: AuthOptions = {
         session.user.tenantId = token.tenantId;
         session.user.isActive = token.isActive;
         session.user.isSuperAdmin = token.isSuperAdmin === true;
+        session.user.permissionMode = token.permissionMode;
+        session.user.permissions = token.permissions;
       }
       return session;
     }

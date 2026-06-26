@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Lead } from "@/lib/models";
-import { requireAuth } from "@/server/auth/guards";
+import { requirePermission } from "@/server/auth/guards";
+import { permissions } from "@/server/permissions/permissions";
 
 export async function GET(req: NextRequest) {
   let session: any;
-  try { session = await requireAuth(); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  try { session = await requirePermission(permissions.contactsRead); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
 
   await connectToDatabase();
   const { searchParams } = new URL(req.url);
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   let session: any;
-  try { session = await requireAuth(); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  try { session = await requirePermission(permissions.contactsWrite); } catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
 
   await connectToDatabase();
   const body = await req.json();
