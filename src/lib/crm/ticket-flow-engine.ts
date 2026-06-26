@@ -82,6 +82,15 @@ function missingFields(requiredFields: TicketRequiredField[], fields: Partial<Re
 async function saveState(input: { tenantId: string; botId: string; conversationId: string; state: TicketFlowState }) {
   await Conversation.updateOne({ _id: input.conversationId, tenantId: input.tenantId, botId: input.botId }, { $set: { "metadata.crmTicketFlow": input.state } });
 }
+
+function compactContextValue(value: unknown, max = 220) {
+  return String(value || "")
+    .replace(/[;\n\r]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
 export async function clearTicketFlow(input: { tenantId: string; botId: string; conversationId: string; ticketId?: string; ticketNumber?: number }) {
   const now = new Date().toISOString();
   await Conversation.updateOne({ _id: input.conversationId, tenantId: input.tenantId, botId: input.botId }, { $set: { "metadata.crmTicketFlow.status": "created", "metadata.crmTicketFlow.ticketId": input.ticketId || "", "metadata.crmTicketFlow.ticketNumber": input.ticketNumber || 0, "metadata.crmTicketFlow.updatedAt": now } });
@@ -153,8 +162,8 @@ export function buildTicketFlowContext(flow?: TicketFlowResult) {
     `crmTicketFlow.hasIssueDescription=${Boolean(fields.issueDescription)}`,
     "crmTicketFlow.customerVisibleTextPolicy=AI_GENERATED_ONLY",
   ];
-  if (flow.action === "ask_missing_fields") parts.push("crmTicketFlow.replyGoal=Generate a warm, natural customer-facing message asking for ALL the listed missing fields in one single message. Do not number them as a form. Do not say a ticket is created yet. React to the customer's last message first, then ask only for what is still missing. Match the customer's language, tone, and emotional state from the conversation. Be human, lightly expressive, and not mechanical.");
-  if (flow.action === "answer_current_message") parts.push("crmTicketFlow.replyGoal=The customer switched to a different topic. Answer their current question fully from business knowledge. Keep the pending ticket flow open silently — do not mention it unless the customer brings it up again.");
-  if (flow.action === "create_ticket") parts.push("crmTicketFlow.replyGoal=The required fields are complete and the system is registering the request. Confirm this naturally and warmly in the customer's language and configured tone. Mention the ticket number if available. Do NOT use a fixed template or canned phrase. Sound like an attentive employee who understood the request, not like a rigid form. Match the register of the conversation — formal if they were formal, warm if they were casual. Invite them to ask if they need anything else.");
+  if (fields.name) parts.push(`crmTicketFlow.customerName=${compactContextValue(fields.name, 120)}`);
+  if (fields.phone) parts.push(`crmTicketFlow.customerPhone=${compactContextValue(fields.phone, 80)}`);
+  if (fields.issueDescription) parts.push(`crmTicketFlow.customerRequest=${compactContextValue(fields.issueDescription)}`);
   return parts.join("; ");
 }

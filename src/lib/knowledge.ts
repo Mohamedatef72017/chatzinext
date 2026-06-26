@@ -84,46 +84,7 @@ type KnowledgeSearchResult = {
 };
 
 const LOCAL_HASH_DIMENSIONS = 128;
-const defaultCategories = [
-  "معلومات الشركة", "المنتجات", "الخدمات", "الأسعار والباقات", "العروض والخصومات",
-  "الشحن والتوصيل", "الدفع والفواتير", "السياسات", "الدعم الفني", "الأسئلة الشائعة",
-  "المبيعات", "التذاكر والعملاء المحتملين", "إجراءات العمل", "أخرى"
-];
-
-export async function ensureDefaultKnowledgeTaxonomy(tenantId: string) {
-  await connectToDatabase();
-  for (const [index, name] of defaultCategories.entries()) {
-    const category = await KnowledgeCategory.findOneAndUpdate(
-      { tenantId, name },
-      {
-        $setOnInsert: {
-          tenantId,
-          name,
-          sortOrder: index + 1,
-          isActive: true
-        }
-      },
-      { new: true, upsert: true }
-    );
-
-    await KnowledgeCollection.findOneAndUpdate(
-      { tenantId, categoryId: category._id, name: "عام" },
-      {
-        $setOnInsert: {
-          tenantId,
-          categoryId: category._id,
-          name: "عام",
-          sortOrder: 1,
-          isActive: true
-        }
-      },
-      { new: true, upsert: true }
-    );
-  }
-}
-
 export async function getKnowledgeDashboardData(tenantId: string) {
-  await ensureDefaultKnowledgeTaxonomy(tenantId);
   const [bots, categories, collections, documents, aiSettings] = await Promise.all([
     Bot.find({ tenantId }).sort({ createdAt: -1 }).lean(),
     KnowledgeCategory.find({ tenantId, isActive: true }).sort({ sortOrder: 1, name: 1 }).lean(),

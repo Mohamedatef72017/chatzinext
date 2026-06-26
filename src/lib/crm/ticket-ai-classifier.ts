@@ -92,7 +92,10 @@ export async function classifyTicketMessageWithAi(input: {
     "Use semantic meaning from the full provided conversation context. Support any customer language.",
     "Extract only fields explicitly provided by the customer anywhere in the provided conversation context. Do not infer name, phone, or issue description.",
     "For a commercial, booking, support, complaint, or handoff request, 'issueDescription' is the concrete product, service, appointment, problem, or request the customer wants.",
-    "If the latest customer message confirms or asks to proceed, use earlier explicit customer messages in the context to complete collectedFields.",
+    "Treat the conversation as an accumulating customer request. Preserve explicit products, services, add-ons, usage needs, and problem details from earlier customer messages as part of collectedFields.issueDescription.",
+    "If the latest customer message confirms, asks to proceed, provides contact details, or says they want to buy/book/register, use earlier explicit customer messages in the context to complete collectedFields.",
+    "Do not require the customer to repeat an item, service, or issue that they already stated earlier in the provided conversation.",
+    "Usage needs such as gaming, work, photography, study, travel, urgency, or budget describe the same request unless the customer clearly starts a separate request.",
   ].join("\n");
   const userInput = JSON.stringify({
     latestCustomerMessage: input.message,

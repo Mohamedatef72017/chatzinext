@@ -57,7 +57,23 @@ describe("Chatzi AI reply behavior smoke tests", () => {
     expect(promptSource).toContain("not overly soft, sugary, or exaggerated");
     expect(promptSource).toContain("use at most one relevant emoji");
     expect(promptSource).toContain("flower or smile is acceptable");
-    expect(cacheSource).toContain("human-chat-style-v3");
+    expect(cacheSource).toContain("human-chat-style-v4");
+  });
+
+  it("keeps purchase conversations moving without optional question loops", () => {
+    const promptSource = readSource("src/lib/ai/build-system-prompt.ts");
+    const classifierSource = readSource("src/lib/crm/ticket-ai-classifier.ts");
+    const workflowSource = readSource("src/mastra/workflows/ai-reply.workflow.ts");
+    const ticketFlowSource = readSource("src/lib/crm/ticket-flow-engine.ts");
+
+    expect(promptSource).toContain("QUESTION ECONOMY & ORDER CONTINUITY");
+    expect(promptSource).toContain("Do not ask what they want again");
+    expect(promptSource).toContain("Optional details must never block progress");
+    expect(promptSource).toContain("stop asking questions in that turn");
+    expect(classifierSource).toContain("accumulating customer request");
+    expect(classifierSource).toContain("Do not require the customer to repeat");
+    expect(workflowSource).not.toContain("CRM FIELD COLLECTION ACTIVE: The runtime context contains a list of fields");
+    expect(ticketFlowSource).not.toContain("crmTicketFlow.replyGoal=");
   });
 
   it("keeps emotion policy in the unified prompt instead of runtime chat instructions", () => {

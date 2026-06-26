@@ -69,7 +69,6 @@ export function Sidebar({ role }: { role?: string }) {
     { href: "/dashboard/leads", label: locale === "ar" ? "العملاء المحتملون" : "Leads", icon: UserPlus },
     { href: "/dashboard/contacts", label: locale === "ar" ? "جهات الاتصال" : "Contacts", icon: ContactRound },
     { href: "/dashboard/ai-settings", label: t.nav.aiSettings, icon: Brain },
-    ...(role === "admin" ? [{ href: "/admin/ai-models", label: locale === "ar" ? "مفاتيح AI" : "AI API Keys", icon: KeyRound }] : []),
     { href: "/dashboard/settings", label: t.nav.settings, icon: Settings },
   ];
 
@@ -90,9 +89,7 @@ export function Sidebar({ role }: { role?: string }) {
     { href: "/dashboard/contacts", label: locale === "ar" ? "جهات الاتصال" : "Contacts", icon: ContactRound },
     { href: "/dashboard/channels", label: t.nav.channels, icon: PlugZap },
     { href: "/dashboard/knowledge", label: t.nav.knowledge, icon: BookOpenText },
-    { href: "/dashboard/bots", label: t.nav.bots, icon: Bot },
     { href: "/dashboard/simulator", label: locale === "ar" ? "محاكي البوت" : "Bot Simulator", icon: PlaySquare },
-    ...(role === "admin" ? [{ href: "/admin/ai-models", label: locale === "ar" ? "مفاتيح AI" : "AI API Keys", icon: KeyRound }] : []),
     { href: "/dashboard/billing", label: t.nav.billing, icon: CreditCard },
     { href: "/dashboard/settings", label: t.nav.settings, icon: Settings },
   ];
@@ -100,7 +97,6 @@ export function Sidebar({ role }: { role?: string }) {
   const quickActions = [
     { href: "/dashboard/conversations", label: locale === "ar" ? "محادثة جديدة" : "New Conversation", icon: MessageSquare },
     { href: "/dashboard/contacts", label: locale === "ar" ? "عميل جديد" : "New Contact", icon: ContactRound },
-    { href: "/dashboard/bots/new", label: locale === "ar" ? "بوت جديد" : "New Bot", icon: Bot },
     { href: "/dashboard/channels", label: locale === "ar" ? "قناة جديدة" : "New Channel", icon: PlugZap },
   ];
 

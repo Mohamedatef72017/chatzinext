@@ -710,9 +710,6 @@ const generateReplyStep = createStep({
     });
     const instructions = [
       basePrompt,
-      inputData.needsLeadInfo
-        ? "CRM FIELD COLLECTION ACTIVE: The runtime context contains a list of fields that are still missing. Ask only for those specific missing fields in a single natural message. Do not mention internal field names. Do not list them as a form. Do not claim the ticket is created yet."
-        : "",
       inputData.knowledgePrompt
         ? `Available business knowledge for this conversation:\n${inputData.knowledgePrompt}`
         : "",
