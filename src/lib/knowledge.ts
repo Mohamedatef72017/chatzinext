@@ -15,6 +15,7 @@ import { decryptSecret } from "@/lib/crypto";
 import { knowledgeTrainingQueue, defaultJobOptions, makeQueueJobId } from "@/lib/queues";
 import { logger } from "@/lib/logger";
 import { routeAiRequest } from "@/lib/ai-router";
+import { detectBusinessIntent } from "@/lib/ai/business-intent";
 import { KnowledgeEntity } from "@/lib/models/knowledge-entity";
 import { extractAndStoreKnowledgeEntities, normalizeArabicText } from "@/lib/knowledge-entities";
 import {
@@ -944,8 +945,8 @@ function extractKeywords(value: string, limit = 32) {
   return [...new Set(tokens)].slice(0, limit);
 }
 
-function inferIntent(_question: string) {
-  return "general_question";
+function inferIntent(question: string) {
+  return detectBusinessIntent(question);
 }
 
 function estimateTokens(text: string) {

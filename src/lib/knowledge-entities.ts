@@ -124,8 +124,30 @@ function sanitizeEntity(raw: any) {
   };
 }
 
-function lexicalEntityFallback(_text: string) {
-  return [] as Array<{ type: KnowledgeEntityType; name: string; keywords: string[]; description: string; category: string; price: string; availability: string; url: string; aliases: string[]; confidence: number }>;
+function lexicalEntityFallback(
+  text: string,
+  documentTitle?: string
+): Array<{ type: KnowledgeEntityType; name: string; keywords: string[]; description: string; category: string; price: string; availability: string; url: string; aliases: string[]; confidence: number }> {
+  const name = (documentTitle || "").trim();
+  if (!name) return [];
+  const keywords = normalizeArabicText(name)
+    .split(/\s+/)
+    .filter((token) => token.length > 2)
+    .slice(0, 10);
+  return [
+    {
+      type: "business_info",
+      name,
+      description: text.slice(0, 500),
+      category: "",
+      price: "",
+      availability: "",
+      url: "",
+      aliases: [],
+      keywords,
+      confidence: 0.4,
+    },
+  ];
 }
 
 export async function extractAndStoreKnowledgeEntities(input: {
@@ -171,7 +193,8 @@ export async function extractAndStoreKnowledgeEntities(input: {
   }
 
   if (!allEntities.length) {
-    for (const chunk of input.chunks) allEntities.push(...lexicalEntityFallback(chunk.text));
+    const firstChunkText = input.chunks[0]?.text || "";
+    allEntities.push(...lexicalEntityFallback(firstChunkText, input.documentTitle));
   }
 
   const unique = new Map<string, any>();

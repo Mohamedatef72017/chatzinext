@@ -120,3 +120,33 @@ export function isPurchaseReadyIntent(intent: BusinessIntent): boolean {
 export function isHighSensitivityIntent(intent: BusinessIntent): boolean {
   return intent === "complaint" || intent === "human_request" || intent === "support";
 }
+
+/**
+ * Maps a detected intent to the most relevant KnowledgeEntity types for lookup.
+ * Returns string[] to avoid circular imports with knowledge-entities.ts.
+ * Returns empty array for intents that do not benefit from entity search.
+ */
+export function entityTypesForIntent(intent: BusinessIntent): string[] {
+  const map: Partial<Record<BusinessIntent, string[]>> = {
+    identity:     ["business_info"],
+    services:     ["service"],
+    products:     ["product"],
+    prices:       ["price", "service", "product"],
+    offers:       ["offer"],
+    contact:      ["contact", "branch"],
+    location:     ["branch", "contact"],
+    hours:        ["branch", "business_info", "appointment_rule"],
+    appointment:  ["appointment_rule", "service", "doctor"],
+    doctor:       ["doctor", "service"],
+    faq:          ["faq", "policy"],
+    support:      ["support", "faq"],
+    complaint:    ["support", "policy"],
+    sales:        ["product", "service", "price", "offer"],
+    business:     ["service", "product", "faq", "business_info"],
+    follow_up:    [],
+    human_request:[],
+    out_of_scope: [],
+    unknown:      [],
+  };
+  return map[intent] ?? [];
+}

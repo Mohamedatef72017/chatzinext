@@ -1,0 +1,313 @@
+ChatZi Knowledge Base Architecture Audit & Optimization
+
+Before writing any code, read this instruction completely.
+
+IMPORTANT
+
+Do NOT run the project.
+
+Do NOT execute:
+
+* npm install
+* npm update
+* npm run dev
+* npm run build
+* next dev
+* next build
+* npm start
+
+This repository is edited only.
+
+The application is built and tested later on my production server.
+
+Your task is to inspect the source code, compare it with the documentation, find weaknesses, improve the architecture, and fix real problems only.
+
+Do NOT over-engineer the system.
+
+The goal is:
+
+Simple architecture + Enterprise quality.
+
+⸻
+
+Objective
+
+Perform a complete architectural audit of the Knowledge Base system.
+
+I want to know whether the Knowledge Base is truly integrated with:
+
+* AI
+* Mastra
+* RAG
+* Prompt Building
+* Memory
+* Search
+* Ticket Creation
+* Customer Support Flow
+
+I also want the system to reach the level of modern enterprise AI platforms while remaining simple and maintainable.
+
+⸻
+
+Phase 1 — Understand the Current Architecture
+
+Read every document related to:
+
+* AI
+* Knowledge Base
+* Mastra
+* RAG
+* Billing (feature gating)
+* Recent change logs
+* docs/
+* docs/changes/
+
+Then inspect the real source code.
+
+Understand exactly how the Knowledge Base currently works.
+
+Do not assume anything.
+
+⸻
+
+Phase 2 — Complete Knowledge Base Audit
+
+Review every part of the pipeline.
+
+Including:
+
+* Knowledge Documents
+* Knowledge Chunks
+* Indexing
+* Chunking
+* Search
+* Embeddings
+* Retrieval
+* Prompt Construction
+* AI Workflow
+* Mastra
+* AI Agent
+* Knowledge Approval
+* Knowledge Categories
+* Knowledge Sources
+* Multi-language Support
+* Tenant Isolation
+* Permissions
+* Feature Gating
+
+Determine whether each component actually works as intended.
+
+⸻
+
+Phase 3 — AI Integration Review
+
+Verify that every AI reply correctly uses the Knowledge Base.
+
+Review:
+
+* how search is executed
+* when search is executed
+* how many results are retrieved
+* how results are ranked
+* how results are inserted into prompts
+* whether AI ignores retrieved knowledge
+* whether prompt construction is correct
+* whether Mastra and Legacy paths behave consistently
+
+The AI should always answer from the Knowledge Base whenever relevant information exists.
+
+It must never ignore valid business information.
+
+⸻
+
+Phase 4 — RAG Review
+
+Review the current RAG implementation.
+
+Evaluate:
+
+* retrieval quality
+* relevance
+* chunk size
+* chunk overlap
+* search quality
+* ranking quality
+* language handling
+* Arabic support
+* English support
+* mixed-language queries
+
+Do NOT redesign RAG unnecessarily.
+
+Improve only where there are real weaknesses.
+
+The architecture should remain simple.
+
+⸻
+
+Phase 5 — Mastra Integration
+
+Review how Mastra interacts with the Knowledge Base.
+
+Verify:
+
+* tools
+* workflows
+* orchestration
+* memory
+* prompt generation
+* reasoning
+* context building
+
+Determine whether Mastra is being used efficiently.
+
+If there are opportunities to simplify or improve orchestration, implement them.
+
+⸻
+
+Phase 6 — Enterprise Comparison
+
+Compare ChatZi against systems such as:
+
+* Intercom Fin AI
+* Zendesk AI
+* Salesforce Einstein
+* Freshdesk Freddy
+* HubSpot AI
+
+Compare only at the architectural level.
+
+Focus on:
+
+* Knowledge Retrieval
+* AI Context
+* Customer Experience
+* Simplicity
+* Maintainability
+* Scalability
+
+Do NOT copy unnecessary complexity.
+
+Only adopt ideas that genuinely improve ChatZi.
+
+⸻
+
+Phase 7 — Performance Review
+
+Review:
+
+* repeated database queries
+* repeated searches
+* duplicate prompt building
+* duplicate retrieval
+* unnecessary indexing
+* expensive operations
+* caching opportunities
+
+Improve performance while keeping the system simple.
+
+⸻
+
+Phase 8 — Security Review
+
+Verify:
+
+* tenant isolation
+* knowledge permissions
+* private knowledge leakage
+* prompt injection protection
+* safe retrieval
+* approved knowledge only
+* access validation
+
+Ensure one tenant can never access another tenant’s knowledge.
+
+⸻
+
+Phase 9 — Simplicity Review
+
+This is extremely important.
+
+Do NOT make the system more complicated.
+
+Every improvement must make the system:
+
+* simpler
+* easier to understand
+* easier to maintain
+* easier to extend
+
+Avoid unnecessary abstractions.
+
+Avoid unnecessary layers.
+
+Avoid over-engineering.
+
+The simplest correct solution is preferred.
+
+⸻
+
+Phase 10 — Final Improvements
+
+After completing the audit:
+
+Fix every real architectural issue you find.
+
+Remove:
+
+* dead code
+* duplicate logic
+* inconsistent retrieval paths
+* unused functions
+* duplicated prompt construction
+* duplicated knowledge search
+
+Unify the Knowledge Base flow into one clear architecture.
+
+⸻
+
+Documentation
+
+After finishing everything, create:
+
+docs/changes/knowledge-base-audit-26-06-2026.md
+
+The document should include:
+
+* Executive Summary
+* Current Knowledge Base Architecture
+* AI Integration Review
+* Mastra Integration Review
+* RAG Review
+* Security Review
+* Performance Review
+* Comparison with Enterprise Platforms
+* Problems Found
+* Root Causes
+* Improvements Implemented
+* Files Modified
+* Before vs After
+* Remaining Recommendations
+* Final Readiness Score
+
+⸻
+
+Final Goal
+
+The final Knowledge Base should be:
+
+* Easy to understand.
+* Easy to maintain.
+* Easy to extend.
+* Fully integrated with AI.
+* Fully integrated with Mastra.
+* Fully compatible with the current RAG architecture.
+* Accurate in answering business questions.
+* Fast.
+* Secure.
+* Multi-tenant.
+* Enterprise-ready without unnecessary complexity.
+
+The objective is not to build the most complicated system.
+
+The objective is to build the simplest possible enterprise-grade Knowledge Base that delivers reliable, professional AI responses.
