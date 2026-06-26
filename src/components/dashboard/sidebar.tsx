@@ -24,12 +24,13 @@ import {
   Download,
   Bell,
   ClipboardCheck,
+  UsersRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/i18n-provider";
 import { usePathname, useRouter } from "next/navigation";
 import { SignOutButton } from "@/components/dashboard/sign-out";
-import { SidebarCountsPanel } from "@/components/dashboard/sidebar-counts";
+import { useSidebarCounts } from "@/components/dashboard/sidebar-counts";
 
 declare global {
   interface BeforeInstallPromptEvent extends Event {
@@ -57,11 +58,14 @@ export function Sidebar({ role }: { role?: string }) {
   const pathname = usePathname();
   const currentPath = pathname || "";
   const router = useRouter();
+  const counts = useSidebarCounts();
+  const canManageSupportAgents = role === "super-admin" || role === "owner" || role === "admin";
 
   const primaryLinks: NavLink[] = [
     { href: "/dashboard", label: t.nav.home, icon: Gauge },
     { href: "/dashboard/conversations", label: t.nav.conversations, icon: MessageSquare },
     { href: "/dashboard/tickets", label: locale === "ar" ? "التذاكر" : "Tickets", icon: ClipboardCheck },
+    ...(canManageSupportAgents ? [{ href: "/dashboard/support-agents", label: locale === "ar" ? "وكلاء الدعم" : "Support agents", icon: UsersRound }] : []),
     { href: "/dashboard/leads", label: locale === "ar" ? "العملاء المحتملون" : "Leads", icon: UserPlus },
     { href: "/dashboard/contacts", label: locale === "ar" ? "جهات الاتصال" : "Contacts", icon: ContactRound },
     { href: "/dashboard/ai-settings", label: t.nav.aiSettings, icon: Brain },
@@ -81,6 +85,7 @@ export function Sidebar({ role }: { role?: string }) {
     { href: "/dashboard", label: t.nav.home, icon: Gauge },
     { href: "/dashboard/conversations", label: t.nav.conversations, icon: MessageSquare },
     { href: "/dashboard/tickets", label: locale === "ar" ? "التذاكر" : "Tickets", icon: ClipboardCheck },
+    ...(canManageSupportAgents ? [{ href: "/dashboard/support-agents", label: locale === "ar" ? "وكلاء الدعم" : "Support agents", icon: UsersRound }] : []),
     { href: "/dashboard/leads", label: locale === "ar" ? "العملاء المحتملون" : "Leads", icon: UserPlus },
     { href: "/dashboard/contacts", label: locale === "ar" ? "جهات الاتصال" : "Contacts", icon: ContactRound },
     { href: "/dashboard/channels", label: t.nav.channels, icon: PlugZap },
@@ -158,6 +163,23 @@ export function Sidebar({ role }: { role?: string }) {
             {drawerLinks.map((item) => {
               const Icon = item.icon;
               const active = isLinkActive(currentPath, item.href);
+              
+              let badge = null;
+              if (!collapsed) {
+                if (item.href === "/dashboard/conversations" && counts.conversations.unread > 0) {
+                  badge = <span className="ms-auto bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{counts.conversations.unread}</span>;
+                } else if (item.href === "/dashboard/tickets" && (counts.tickets.new > 0 || counts.tickets.open > 0)) {
+                  badge = (
+                    <span className="ms-auto flex items-center gap-1">
+                      {counts.tickets.new > 0 && <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" title={locale === "ar" ? "جديدة" : "New"}>{counts.tickets.new}</span>}
+                      {counts.tickets.open > 0 && <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" title={locale === "ar" ? "مفتوحة" : "Open"}>{counts.tickets.open}</span>}
+                    </span>
+                  );
+                } else if (item.href === "/dashboard/leads" && counts.leads.new > 0) {
+                  badge = <span className="ms-auto bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" title={locale === "ar" ? "عملاء جدد" : "New Leads"}>{counts.leads.new}</span>;
+                }
+              }
+
               return (
                 <Link
                   key={item.href}
@@ -168,11 +190,15 @@ export function Sidebar({ role }: { role?: string }) {
                   title={item.label}
                 >
                   <Icon size={18} className="shrink-0" />
-                  {!collapsed ? <span className="truncate">{item.label}</span> : null}
+                  {!collapsed ? (
+                    <>
+                      <span className="truncate">{item.label}</span>
+                      {badge}
+                    </>
+                  ) : null}
                 </Link>
               );
             })}
-            <SidebarCountsPanel collapsed={collapsed} />
           </nav>
         </div>
 
@@ -240,6 +266,21 @@ export function Sidebar({ role }: { role?: string }) {
                   {drawerLinks.map((item) => {
                     const Icon = item.icon;
                     const active = isLinkActive(currentPath, item.href);
+                    
+                    let badge = null;
+                    if (item.href === "/dashboard/conversations" && counts.conversations.unread > 0) {
+                      badge = <span className="ms-auto bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{counts.conversations.unread}</span>;
+                    } else if (item.href === "/dashboard/tickets" && (counts.tickets.new > 0 || counts.tickets.open > 0)) {
+                      badge = (
+                        <span className="ms-auto flex items-center gap-1">
+                          {counts.tickets.new > 0 && <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{counts.tickets.new}</span>}
+                          {counts.tickets.open > 0 && <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{counts.tickets.open}</span>}
+                        </span>
+                      );
+                    } else if (item.href === "/dashboard/leads" && counts.leads.new > 0) {
+                      badge = <span className="ms-auto bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{counts.leads.new}</span>;
+                    }
+
                     return (
                       <Link
                         key={item.href}
@@ -251,6 +292,7 @@ export function Sidebar({ role }: { role?: string }) {
                       >
                         <Icon size={18} />
                         <span>{item.label}</span>
+                        {badge}
                       </Link>
                     );
                   })}

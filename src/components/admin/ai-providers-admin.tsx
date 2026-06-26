@@ -13,68 +13,99 @@ export type AiProviderRow = {
   isActive: boolean;
   isDefault: boolean;
   baseUrl: string;
+  defaultModel?: string;
   priority: number;
 };
 
-const PROVIDERS_META: Record<ProviderId, { name: string; description: string; color: string; logoUrl?: string; modelCount: number }> = {
+const PROVIDERS_META: Record<ProviderId, { name: string; description: string; color: string; logoUrl?: string; modelCount: number; knownModels?: string[] }> = {
   openai: {
     name: "OpenAI",
     description: "The most capable models including GPT-4o and GPT-4 Turbo. Highly reliable and versatile.",
     color: "bg-[#10a37f]",
-    modelCount: 4
+    modelCount: 4,
+    knownModels: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo", "o1-preview", "o1-mini"]
   },
   anthropic: {
     name: "Anthropic",
     description: "Claude 3.5 Sonnet & Opus. Excellent at coding, long context windows, and nuanced writing.",
     color: "bg-[#d97757]",
-    modelCount: 3
+    modelCount: 3,
+    knownModels: ["claude-3-5-sonnet-20240620", "claude-3-opus-20240229", "claude-3-haiku-20240307"]
   },
   gemini: {
     name: "Google Gemini",
     description: "Gemini 1.5 Pro with a massive 1M token context window. Great for document analysis.",
     color: "bg-[#1a73e8]",
-    modelCount: 2
+    modelCount: 2,
+    knownModels: ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"]
   },
   openrouter: {
     name: "OpenRouter",
     description: "Unified API for 100+ models. Automatically routes to the cheapest or best endpoints.",
     color: "bg-[#4f46e5]",
-    modelCount: 120
+    modelCount: 120,
+    knownModels: ["openai/gpt-4o", "openai/gpt-4o-mini", "anthropic/claude-3.5-sonnet", "meta-llama/llama-3.1-8b-instruct", "meta-llama/llama-3.1-70b-instruct"]
   },
   deepseek: {
     name: "DeepSeek",
     description: "Highly efficient open-weight models offering exceptional coding performance at low costs.",
     color: "bg-[#2563eb]",
-    modelCount: 2
+    modelCount: 2,
+    knownModels: ["deepseek-chat", "deepseek-coder"]
   },
   xai: {
     name: "xAI (Grok)",
     description: "Grok models with real-time knowledge and unfiltered intelligence.",
     color: "bg-[#000000]",
-    modelCount: 2
+    modelCount: 2,
+    knownModels: ["grok-beta", "grok-1"]
   },
   groq: {
     name: "Groq",
     description: "LPU inference engine delivering lightning-fast generation for open source models like LLaMA 3.",
     color: "bg-[#f97316]",
-    modelCount: 5
+    modelCount: 5,
+    knownModels: ["llama-3.1-8b-instant", "llama-3.1-70b-versatile", "mixtral-8x7b-32768", "gemma2-9b-it"]
   },
   ollama: {
     name: "Ollama",
     description: "Run Llama 3, Mistral, and other open-source models locally on your own hardware.",
     color: "bg-[#52525b]",
-    modelCount: 10
+    modelCount: 10,
+    knownModels: ["llama3", "llama3.1", "mistral", "gemma", "phi3"]
   }
 };
 
 export function AiProvidersAdmin({ providers }: { providers: AiProviderRow[] }) {
   const [loading, setLoading] = useState<string | null>(null);
+  const [fetchingModels, setFetchingModels] = useState<ProviderId | null>(null);
+  const [fetchedModels, setFetchedModels] = useState<Record<string, string[]>>({});
   const [editingProvider, setEditingProvider] = useState<ProviderId | null>(null);
-  const [formData, setFormData] = useState({ apiKey: "", baseUrl: "", isActive: true, isDefault: false });
+  const [formData, setFormData] = useState({ apiKey: "", baseUrl: "", defaultModel: "", isActive: true, isDefault: false });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const allProviderIds: ProviderId[] = ["openai", "anthropic", "gemini", "openrouter", "deepseek", "xai", "groq", "ollama"];
+
+  async function handleFetchModels(pId: ProviderId) {
+    setFetchingModels(pId);
+    setError("");
+    setSuccess("");
+    try {
+      const { fetchAvailableModels } = await import("@/app/admin/actions");
+      const result = await fetchAvailableModels(pId, formData.apiKey, formData.baseUrl);
+      if (result.success && result.models.length > 0) {
+        setFetchedModels(prev => ({ ...prev, [pId]: result.models }));
+        setSuccess(`تم جلب ${result.models.length} نموذج بنجاح`);
+      } else {
+        setError("لم يتم العثور على نماذج.");
+      }
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setFetchingModels(null);
+    }
+  }
 
   async function handleSave(providerId: ProviderId) {
     setLoading(providerId);
@@ -89,6 +120,7 @@ export function AiProvidersAdmin({ providers }: { providers: AiProviderRow[] }) 
           providerId,
           apiKey: formData.apiKey,
           baseUrl: formData.baseUrl,
+          defaultModel: formData.defaultModel,
           isActive: formData.isActive,
           isDefault: formData.isDefault
         })
@@ -111,6 +143,7 @@ export function AiProvidersAdmin({ providers }: { providers: AiProviderRow[] }) 
     setFormData({
       apiKey: "",
       baseUrl: existing?.baseUrl || "",
+      defaultModel: existing?.defaultModel || "",
       isActive: existing?.isActive ?? true,
       isDefault: existing?.isDefault ?? false
     });
@@ -136,6 +169,7 @@ export function AiProvidersAdmin({ providers }: { providers: AiProviderRow[] }) 
           const existing = providers.find((p) => p.providerId === pId);
           const isConfigured = existing?.isConfigured;
           const isEditing = editingProvider === pId;
+          const displayModels = fetchedModels[pId] || meta.knownModels || [];
 
           return (
             <div 
@@ -209,6 +243,41 @@ export function AiProvidersAdmin({ providers }: { providers: AiProviderRow[] }) 
                         />
                       </div>
                     )}
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <Settings2 size={14} /> Model ID (Optional)
+                        </label>
+                        <button
+                          onClick={() => handleFetchModels(pId)}
+                          disabled={fetchingModels === pId || (!formData.apiKey && !isConfigured && pId !== "ollama")}
+                          className="text-[10px] text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center gap-1 disabled:opacity-50"
+                          type="button"
+                        >
+                          {fetchingModels === pId ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                          جلب النماذج
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        list={`models-${pId}`}
+                        placeholder="e.g. gpt-4o"
+                        value={formData.defaultModel}
+                        onChange={(e) => setFormData({ ...formData, defaultModel: e.target.value })}
+                        className="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                        dir="ltr"
+                      />
+                      {displayModels.length > 0 && (
+                        <datalist id={`models-${pId}`}>
+                          {displayModels.map((model) => (
+                            <option key={model} value={model} />
+                          ))}
+                        </datalist>
+                      )}
+                      <p className="text-[10px] text-slate-500 mt-1">Select from the list or type a custom model. Leave empty to use the system default model.</p>
+                    </div>
+
 
                     <div className="flex items-center justify-between">
                       <label className="flex items-center gap-2 text-sm cursor-pointer">

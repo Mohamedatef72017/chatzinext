@@ -46,6 +46,8 @@ ticketSchema.index({ tenantId: 1, conversationId: 1 }, { sparse: true });
 ticketSchema.index({ tenantId: 1, number: 1 }, { unique: true, sparse: true });
 ticketSchema.index({ tenantId: 1, assignedTo: 1 }, { sparse: true });
 ticketSchema.index({ tenantId: 1, slaBreached: 1 });
+ticketSchema.index({ tenantId: 1, status: 1, "metadata.normalizedCustomerPhone": 1 }, { sparse: true });
+ticketSchema.index({ tenantId: 1, status: 1, "metadata.normalizedCustomerPhone": 1, "metadata.issueIdentityKey": 1 }, { sparse: true });
 
 export type TicketDocument = InferSchemaType<typeof ticketSchema>;
 export const Ticket = (models.Ticket as Model<TicketDocument>) || model("Ticket", ticketSchema);

@@ -22,6 +22,9 @@ const ticketToolInputSchema = z.object({
   subject: z.string().optional(),
   description: z.string().optional(),
   aiSummary: z.string().optional(),
+  customerName: z.string().optional(),
+  customerPhone: z.string().optional(),
+  issueDescription: z.string().optional(),
 });
 
 const ticketToolOutputSchema = z.object({
@@ -50,7 +53,16 @@ export const createOrUpdateTicketTool = createTool({
       tenantId: input.tenantId,
       botId: input.botId,
       conversationId: input.conversationId,
-      message: [input.subject, input.description, input.aiSummary].filter(Boolean).join("\n"),
+      message: [
+        input.issueDescription || input.subject,
+        input.description,
+        input.aiSummary,
+      ].filter(Boolean).join("\n"),
+      providedFields: {
+        name: input.customerName,
+        phone: input.customerPhone,
+        issueDescription: input.issueDescription,
+      },
       detectedIntent: {
         shouldCreate: true,
         category: input.category,
@@ -69,6 +81,9 @@ export const createOrUpdateTicketTool = createTool({
     }
 
     const fields = flow.collectedFields || {};
+    const customerName = String(fields.name || input.customerName || "").trim();
+    const customerPhone = String(fields.phone || input.customerPhone || "").trim();
+    const issueDescription = String(fields.issueDescription || input.issueDescription || input.description || input.subject || "").trim();
     const ticket = await ensureTicketForConversation({
       tenantId: input.tenantId,
       botId: input.botId,
@@ -76,14 +91,14 @@ export const createOrUpdateTicketTool = createTool({
       category: input.category,
       priority: (input.priority || "medium") as "low" | "medium" | "high" | "urgent",
       triggerReason: input.triggerReason,
-      subject: input.subject || String(fields.issueDescription || "").slice(0, 120),
-      description: String(fields.issueDescription || input.description || input.subject || ""),
+      subject: input.subject || issueDescription.slice(0, 120),
+      description: issueDescription,
       aiSummary: input.aiSummary,
       metadata: {
         sourceTool: "mastra.create-or-update-ticket",
-        customerName: fields.name || "",
-        customerPhone: fields.phone || "",
-        issueDescription: fields.issueDescription || "",
+        customerName,
+        customerPhone,
+        issueDescription,
         crmTicketFlow: flow.state || null,
       },
     });

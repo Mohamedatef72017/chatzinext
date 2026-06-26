@@ -1,0 +1,248 @@
+ChatZi AI CRM Chat Behavior Report
+==================================
+
+Date: 2026-06-26
+Scope: AI chat behavior, CRM ticket flow, lead capture, duplicate ticket prevention
+
+
+1. Summary
+----------
+
+We improved the bot behavior for purchase/support-style conversations by moving CRM understanding to an AI-first structured classifier.
+
+The bot no longer relies on hardcoded customer phrases to understand purchase intent, booking intent, support intent, customer name, phone number, or requested product/service.
+
+The system now uses AI structured JSON extraction from recent conversation context, while keeping only technical data-safety guardrails such as phone normalization and duplicate-ticket prevention.
+
+
+2. Chat State Before
+--------------------
+
+The previous behavior was poor in the provided conversation:
+
+- The customer asked about the company's services.
+- The bot sometimes replied with generic identity text instead of useful business knowledge.
+- The customer said they wanted to buy iPhone 15.
+- The bot asked for name and phone.
+- The customer provided name and phone multiple times.
+- The bot did not reliably reuse the provided data.
+- The bot asked again for the same name and phone.
+- Ticket and lead creation were not reliable from the conversation flow.
+- Duplicate ticket prevention was mostly tied to the same conversation, not the same phone number.
+
+Example of the problem:
+
+- Customer: "أسمي محمود عادل رقم الهاتف 01005840966"
+- Bot later: "أحتاج إلى اسمك ورقم هاتفك"
+
+This made the bot look as if it had no memory and no real CRM action.
+
+
+3. Root Causes
+--------------
+
+The main causes were:
+
+- CRM field extraction was not strong enough.
+- Fast responder could run before CRM routing and intercept short business messages.
+- The system did not reliably use recent conversation context when deciding whether all required CRM fields were already provided.
+- Ticket deduplication did not fully protect against multiple open tickets for the same phone number.
+- Earlier mitigation used phrase-based routing/parsing, which the product owner rejected because it felt like hardcoding.
+
+
+4. What Was Changed
+-------------------
+
+4.1 AI-first CRM classifier
+
+The CRM flow now depends on an AI structured classifier that returns strict JSON.
+
+The classifier receives:
+
+- Latest customer message.
+- Recent conversation messages.
+- Active CRM ticket flow state, if any.
+- Required fields policy.
+- Allowed ticket categories.
+- Business settings and instructions.
+
+It returns structured data such as:
+
+- action
+- category
+- priority
+- collectedFields.name
+- collectedFields.phone
+- collectedFields.issueDescription
+- reason
+- confidence
+
+
+4.2 Recent conversation context
+
+The workflow now loads recent messages from the conversation and passes them into the CRM classifier.
+
+This allows the bot to understand a later message like "أكد طلب الشراء" or "تمام" based on earlier messages where the customer already mentioned the product, name, and phone.
+
+
+4.3 CRM routing before fast responder
+
+The AI CRM ticket flow now runs before the lightweight fast responder.
+
+This prevents short business-critical messages from being treated as generic greetings or unclear messages.
+
+
+4.4 Ticket creation behavior
+
+When required fields are complete:
+
+- The system reaches create_ticket.
+- The ticket can be created or updated.
+- The bot confirms naturally.
+- The bot does not ask again for already collected fields.
+
+
+4.5 Duplicate ticket prevention
+
+The ticket service now checks for existing open tickets using:
+
+- tenant
+- open ticket status
+- normalized customer phone
+- contactId when available
+- conversation fingerprint/category fallback
+
+If an open ticket already exists for the same phone number, the system updates that ticket instead of creating a duplicate.
+
+
+4.6 Lead deduplication
+
+Lead creation/update now deduplicates using:
+
+- normalized phone
+- email
+- contactId
+
+This reduces repeated leads for the same customer across conversations or channels.
+
+
+5. Hardcoded Logic Status
+-------------------------
+
+Current status: No hardcoded business or language routing logic remains in the AI chat/CRM understanding path.
+
+Specifically:
+
+- No hardcoded product names.
+- No hardcoded prices.
+- No hardcoded company services.
+- No hardcoded customer purchase phrases such as "مهتم", "أريد شراء", or "أكد الطلب".
+- No manual parser that depends on labels such as "الاسم", "رقم الهاتف", or "my name is".
+- No phrase list for deciding sales, booking, support, or complaint intent.
+
+CRM understanding is now handled by the AI structured classifier using conversation context.
+
+
+6. What Still Exists and Why
+----------------------------
+
+The remaining non-AI logic is technical guardrail logic only, not business hardcoding:
+
+- Phone normalization.
+- Arabic/Persian digit normalization for phone numbers.
+- Minimum phone length validation.
+- Rejecting short product-like numbers such as "15" from "iPhone 15".
+- Database-level duplicate protection for open tickets.
+- Lead deduplication by phone/email/contact.
+
+These rules are data-safety protections. They do not define business behavior, products, services, or customer intent.
+
+
+7. Chat State After
+-------------------
+
+For the original-style conversation:
+
+Customer:
+"ماهي خدمات الشركة المتحدة"
+
+Customer:
+"اريد شراء ايفون 15"
+
+Customer:
+"الاسم / محمود عادل رقم الهاتف/ 01002540633"
+
+Expected behavior now:
+
+- The services question goes to knowledge/reply generation.
+- The purchase message starts the CRM ticket flow.
+- The requested product is captured as issueDescription.
+- Name and phone are captured from conversation context.
+- Once all required fields are complete, the flow reaches create_ticket.
+- The bot does not ask again for name or phone.
+- If an open ticket already exists for the same phone number, it is updated instead of duplicated.
+- A lead is created or updated without duplication.
+
+
+8. Test Scenario Executed
+-------------------------
+
+A focused simulated test was added for the original conversation scenario.
+
+The test verifies:
+
+- Informational business question does not create a ticket.
+- Purchase intent starts a sales_request ticket flow.
+- Missing fields are only name and phone after product is known.
+- Providing name and phone completes the flow.
+- Final action becomes create_ticket.
+- Collected fields include:
+  - name: محمود عادل
+  - phone: 01002540633
+  - issueDescription: iPhone 15
+
+
+9. Verification Results
+-----------------------
+
+Focused tests passed:
+
+Command:
+npx jest tests/crm-ticket-flow-engine.test.ts tests/business-intent-arabic.test.ts tests/phone-normalization.test.ts tests/no-hardcoded-crm-vocabulary.test.ts --runInBand
+
+Result:
+Test Suites: 4 passed
+Tests: 6 passed
+
+
+10. Typecheck Status
+--------------------
+
+Command:
+npm run typecheck
+
+Current result:
+Fails due to existing TypeScript mock typing issues in old test files:
+
+- tests/quota.test.ts
+- tests/rate-limit.test.ts
+
+These errors are unrelated to the AI chat/CRM changes.
+
+The focused CRM/chat tests pass.
+
+
+11. Final State
+---------------
+
+The chat/CRM flow is now:
+
+- AI-first.
+- Context-aware.
+- Not dependent on hardcoded customer phrases.
+- Safer against duplicate open tickets.
+- Better at creating/updating leads.
+- Tested against the original purchase conversation scenario.
+
+Recommended next step:
+Fix old Jest mock typing issues in quota and rate-limit tests so full npm run typecheck passes cleanly.

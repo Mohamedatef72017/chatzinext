@@ -1,6 +1,6 @@
 import { Conversation } from "@/lib/models";
 import type { TicketCategory, TicketIntentClassification, TicketPriority } from "@/lib/tickets";
-import { classifyTicketMessageWithAi } from "@/lib/crm/ticket-ai-classifier";
+import { classifyTicketMessageWithAi, type TicketClassifierConversationMessage } from "@/lib/crm/ticket-ai-classifier";
 import { getCrmTicketPolicy, priorityForCategory, type CrmTicketPolicy, type TicketRequiredField } from "@/lib/crm/ticket-policy";
 
 export type { TicketRequiredField } from "@/lib/crm/ticket-policy";
@@ -34,18 +34,33 @@ export type TicketFlowResult = {
   readyToCreate?: boolean;
 };
 
+function normalizeDigits(value: string) {
+  const easternArabic = "٠١٢٣٤٥٦٧٨٩";
+  const persianArabic = "۰۱۲۳۴۵۶۷۸۹";
+  return String(value || "").replace(/[٠-٩۰-۹]/g, (char) => {
+    const easternIndex = easternArabic.indexOf(char);
+    if (easternIndex >= 0) return String(easternIndex);
+    const persianIndex = persianArabic.indexOf(char);
+    return persianIndex >= 0 ? String(persianIndex) : char;
+  });
+}
+
 function normalizePhone(value?: string | null) {
   if (!value) return "";
-  const cleaned = String(value).replace(/[^\d+]/g, "");
-  return cleaned.replace(/\D/g, "").length >= 7 ? cleaned : "";
+  const normalized = normalizeDigits(String(value));
+  const phoneLike = normalized.match(/(?:\+|00)?\d[\d\s\-().]{6,}\d/g)?.[0] || normalized;
+  const cleaned = phoneLike.replace(/[^\d+]/g, "");
+  const prefix = cleaned.startsWith("+") ? "+" : "";
+  const digits = cleaned.replace(/\D/g, "").replace(/^00/, "");
+  return digits.length >= 7 ? `${prefix}${digits}` : "";
 }
+
 function cleanField(value: unknown, field: TicketRequiredField) {
   const raw = String(value || "").trim();
   if (!raw) return "";
   if (field === "phone") return normalizePhone(raw);
   return raw.slice(0, field === "issueDescription" ? 1200 : 120);
 }
-export function extractTicketFieldsFromMessage() { return {} as Partial<Record<TicketRequiredField, string>>; }
 function asTicketFlowState(value: unknown): TicketFlowState | null {
   if (!value || typeof value !== "object") return null;
   const state = value as TicketFlowState;
@@ -84,6 +99,8 @@ export async function processTicketFlow(input: {
   businessCategory?: string;
   businessSubcategory?: string;
   customInstructionsEn?: string;
+  conversationMessages?: TicketClassifierConversationMessage[];
+  providedFields?: Partial<Record<TicketRequiredField, string>>;
 }) : Promise<TicketFlowResult> {
   const now = new Date().toISOString();
   const metadata = input.conversationMetadata || {};
@@ -92,28 +109,30 @@ export async function processTicketFlow(input: {
   const requiredFields = activeState?.requiredFields?.length ? activeState.requiredFields : policy.requiredFields;
   const requestedCategory = input.detectedIntent?.shouldCreate ? input.detectedIntent.category : undefined;
   const requestedPriority = input.detectedIntent?.shouldCreate ? input.detectedIntent.priority : undefined;
-  const classification = await classifyTicketMessageWithAi({ tenantId: input.tenantId, botId: input.botId, message: input.message, policy, activeState, languageMode: input.languageMode, businessCategory: input.businessCategory, businessSubcategory: input.businessSubcategory, customInstructionsEn: input.customInstructionsEn, requestedCategory, requestedPriority, reasonHint: input.detectedIntent?.reason });
+  const classification = await classifyTicketMessageWithAi({ tenantId: input.tenantId, botId: input.botId, message: input.message, policy, activeState, languageMode: input.languageMode, businessCategory: input.businessCategory, businessSubcategory: input.businessSubcategory, customInstructionsEn: input.customInstructionsEn, requestedCategory, requestedPriority, reasonHint: input.detectedIntent?.reason, conversationMessages: input.conversationMessages });
+  const latestFields = mergeFields(requiredFields, undefined, { ...classification.collectedFields, ...(input.providedFields || {}) });
+  const providedMissingFields = activeState?.missingFields?.filter((field) => cleanField(latestFields[field], field)) || [];
 
-  if (activeState && (classification.action === "answer_current_message" || classification.action === "cancel_ticket_flow")) {
+  if (activeState && providedMissingFields.length === 0 && (classification.action === "answer_current_message" || classification.action === "cancel_ticket_flow")) {
     const state: TicketFlowState = { ...activeState, status: "paused_for_context", updatedAt: now, lastCustomerMessage: input.message, lastInterruptReason: classification.reason || classification.action };
     await saveState({ ...input, state });
     return { action: "answer_current_message", state, category: state.category, priority: state.priority, reason: classification.reason || "ticket_flow_paused", missingFields: state.missingFields, collectedFields: state.collectedFields, interrupted: true };
   }
 
   if (activeState) {
-    const fields = mergeFields(requiredFields, activeState.collectedFields, classification.collectedFields);
+    const fields = mergeFields(requiredFields, activeState.collectedFields, latestFields);
     const missing = missingFields(requiredFields, fields);
     const state: TicketFlowState = { ...activeState, status: missing.length ? "collecting_required_fields" : "ready_to_create", collectedFields: fields, missingFields: missing, requiredFields, updatedAt: now, lastCustomerMessage: input.message };
     await saveState({ ...input, state });
     return { action: missing.length ? "ask_missing_fields" : "create_ticket", state, category: state.category, priority: state.priority, reason: missing.length ? "ticket_required_fields_missing" : "ticket_required_fields_complete", missingFields: missing, collectedFields: fields, readyToCreate: missing.length === 0 };
   }
 
-  const shouldStart = classification.action === "start_ticket_flow" || classification.action === "continue_ticket_flow";
+  const shouldStart = input.detectedIntent?.shouldCreate === true || classification.action === "start_ticket_flow" || classification.action === "continue_ticket_flow";
   if (!shouldStart) return { action: "none" };
 
   const category = classification.category || requestedCategory || "general";
   const priority = classification.priority || requestedPriority || priorityForCategory(policy, category);
-  const fields = mergeFields(requiredFields, undefined, classification.collectedFields);
+  const fields = mergeFields(requiredFields, undefined, latestFields);
   const missing = missingFields(requiredFields, fields);
   const state: TicketFlowState = { version: 1, status: missing.length ? "collecting_required_fields" : "ready_to_create", category, priority, reason: classification.reason || input.detectedIntent?.reason || "crm_ticket_flow_started", requiredFields, missingFields: missing, collectedFields: fields, startedAt: now, updatedAt: now, lastCustomerMessage: input.message };
   await saveState({ ...input, state });
@@ -134,8 +153,8 @@ export function buildTicketFlowContext(flow?: TicketFlowResult) {
     `crmTicketFlow.hasIssueDescription=${Boolean(fields.issueDescription)}`,
     "crmTicketFlow.customerVisibleTextPolicy=AI_GENERATED_ONLY",
   ];
-  if (flow.action === "ask_missing_fields") parts.push("crmTicketFlow.replyGoal=Generate a warm, natural customer-facing message asking for ALL the listed missing fields in one single message. Do not number them as a form. Do not say a ticket is created yet. Match the customer's language, tone, and emotional state from the conversation. Be natural, not mechanical.");
+  if (flow.action === "ask_missing_fields") parts.push("crmTicketFlow.replyGoal=Generate a warm, natural customer-facing message asking for ALL the listed missing fields in one single message. Do not number them as a form. Do not say a ticket is created yet. React to the customer's last message first, then ask only for what is still missing. Match the customer's language, tone, and emotional state from the conversation. Be human, lightly expressive, and not mechanical.");
   if (flow.action === "answer_current_message") parts.push("crmTicketFlow.replyGoal=The customer switched to a different topic. Answer their current question fully from business knowledge. Keep the pending ticket flow open silently — do not mention it unless the customer brings it up again.");
-  if (flow.action === "create_ticket") parts.push("crmTicketFlow.replyGoal=The required fields are complete and the system is registering the request. Confirm this naturally and warmly in the customer's language and configured tone. Mention the ticket number if available. Do NOT use a fixed template or canned phrase. Match the register of the conversation — formal if they were formal, warm if they were casual. Invite them to ask if they need anything else.");
+  if (flow.action === "create_ticket") parts.push("crmTicketFlow.replyGoal=The required fields are complete and the system is registering the request. Confirm this naturally and warmly in the customer's language and configured tone. Mention the ticket number if available. Do NOT use a fixed template or canned phrase. Sound like an attentive employee who understood the request, not like a rigid form. Match the register of the conversation — formal if they were formal, warm if they were casual. Invite them to ask if they need anything else.");
   return parts.join("; ");
 }

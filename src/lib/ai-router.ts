@@ -24,10 +24,9 @@ export async function routeAiRequest(options: {
 }): Promise<{ reply: string; responseId: string; providerUsed: string; modelUsed: string }> {
   
   const providers = await AiProvider.find({ isActive: true }).sort({ priority: 1 }).lean();
-  const envOpenAiKey = process.env.OPENAI_API_KEY?.trim() || "";
 
-  if ((!providers || providers.length === 0) && !envOpenAiKey) {
-    throw new Error("No active AI providers found. Add an OpenAI API key in Admin → AI Providers or set OPENAI_API_KEY.");
+  if (!providers || providers.length === 0) {
+    throw new Error("No active AI providers found. Add an AI API key in Admin → AI Providers.");
   }
 
   const sortedProviders = [...providers].sort((a, b) => {
@@ -35,24 +34,13 @@ export async function routeAiRequest(options: {
     return a.isDefault ? -1 : 1;
   });
 
-  if (envOpenAiKey) {
-    sortedProviders.unshift({
-      providerId: "openai",
-      apiKeyEncrypted: envOpenAiKey,
-      baseUrl: "",
-      priority: -1,
-      isDefault: true,
-      isActive: true
-    } as (typeof providers)[number]);
-  }
-
   let lastError: Error | null = null;
 
   for (const providerDoc of sortedProviders) {
     const providerId = providerDoc.providerId as AiProviderName;
     const apiKey = decryptSecret(providerDoc.apiKeyEncrypted) || "";
     const baseUrl = providerDoc.baseUrl;
-    const model = DEFAULT_MODELS[providerId] || "gpt-3.5-turbo";
+    const model = providerDoc.defaultModel || DEFAULT_MODELS[providerId] || "gpt-3.5-turbo";
 
     // Skip if no API key and not a local Ollama server
     if (!apiKey && providerId !== "ollama") continue;

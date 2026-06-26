@@ -15,6 +15,7 @@ async function getAdminAiProviders(): Promise<AiProviderRow[]> {
     isActive: p.isActive,
     isDefault: p.isDefault,
     baseUrl: p.baseUrl || "",
+    defaultModel: p.defaultModel || "",
     priority: p.priority || 0
   }));
 }

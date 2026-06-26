@@ -50,3 +50,27 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await requireSuperAdmin();
+    const { id } = await params;
+    await connectToDatabase();
+
+    const target = await User.findOne({ _id: id, tenantId: session.user.tenantId });
+    if (!target) {
+      return NextResponse.json({ error: "User was not found." }, { status: 404 });
+    }
+
+    if (target.role === "owner") {
+      return NextResponse.json({ error: "Owner users cannot be deleted here." }, { status: 403 });
+    }
+
+    await User.deleteOne({ _id: id });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to delete user.";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+

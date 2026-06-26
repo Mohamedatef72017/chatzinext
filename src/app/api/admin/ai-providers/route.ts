@@ -4,15 +4,17 @@ import { requireSuperAdmin } from "@/server/auth/guards";
 import { AiProvider } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 import { encryptSecret } from "@/lib/crypto";
-
+import { validateApiKey } from "@/lib/ai/validate-key";
 const schema = z.object({
   providerId: z.enum(["openai", "anthropic", "gemini", "openrouter", "deepseek", "xai", "groq", "ollama"]),
   apiKey: z.string().optional(),
   baseUrl: z.string().optional(),
+  defaultModel: z.string().optional(),
   isActive: z.boolean(),
   isDefault: z.boolean().optional(),
   priority: z.number().optional()
 });
+
 
 export async function POST(request: Request) {
   try {
@@ -43,11 +45,20 @@ export async function POST(request: Request) {
       isActive: body.isActive,
       ...(body.isDefault !== undefined && { isDefault: body.isDefault }),
       ...(body.priority !== undefined && { priority: body.priority }),
-      ...(body.baseUrl !== undefined && { baseUrl: body.baseUrl })
+      ...(body.baseUrl !== undefined && { baseUrl: body.baseUrl }),
+      ...(body.defaultModel !== undefined && { defaultModel: body.defaultModel })
     };
 
     if (body.apiKey && body.apiKey.trim().length > 0) {
-      updateData.apiKeyEncrypted = encryptSecret(body.apiKey.trim());
+      const apiKey = body.apiKey.trim();
+      const isValid = await validateApiKey(body.providerId, apiKey, body.baseUrl);
+      if (!isValid) {
+        return NextResponse.json(
+          { error: "المفتاح غير صالح أو مرفوض. يرجى التأكد من صحة المفتاح وتوفره على رصيد كافٍ." },
+          { status: 400 }
+        );
+      }
+      updateData.apiKeyEncrypted = encryptSecret(apiKey);
     }
 
     if (existing) {

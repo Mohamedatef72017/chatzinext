@@ -10,7 +10,7 @@ const tenantSubscriptionSchema = new Schema(
     stripeCustomerId: { type: String, default: "" },
     stripeSubscriptionId: { type: String, default: "" },
     providerCustomerId: { type: String, default: "" },
-    providerSubscriptionId: { type: String, default: "", index: true },
+    providerSubscriptionId: { type: String, default: "" },
 
     /** Subscription status */
     status: { type: String, default: "inactive", index: true },

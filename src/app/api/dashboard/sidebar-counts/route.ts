@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Types } from "mongoose";
 import { requireSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
-import { Conversation, Ticket } from "@/lib/models";
+import { Conversation, Ticket, Lead } from "@/lib/models";
 
 export const dynamic = "force-dynamic";
 
@@ -16,20 +16,23 @@ export async function GET() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [conversationChannels, activeConversations, openTickets, newTickets] = await Promise.all([
+    const [conversationChannels, activeConversations, unreadConversations, openTickets, newTickets, newLeads] = await Promise.all([
       Conversation.aggregate([
         { $match: { tenantId: tenantObjectId } },
         { $group: { _id: "$channel", count: { $sum: 1 } } },
         { $sort: { count: -1 } },
       ]),
       Conversation.countDocuments({ tenantId, status: { $in: ["open", "pending", "snoozed"] } }),
+      Conversation.countDocuments({ tenantId, unreadCount: { $gt: 0 }, status: { $nin: ["closed", "archived"] } }),
       Ticket.countDocuments({ tenantId, status: { $in: ["open", "in_progress", "pending"] } }),
       Ticket.countDocuments({ tenantId, status: { $in: ["open", "in_progress", "pending"] }, createdAt: { $gte: today } }),
+      Lead.countDocuments({ tenantId, stage: "new" }),
     ]);
 
     return NextResponse.json({
       conversations: {
         active: activeConversations,
+        unread: unreadConversations,
         byChannel: conversationChannels.map((item: any) => ({
           channel: item._id || "website",
           count: item.count || 0,
@@ -39,6 +42,9 @@ export async function GET() {
         open: openTickets,
         new: newTickets,
       },
+      leads: {
+        new: newLeads,
+      }
     });
   } catch (error) {
     return NextResponse.json(

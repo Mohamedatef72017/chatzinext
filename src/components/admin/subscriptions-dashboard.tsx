@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { DollarSign, Users, Activity, ShieldAlert, Clock, AlertTriangle } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 
 type Subscription = {
   id: string;
@@ -24,7 +25,17 @@ type Analytics = {
   distribution: { name: string; count: number }[];
 };
 
-export function SubscriptionsDashboard({ analytics, subscriptions }: { analytics: Analytics; subscriptions: Subscription[] }) {
+export function SubscriptionsDashboard({ 
+  analytics, 
+  subscriptions,
+  currentPage,
+  totalPages
+}: { 
+  analytics: Analytics; 
+  subscriptions: Subscription[];
+  currentPage: number;
+  totalPages: number;
+}) {
   const [loading, setLoading] = useState("");
   const [subs, setSubs] = useState(subscriptions);
 
@@ -175,6 +186,7 @@ export function SubscriptionsDashboard({ analytics, subscriptions }: { analytics
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalPages={totalPages} />
       </section>
     </div>
   );

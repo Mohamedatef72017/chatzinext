@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, UserPlus } from "lucide-react";
+import { Save, UserPlus, Trash2 } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import type { Role } from "@/server/permissions/roles";
 
 type LimitedRole = Exclude<Role, "owner" | "super-admin">;
@@ -26,11 +27,15 @@ const editableRoles: Array<{ value: LimitedRole; label: string }> = [
 export function UsersAdmin({
   users,
   usage,
-  limits
+  limits,
+  currentPage,
+  totalPages
 }: {
   users: ManagedUser[];
   usage: Record<LimitedRole, number>;
   limits: Record<LimitedRole, number>;
+  currentPage: number;
+  totalPages: number;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -75,6 +80,20 @@ export function UsersAdmin({
     const body = await response.json();
     if (!response.ok) {
       setError(body.error || "Unable to update user.");
+      return;
+    }
+    router.refresh();
+  }
+
+  async function deleteUser(id: string) {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+    setError("");
+    const response = await fetch(`/api/admin/users/${id}`, {
+      method: "DELETE",
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      setError(body.error || "Unable to delete user.");
       return;
     }
     router.refresh();
@@ -140,15 +159,21 @@ export function UsersAdmin({
                   {user.role === "owner" ? (
                     <span className="text-slate-400">Primary owner</span>
                   ) : (
-                    <button className="btn-secondary px-3 py-1.5" onClick={() => updateUser(user.id, { isActive: !user.isActive })}>
-                      {user.isActive ? "Deactivate" : "Activate"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button className="btn-secondary px-3 py-1.5" onClick={() => updateUser(user.id, { isActive: !user.isActive })}>
+                        {user.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                      <button className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 p-1.5 rounded-md transition-colors" onClick={() => deleteUser(user.id)} title="Delete User">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        <Pagination currentPage={currentPage} totalPages={totalPages} />
       </section>
     </div>
   );

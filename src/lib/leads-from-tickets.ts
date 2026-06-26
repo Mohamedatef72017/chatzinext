@@ -3,10 +3,20 @@ import { Contact, Conversation, Lead, Ticket } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 
 export function normalizePhone(value?: string | null) {
-  const digits = String(value || "").replace(/[^\d+]/g, "");
+  const easternArabic = "٠١٢٣٤٥٦٧٨٩";
+  const persianArabic = "۰۱۲۳۴۵۶۷۸۹";
+  const normalized = String(value || "").replace(/[٠-٩۰-۹]/g, (char) => {
+    const easternIndex = easternArabic.indexOf(char);
+    if (easternIndex >= 0) return String(easternIndex);
+    const persianIndex = persianArabic.indexOf(char);
+    return persianIndex >= 0 ? String(persianIndex) : char;
+  });
+  const phoneLike = normalized.match(/(?:\+|00)?\d[\d\s\-().]{6,}\d/g)?.[0] || normalized;
+  const digits = phoneLike.replace(/[^\d+]/g, "");
   if (!digits) return "";
   const plus = digits.startsWith("+") ? "+" : "";
-  return plus + digits.replace(/\+/g, "").replace(/^00/, "");
+  const digitOnly = digits.replace(/\D/g, "").replace(/^00/, "");
+  return digitOnly.length >= 7 ? plus + digitOnly : "";
 }
 
 function extractPhoneFromText(...values: Array<string | undefined | null>) {
@@ -38,7 +48,7 @@ export async function syncLeadFromTicket(input: { tenantId: string; ticketId: st
   const requester = ticket.requesterExternalId || conversation?.externalUserId || "";
   const textPool = [ticket.title, ticket.subject, ticket.description, ticket.aiSummary, ticket.triggerReason, requester];
 
-  const phone = normalizePhone(customFields.phone || metadata.phone || metadata.customerPhone || contact?.phone || extractPhoneFromText(...textPool));
+  const phone = normalizePhone(customFields.normalizedPhone || customFields.phone || metadata.normalizedCustomerPhone || metadata.phone || metadata.customerPhone || contact?.phone || extractPhoneFromText(...textPool));
   const email = customFields.email || metadata.email || contact?.email || extractEmailFromText(...textPool);
   const name = customFields.name || metadata.name || metadata.customerName || contact?.name || requester || (phone ? `Lead ${phone.slice(-4)}` : "Potential customer");
   const interest = customFields.interest || metadata.interest || ticket.subject || ticket.title || ticket.category || "";

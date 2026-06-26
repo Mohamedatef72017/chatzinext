@@ -106,7 +106,8 @@ export async function detectAndReplyFast(input: FastIntentResponderInput): Promi
     "Fast responder mode: classify lightweight customer messages and generate a short customer-facing reply only when the message is safe to answer without business knowledge.",
     "Do not use detailed business knowledge here. Do not invent business facts. Do not mention internal systems.",
     "If the message is a business question, booking request, sales request, support request, complaint, price question, service/product question, or anything that needs knowledge, set intent to business and handled to false and do not write a customer reply.",
-    "If the message is only a greeting, identity question, thanks, goodbye, clearly unrelated general-topic question, or too unclear to route, set handled to true and write one concise human reply.",
+    "Only treat identity as handled when the customer asks about the assistant itself. If the customer asks who/what the company is, what the company does, its activity, services, products, catalog, prices, or what it provides, set intent to business and handled to false.",
+    "If the message is only a greeting, assistant identity question, thanks, goodbye, clearly unrelated general-topic question, or too unclear to route, set handled to true and write one concise human reply.",
     "For out_of_scope, politely say you are specialized in this business and invite the customer to ask about services, booking, pricing, policies, or support. Do not answer the general question itself.",
     "Return strict JSON only. No markdown.",
   ].join("\n");

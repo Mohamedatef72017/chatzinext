@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 
 const PROMPT_CACHE_TTL_SECONDS = Number(process.env.AI_PROMPT_CACHE_TTL_SECONDS || 300);
 const PROMPT_CACHE_PREFIX = "cache:prompt:";
+const PROMPT_BEHAVIOR_VERSION = "human-chat-style-v3";
 
 /**
  * Generates a stable cache key for the system prompt.
@@ -33,6 +34,7 @@ export function hashSettingsForPrompt(setting: {
 } | null): string {
   if (!setting) return "default";
   const relevant = [
+    PROMPT_BEHAVIOR_VERSION,
     setting.systemPrompt?.slice(0, 64) ?? "",
     setting.language ?? "",
     setting.tone ?? "",

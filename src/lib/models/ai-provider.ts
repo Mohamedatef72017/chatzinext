@@ -12,6 +12,7 @@ const aiProviderSchema = new Schema(
     name: { type: String, required: true },
     apiKeyEncrypted: { type: String, default: "" },
     baseUrl: { type: String, default: "" }, // Used for Ollama or custom endpoints
+    defaultModel: { type: String, default: "" }, // Optional specific model ID to override the default
     priority: { type: Number, default: 0 }, // Lower number = higher priority
     isDefault: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true }

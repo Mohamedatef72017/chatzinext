@@ -14,6 +14,12 @@ export type TicketAiClassification = {
   confidence?: number;
   collectedFields: Partial<Record<TicketRequiredField, string>>;
 };
+export type TicketClassifierConversationMessage = {
+  sender?: string;
+  direction?: string;
+  content: string;
+  createdAt?: string;
+};
 
 function extractJsonObject(value: string) {
   const text = String(value || "").trim();
@@ -28,8 +34,19 @@ function cleanField(value: unknown, max = 500) { return String(value || "").trim
 function normalizePhone(value: unknown) {
   const raw = String(value || "").trim();
   if (!raw) return "";
-  const cleaned = raw.replace(/[^\d+]/g, "");
-  return cleaned.replace(/\D/g, "").length >= 7 ? cleaned : "";
+  const easternArabic = "٠١٢٣٤٥٦٧٨٩";
+  const persianArabic = "۰۱۲۳۴۵۶۷۸۹";
+  const normalized = raw.replace(/[٠-٩۰-۹]/g, (char) => {
+    const easternIndex = easternArabic.indexOf(char);
+    if (easternIndex >= 0) return String(easternIndex);
+    const persianIndex = persianArabic.indexOf(char);
+    return persianIndex >= 0 ? String(persianIndex) : char;
+  });
+  const phoneLike = normalized.match(/(?:\+|00)?\d[\d\s\-().]{6,}\d/g)?.[0] || normalized;
+  const cleaned = phoneLike.replace(/[^\d+]/g, "");
+  const prefix = cleaned.startsWith("+") ? "+" : "";
+  const digits = cleaned.replace(/\D/g, "").replace(/^00/, "");
+  return digits.length >= 7 ? `${prefix}${digits}` : "";
 }
 function sanitizeFields(value: any): TicketAiClassification["collectedFields"] {
   const fields = value && typeof value === "object" ? value : {};
@@ -64,19 +81,26 @@ export async function classifyTicketMessageWithAi(input: {
   requestedCategory?: TicketCategory;
   requestedPriority?: TicketPriority;
   reasonHint?: string;
+  conversationMessages?: TicketClassifierConversationMessage[];
 }): Promise<TicketAiClassification> {
   const systemPrompt = [
     "You are a structured CRM policy engine for an omnichannel SaaS.",
     "Return strict JSON only. Do not write customer-facing text.",
-    "Decide whether the latest message starts a ticket flow, continues an active ticket flow, temporarily switches to an informational conversation, cancels a pending flow, or does nothing.",
+    "Decide whether the current conversation starts a ticket flow, continues an active ticket flow, temporarily switches to an informational conversation, cancels a pending flow, or does nothing.",
     "A formal ticket must not be created until all policy.requiredFields are collected.",
     "If a pending flow exists and the customer asks for business information instead of providing missing fields, set action='answer_current_message' and keep the flow pending.",
-    "Use semantic meaning, not language-specific keyword rules. Support any customer language.",
-    "Extract only fields explicitly provided by the customer. Do not infer name, phone, or issue description.",
-    "IMPORTANT: For sales, purchase, or booking requests, 'issueDescription' is the specific product, service, or issue the customer wants.",
+    "Use semantic meaning from the full provided conversation context. Support any customer language.",
+    "Extract only fields explicitly provided by the customer anywhere in the provided conversation context. Do not infer name, phone, or issue description.",
+    "For a commercial, booking, support, complaint, or handoff request, 'issueDescription' is the concrete product, service, appointment, problem, or request the customer wants.",
+    "If the latest customer message confirms or asks to proceed, use earlier explicit customer messages in the context to complete collectedFields.",
   ].join("\n");
   const userInput = JSON.stringify({
     latestCustomerMessage: input.message,
+    conversationMessages: (input.conversationMessages || []).slice(-20).map((message) => ({
+      sender: message.sender || message.direction || "unknown",
+      content: String(message.content || "").slice(0, 1500),
+      createdAt: message.createdAt || "",
+    })),
     activeTicketFlow: input.activeState ? { status: input.activeState.status, category: input.activeState.category, priority: input.activeState.priority, requiredFields: input.activeState.requiredFields, missingFields: input.activeState.missingFields, collectedFields: input.activeState.collectedFields } : null,
     policy: { requiredFields: input.policy.requiredFields, allowedCategories: input.policy.categories, defaultPriority: input.policy.defaultPriority, customerVisibleTextPolicy: input.policy.customerVisibleTextPolicy },
     hints: { requestedCategory: input.requestedCategory || null, requestedPriority: input.requestedPriority || null, reasonHint: input.reasonHint || null, languageMode: input.languageMode || "auto", businessCategory: input.businessCategory || "", businessSubcategory: input.businessSubcategory || "", customInstructionsEn: input.customInstructionsEn || "" },

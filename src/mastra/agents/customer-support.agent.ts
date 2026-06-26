@@ -10,13 +10,7 @@ import { summarizeConversationTool } from "@/mastra/tools/summarize-conversation
 import { GLOBAL_CRM_SYSTEM_PROMPT } from "@/lib/ai/build-system-prompt";
 import { CHATZI_MASTRA_MODEL_CONTEXT_KEY } from "@/lib/ai/mastra-model-resolver";
 
-const fallbackAgentModel: MastraModelConfig = process.env.OPENAI_API_KEY
-  ? {
-      providerId: "openai",
-      modelId: "gpt-4o-mini",
-      apiKey: process.env.OPENAI_API_KEY,
-    }
-  : "openai/gpt-4o-mini";
+const fallbackAgentModel: MastraModelConfig = "openai/gpt-4o-mini";
 
 export const customerSupportAgent = new Agent({
   id: "customer-support-agent",
@@ -66,14 +60,14 @@ export const customerSupportAgent = new Agent({
       collapseWhitespace: true,
     }),
     new TokenLimiterProcessor({
-      limit: 4000,
+      limit: 32000,
       strategy: "truncate",
       trimMode: "best-fit",
     }),
   ],
   outputProcessors: [
     new TokenLimiterProcessor({
-      limit: 600,
+      limit: 1000,
       strategy: "truncate",
       countMode: "part",
     }),

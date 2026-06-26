@@ -3,7 +3,7 @@ import { Types } from "mongoose";
 import { Bot, Conversation, Message, Ticket } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 import { publishRealtimeEvent } from "@/lib/realtime";
-import { syncLeadFromTicket } from "@/lib/leads-from-tickets";
+import { normalizePhone, syncLeadFromTicket } from "@/lib/leads-from-tickets";
 
 export type TicketCategory =
   | "technical_support"
@@ -37,6 +37,10 @@ export type TicketIntentClassification = {
   reason: string;
 };
 
+const OPEN_TICKET_STATUSES = ["open", "pending", "in_progress"];
+const EASTERN_ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+const PERSIAN_ARABIC_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
+
 function buildSubject(input: {
   category: TicketCategory;
   triggerReason: string;
@@ -44,6 +48,109 @@ function buildSubject(input: {
 }) {
   const label = input.category.replace(/_/g, " ");
   return `${label} - ${input.externalUserId}`;
+}
+
+function getInputMetadata(input: EnsureTicketInput) {
+  return input.metadata && typeof input.metadata === "object" ? input.metadata : {};
+}
+
+function getCustomerPhoneForTicket(input: EnsureTicketInput) {
+  const metadata = getInputMetadata(input) as Record<string, unknown>;
+  return normalizePhone(
+    [
+      metadata.normalizedCustomerPhone,
+      metadata.customerPhone,
+      metadata.phone,
+      (metadata as any).contactPhone,
+      (metadata as any).whatsapp,
+      input.subject,
+      input.description,
+      input.aiSummary,
+    ]
+      .filter(Boolean)
+      .join("\n")
+  );
+}
+
+function normalizeDigits(value: string) {
+  return String(value || "").replace(/[٠-٩۰-۹]/g, (char) => {
+    const easternIndex = EASTERN_ARABIC_DIGITS.indexOf(char);
+    if (easternIndex >= 0) return String(easternIndex);
+    const persianIndex = PERSIAN_ARABIC_DIGITS.indexOf(char);
+    return persianIndex >= 0 ? String(persianIndex) : char;
+  });
+}
+
+function normalizeIssueIdentityText(value: string) {
+  return normalizeDigits(value)
+    .toLowerCase()
+    .replace(/(?:\+|00)?\d[\d\s\-().]{6,}\d/g, " ")
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, " ")
+    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 500);
+}
+
+function getIssueIdentityText(input: EnsureTicketInput) {
+  const metadata = getInputMetadata(input) as Record<string, unknown>;
+  const candidates = [
+    metadata.issueDescription,
+    metadata.interest,
+    input.subject,
+    input.description,
+  ];
+  for (const candidate of candidates) {
+    const normalized = normalizeIssueIdentityText(String(candidate || ""));
+    if (normalized) return normalized;
+  }
+  return "";
+}
+
+export function buildTicketIssueIdentityKey(input: EnsureTicketInput) {
+  const issueText = getIssueIdentityText(input);
+  const fallbackScope = issueText ? "" : input.conversationId;
+  const source = [input.tenantId, input.botId, input.category, issueText || input.triggerReason, fallbackScope].join("|");
+  return crypto.createHash("sha256").update(source).digest("hex");
+}
+
+export function buildTicketDedupeMatches(input: EnsureTicketInput, issueFingerprint: string, issueIdentityKey: string) {
+  const normalizedCustomerPhone = getCustomerPhoneForTicket(input);
+  const matches: Record<string, unknown>[] = [
+    { conversationId: input.conversationId, "metadata.issueFingerprint": issueFingerprint },
+    { conversationId: input.conversationId, "metadata.issueIdentityKey": issueIdentityKey },
+  ];
+
+  if (normalizedCustomerPhone) {
+    matches.push(
+      {
+        "metadata.normalizedCustomerPhone": normalizedCustomerPhone,
+        "metadata.issueIdentityKey": issueIdentityKey,
+      },
+      {
+        "customFields.normalizedPhone": normalizedCustomerPhone,
+        "metadata.issueIdentityKey": issueIdentityKey,
+      }
+    );
+  }
+
+  return matches;
+}
+
+function withTicketCustomerMetadata(input: EnsureTicketInput, issueFingerprint: string, issueIdentityKey: string) {
+  const metadata = getInputMetadata(input);
+  const normalizedCustomerPhone = getCustomerPhoneForTicket(input);
+  return {
+    ...metadata,
+    issueFingerprint,
+    issueIdentityKey,
+    ...(normalizedCustomerPhone
+      ? {
+          customerPhone: String((metadata as any).customerPhone || (metadata as any).phone || normalizedCustomerPhone),
+          normalizedCustomerPhone,
+        }
+      : {}),
+  };
 }
 
 export function classifyTicketIntent(_message: string): TicketIntentClassification {
@@ -69,12 +176,20 @@ export async function ensureTicketForConversation(input: EnsureTicketInput) {
   if (!conversation) throw new Error("المحادثة غير موجودة.");
 
   const issueFingerprint = buildTicketIssueFingerprint(input);
+  const issueIdentityKey = buildTicketIssueIdentityKey(input);
+  const existingTicketMatches = buildTicketDedupeMatches(input, issueFingerprint, issueIdentityKey);
+
+  if (conversation.contactId) {
+    existingTicketMatches.push({
+      contactId: conversation.contactId,
+      "metadata.issueIdentityKey": issueIdentityKey,
+    });
+  }
 
   const existing = await Ticket.findOne({
     tenantId: input.tenantId,
-    conversationId: input.conversationId,
-    status: { $in: ["open", "pending", "in_progress"] },
-    $or: [{ "metadata.issueFingerprint": issueFingerprint }, { category: input.category }],
+    status: { $in: OPEN_TICKET_STATUSES },
+    $or: existingTicketMatches,
   });
 
   if (existing) {
@@ -84,8 +199,9 @@ export async function ensureTicketForConversation(input: EnsureTicketInput) {
       priority: input.priority || existing.priority,
       metadata: {
         ...(existing.metadata && typeof existing.metadata === "object" ? existing.metadata : {}),
-        ...(input.metadata || {}),
+        ...withTicketCustomerMetadata(input, issueFingerprint, issueIdentityKey),
         issueFingerprint,
+        issueIdentityKey,
         lastTriggerReason: input.triggerReason,
       },
     };
@@ -158,7 +274,7 @@ export async function ensureTicketForConversation(input: EnsureTicketInput) {
       `Bot: ${bot?.name || "-"}\nReason: ${input.triggerReason}\nCustomer: ${
         conversation.externalUserId
       }`,
-    metadata: { ...(input.metadata || {}), issueFingerprint },
+    metadata: withTicketCustomerMetadata(input, issueFingerprint, issueIdentityKey),
   });
 
   await syncLeadFromTicket({ tenantId: input.tenantId, ticketId: createdTicket._id.toString() }).catch(() => null);

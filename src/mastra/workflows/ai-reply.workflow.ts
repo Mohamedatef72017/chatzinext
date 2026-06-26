@@ -186,6 +186,16 @@ const aiReplyRunContextSchema = aiReplyInputSchema.extend({
   tenantName: z.string().optional(),
   needsLeadInfo: z.boolean().optional(),
   conversationMetadata: z.record(z.unknown()).optional(),
+  recentMessages: z
+    .array(
+      z.object({
+        sender: z.string().optional(),
+        direction: z.string().optional(),
+        content: z.string(),
+        createdAt: z.string().optional(),
+      })
+    )
+    .optional(),
   ticketFlow: z.any().optional(),
   ticketFlowContext: z.string().optional(),
 });
@@ -271,6 +281,27 @@ function buildRuntimeContext(inputData: AiReplyRunContext, ticketId?: string) {
   }
 
   return parts.length ? parts.join("; ") : "";
+}
+
+function hasActiveTicketFlow(metadata?: Record<string, unknown>) {
+  const status = String(((metadata as any)?.crmTicketFlow as any)?.status || "");
+  return ["collecting_required_fields", "paused_for_context", "ready_to_create"].includes(status);
+}
+
+function shouldBypassFastResponder(inputData: AiReplyRunContext) {
+  if (hasActiveTicketFlow(inputData.conversationMetadata)) return true;
+  return Boolean(inputData.ticketFlow && inputData.ticketFlow.action !== "none");
+}
+
+function businessIntentFromTicketCategory(category?: string): BusinessIntent | undefined {
+  const map: Partial<Record<string, BusinessIntent>> = {
+    sales_request: "sales",
+    booking_request: "appointment",
+    technical_support: "support",
+    complaint: "complaint",
+    human_request: "human_request",
+  };
+  return category ? map[category] : undefined;
 }
 
 
@@ -363,6 +394,16 @@ const loadConversationStep = createStep({
 
     if (!userMessage) throw new Error("تعذر العثور على رسالة العميل.");
 
+    const recentMessages = await Message.find({
+      tenantId: inputData.tenantId,
+      botId: inputData.botId,
+      conversationId: conversation._id,
+    })
+      .sort({ createdAt: -1 })
+      .limit(Number(process.env.AI_CRM_CONTEXT_MESSAGES || 20))
+      .select("sender direction content createdAt")
+      .lean();
+
     const shouldSkip =
       conversation.status === "closed" ||
       conversation.status === "resolved" ||
@@ -412,6 +453,14 @@ const loadConversationStep = createStep({
         : null,
       tenantName: tenant.name,
       conversationMetadata: (conversation.metadata && typeof conversation.metadata === "object" ? conversation.metadata : {}) as Record<string, unknown>,
+      recentMessages: recentMessages
+        .reverse()
+        .map((message) => ({
+          sender: String(message.sender || ""),
+          direction: String(message.direction || ""),
+          content: String(message.content || ""),
+          createdAt: message.createdAt?.toISOString?.() || "",
+        })),
       unifiedPrompt: await (async () => {
         const settingsHash = hashSettingsForPrompt(setting ?? null);
         const cacheKey = buildPromptCacheKey(inputData.tenantId, inputData.botId, settingsHash);
@@ -442,6 +491,7 @@ const fastReplyStep = createStep({
   outputSchema: aiReplyRunContextSchema,
   execute: async ({ inputData }) => {
     if (inputData.action) return inputData;
+    if (shouldBypassFastResponder(inputData)) return inputData;
 
     const fast = await detectAndReplyFast({
       tenantId: inputData.tenantId,
@@ -525,6 +575,7 @@ const routeHandoffStep = createStep({
       businessCategory: inputData.setting?.businessCategory,
       businessSubcategory: inputData.setting?.businessSubcategory,
       customInstructionsEn: [inputData.setting?.categoryPromptEn, inputData.setting?.customInstructionsEn].filter(Boolean).join("\n\n"),
+      conversationMessages: inputData.recentMessages,
     });
 
     if (ticketFlow.action === "none") return inputData;
@@ -544,6 +595,7 @@ const routeHandoffStep = createStep({
       ticketFlow,
       ticketFlowContext: buildTicketFlowContext(ticketFlow),
       needsLeadInfo: ticketFlow.action === "ask_missing_fields",
+      businessIntent: businessIntentFromTicketCategory(ticketFlow.category) || inputData.businessIntent,
       reason: ticketFlow.reason || "crm_ticket_ai_policy_engine",
     };
   },
@@ -1015,9 +1067,9 @@ export const aiReplyWorkflow = createWorkflow({
   outputSchema: aiReplyOutputSchema,
 })
   .then(loadConversationStep)
-  .then(fastReplyStep)
   .then(moderationStep)
   .then(routeHandoffStep)
+  .then(fastReplyStep)
   .then(quotaStep)
   .then(knowledgeStep)
   .then(generateReplyStep)

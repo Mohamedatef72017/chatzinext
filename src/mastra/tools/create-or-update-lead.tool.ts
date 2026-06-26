@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Types } from "mongoose";
 import { Conversation, Lead } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
+import { normalizePhone } from "@/lib/leads-from-tickets";
 
 const leadToolInputSchema = z.object({
   tenantId: z.string().min(1),
@@ -43,10 +44,15 @@ export const createOrUpdateLeadTool = createTool({
       ? input.contactId
       : conversation.contactId?.toString?.();
 
-    const filter: Record<string, unknown> = {
-      tenantId: input.tenantId,
-      conversationId: input.conversationId,
-    };
+    const normalizedPhone = normalizePhone(input.phone);
+    const orFilters: Record<string, unknown>[] = [];
+    if (normalizedPhone) orFilters.push({ normalizedPhone });
+    if (input.email) orFilters.push({ email: input.email.trim().toLowerCase() });
+    if (contactId) orFilters.push({ contactId });
+
+    const filter: Record<string, unknown> = orFilters.length
+      ? { tenantId: input.tenantId, $or: orFilters }
+      : { tenantId: input.tenantId, conversationId: input.conversationId };
 
     const lead = await Lead.findOneAndUpdate(
       filter,
@@ -56,8 +62,9 @@ export const createOrUpdateLeadTool = createTool({
           conversationId: input.conversationId,
           contactId,
           name: input.name || "",
-          email: input.email || "",
+          email: input.email?.trim().toLowerCase() || "",
           phone: input.phone || "",
+          normalizedPhone,
           interest: input.interest || "",
           notes: input.notes || "",
           sourceChannel: input.sourceChannel || conversation.channel || conversation.provider || "",

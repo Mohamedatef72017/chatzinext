@@ -18,32 +18,62 @@ export default async function DashboardPage() {
 
   const kpis = [
     {
-      label: isAr ? "Chats Today" : "Chats Today",
+      label: isAr ? "الرسائل اليوم" : "Chats Today",
       value: summary.todayMessages,
       helper: isAr ? "رسائل اليوم عبر كل القنوات" : "Messages across all channels today",
       icon: MessageSquare,
       tone: "from-indigo-500/15 to-indigo-500/5 text-indigo-700 dark:text-indigo-300",
     },
     {
-      label: isAr ? "Active Conversations" : "Active Conversations",
+      label: isAr ? "المحادثات المفتوحة" : "Active Conversations",
       value: summary.activeConversations,
       helper: isAr ? "محادثات مفتوحة أو بانتظار المعالجة" : "Open or pending threads right now",
       icon: Users,
       tone: "from-emerald-500/15 to-emerald-500/5 text-emerald-700 dark:text-emerald-300",
     },
     {
-      label: isAr ? "AI Resolution Rate" : "AI Resolution Rate",
+      label: isAr ? "إغلاقات الذكاء الاصطناعي" : "AI Resolution Rate",
       value: `${summary.aiResolutionRate}%`,
       helper: isAr ? "نسبة الإغلاقات التي تمت آليًا" : "Resolved by AI workflows",
       icon: Bot,
       tone: "from-violet-500/15 to-violet-500/5 text-violet-700 dark:text-violet-300",
     },
     {
-      label: isAr ? "Human Resolution Rate" : "Human Resolution Rate",
+      label: isAr ? "إغلاقات فريق العمل" : "Human Resolution Rate",
       value: `${summary.humanResolutionRate}%`,
       helper: isAr ? "نسبة الإغلاقات بواسطة الفريق" : "Resolved by human agents",
       icon: Activity,
       tone: "from-amber-500/15 to-amber-500/5 text-amber-700 dark:text-amber-300",
+    },
+    {
+      label: isAr ? "التذاكر (مفتوحة / منتهية)" : "Tickets (Open / Resolved)",
+      value: `${summary.tickets} / ${summary.resolvedTickets}`,
+      helper: isAr ? `من إجمالي ${summary.totalTickets} تذكرة` : `Out of ${summary.totalTickets} total tickets`,
+      icon: PlugZap,
+      tone: "from-rose-500/15 to-rose-500/5 text-rose-700 dark:text-rose-300",
+    },
+    {
+      label: isAr ? "العملاء المحتملون (Leads)" : "Leads",
+      value: summary.totalLeads,
+      helper: isAr ? "العملاء المهتمين بالخدمات" : "Customers interested in your services",
+      icon: Users,
+      tone: "from-blue-500/15 to-blue-500/5 text-blue-700 dark:text-blue-300",
+    },
+    {
+      label: isAr ? "وكلاء الدعم" : "Support Agents",
+      value: summary.totalUsers,
+      helper: isAr ? "أعضاء فريق العمل المضافين" : "Team members added to your account",
+      icon: Users,
+      tone: "from-cyan-500/15 to-cyan-500/5 text-cyan-700 dark:text-cyan-300",
+    },
+    {
+      label: isAr ? "حالة الاشتراك" : "Subscription",
+      value: summary.subscriptionStatus === "active" ? (isAr ? "نشط" : "Active") : summary.subscriptionStatus === "trialing" ? (isAr ? "تجريبي" : "Trialing") : summary.subscriptionStatus,
+      helper: summary.subscriptionEndsAt 
+        ? (isAr ? `ينتهي في ${new Date(summary.subscriptionEndsAt).toLocaleDateString("ar-EG")}` : `Ends on ${new Date(summary.subscriptionEndsAt).toLocaleDateString("en-US")}`) 
+        : (isAr ? "اشتراك مدى الحياة" : "Lifetime Subscription"),
+      icon: Activity,
+      tone: "from-emerald-500/15 to-emerald-500/5 text-emerald-700 dark:text-emerald-300",
     },
   ];
 

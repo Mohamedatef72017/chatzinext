@@ -29,7 +29,7 @@ describe("Chatzi AI reply behavior smoke tests", () => {
 
     expect(source).toContain("rankScore");
     expect(source).toContain("const score = Math.round(semanticScore * 100);");
-    expect(source).toContain("(b.rankScore ?? b.score) - (a.rankScore ?? a.score)");
+    expect(source.replace(/\s+/g, "")).toContain("(b.rankScore??b.score)-(a.rankScore??a.score)");
     expect(source).not.toContain("const score = Math.round((semanticScore * 0.72 + keywordScore * 0.28) * 100);");
   });
 
@@ -47,5 +47,32 @@ describe("Chatzi AI reply behavior smoke tests", () => {
 
     expect(source).toContain('inputData.reason === "explicit_human_request"');
     expect(source).not.toContain('"complaint",\n        "technical_support"');
+  });
+
+  it("keeps replies human and lightly expressive without overdoing emojis", () => {
+    const promptSource = readSource("src/lib/ai/build-system-prompt.ts");
+    const cacheSource = readSource("src/lib/ai/prompt-cache.ts");
+
+    expect(promptSource).toContain("HUMAN CHAT STYLE");
+    expect(promptSource).toContain("not overly soft, sugary, or exaggerated");
+    expect(promptSource).toContain("use at most one relevant emoji");
+    expect(promptSource).toContain("flower or smile is acceptable");
+    expect(cacheSource).toContain("human-chat-style-v3");
+  });
+
+  it("keeps emotion policy in the unified prompt instead of runtime chat instructions", () => {
+    const promptSource = readSource("src/lib/ai/build-system-prompt.ts");
+    const safeReplySource = readSource("src/lib/ai/safe-customer-reply.ts");
+    const ticketFlowSource = readSource("src/lib/crm/ticket-flow-engine.ts");
+    const workflowSource = readSource("src/mastra/workflows/ai-reply.workflow.ts");
+
+    expect(promptSource).toContain("telling the assistant to stop talking");
+    expect(promptSource).toContain("do not push sales");
+    expect(ticketFlowSource).not.toContain("Emotion override");
+    expect(ticketFlowSource).not.toContain("angry, abusive");
+    expect(workflowSource).not.toContain("Emotion override");
+    expect(workflowSource).not.toContain("angry, abusive");
+    expect(safeReplySource).not.toContain("asking the assistant to stop talking");
+    expect(safeReplySource).not.toContain("Do not sell, list options, ask discovery questions");
   });
 });

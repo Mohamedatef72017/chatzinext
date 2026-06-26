@@ -614,26 +614,40 @@ export async function getSubscriptionAnalytics() {
   };
 }
 
-export async function getAllSubscriptions() {
+export async function getAllSubscriptions(page: number = 1, limit: number = 20) {
   await connectToDatabase();
-  const subs = await TenantSubscription.find()
-    .populate("tenantId")
-    .populate("planId")
-    .sort({ createdAt: -1 })
-    .lean();
+  const skip = (page - 1) * limit;
 
-  return subs.map((sub: any) => ({
-    id: sub._id.toString(),
-    tenantName: sub.tenantId?.name || "Unknown",
-    tenantSlug: sub.tenantId?.slug || "",
-    planName: sub.planId?.name || "الخطة المجانية",
-    status: sub.status,
-    usedMessages: sub.usedMessages,
-    monthlyLimit: sub.monthlyMessageLimit,
-    extraCredits: sub.extraMessageCredits,
-    currentPeriodEnd: sub.currentPeriodEnd?.toISOString() || "",
-    cancelAtPeriodEnd: sub.cancelAtPeriodEnd ?? false,
-    trialEndsAt: sub.trialEndsAt?.toISOString() ?? null,
-    graceEndsAt: sub.graceEndsAt?.toISOString() ?? null
-  }));
+  const [totalCount, subs] = await Promise.all([
+    TenantSubscription.countDocuments(),
+    TenantSubscription.find()
+      .populate("tenantId")
+      .populate("planId")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+  ]);
+
+  return {
+    subscriptions: subs.map((sub: any) => ({
+      id: sub._id.toString(),
+      tenantName: sub.tenantId?.name || "Unknown",
+      tenantSlug: sub.tenantId?.slug || "",
+      planName: sub.planId?.name || "الخطة المجانية",
+      status: sub.status,
+      usedMessages: sub.usedMessages,
+      monthlyLimit: sub.monthlyMessageLimit,
+      extraCredits: sub.extraMessageCredits,
+      currentPeriodEnd: sub.currentPeriodEnd?.toISOString() || "",
+      cancelAtPeriodEnd: sub.cancelAtPeriodEnd ?? false,
+      trialEndsAt: sub.trialEndsAt?.toISOString() ?? null,
+      graceEndsAt: sub.graceEndsAt?.toISOString() ?? null
+    })),
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / limit) || 1,
+      totalCount
+    }
+  };
 }

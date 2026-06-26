@@ -860,10 +860,9 @@ function splitIntoChunks(text: string) {
 }
 
 async function createEmbedding(text: string, apiKey?: string): Promise<{ embedding: number[]; provider: string }> {
-  const finalApiKey = apiKey || process.env.OPENAI_API_KEY;
-  if (finalApiKey) {
+  if (apiKey) {
     try {
-      const client = new OpenAI({ apiKey: finalApiKey });
+      const client = new OpenAI({ apiKey: apiKey });
       const response = await client.embeddings.create({
         model: process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small",
         input: text.slice(0, 8000)

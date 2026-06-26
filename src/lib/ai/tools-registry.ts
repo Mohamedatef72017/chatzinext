@@ -3,6 +3,7 @@ import { Lead } from "@/lib/models/lead";
 import { connectToDatabase } from "@/lib/mongodb";
 import { ensureTicketForConversation, type TicketCategory, type TicketPriority } from "@/lib/tickets";
 import { processTicketFlow } from "@/lib/crm/ticket-flow-engine";
+import { normalizePhone } from "@/lib/leads-from-tickets";
 
 /**
  * Registry mapping tool names to their OpenAI function definitions.
@@ -68,7 +69,9 @@ export const AVAILABLE_TOOLS: Record<string, any> = {
             enum: ["low", "medium", "high", "urgent"],
             description: "Ticket priority based on urgency signals in the conversation"
           },
-          category: { type: "string", enum: ["technical_support", "complaint", "human_request", "booking_request", "sales_request", "ai_failed", "general"], description: "Ticket category for routing" }
+          category: { type: "string", enum: ["technical_support", "complaint", "human_request", "booking_request", "sales_request", "ai_failed", "general"], description: "Ticket category for routing" },
+          customerName: { type: "string", description: "Customer name if explicitly provided" },
+          customerPhone: { type: "string", description: "Customer phone or WhatsApp number if explicitly provided" }
         },
         required: ["title", "description"]
       }
@@ -149,20 +152,25 @@ export const TOOL_EXECUTORS: Record<string, Function> = {
     const { name, email, phone, company, interest, notes, score } = args;
 
     if (!name?.trim()) return JSON.stringify({ ok: false, event: "lead_missing_required_field", missingFields: ["name"] });
+    const normalizedPhone = normalizePhone(phone);
 
     const leadData = {
       name,
-      ...(email && { email }),
-      ...(phone && { phone }),
+      ...(email && { email: String(email).trim().toLowerCase() }),
+      ...(phone && { phone, normalizedPhone }),
       ...(company && { company }),
       ...(interest && { interest }),
       ...(notes && { notes }),
       ...(score !== undefined && { score }),
     };
 
-    // Use contactId when available for accurate dedup; fall back to conversationId
-    const dedupeFilter = context.contactId
-      ? { tenantId: context.tenantId, contactId: context.contactId }
+    const orFilters: Record<string, unknown>[] = [];
+    if (normalizedPhone) orFilters.push({ normalizedPhone });
+    if (email) orFilters.push({ email: String(email).trim().toLowerCase() });
+    if (context.contactId) orFilters.push({ contactId: context.contactId });
+
+    const dedupeFilter = orFilters.length
+      ? { tenantId: context.tenantId, $or: orFilters }
       : { tenantId: context.tenantId, conversationId: context.conversationId };
 
     await Lead.findOneAndUpdate(
@@ -188,7 +196,7 @@ export const TOOL_EXECUTORS: Record<string, Function> = {
 
   create_ticket: async (args: any, context: ToolContext) => {
     await connectToDatabase();
-    const { title, description, priority = "medium", category = "general" } = args;
+    const { title, description, priority = "medium", category = "general", customerName, customerPhone } = args;
 
     if (!title?.trim() && !description?.trim()) return JSON.stringify({ ok: false, event: "ticket_tool_missing_input" });
 
@@ -199,7 +207,14 @@ export const TOOL_EXECUTORS: Record<string, Function> = {
       tenantId: context.tenantId,
       botId,
       conversationId: context.conversationId,
-      message: [title, description].filter(Boolean).join("\n"),
+      message: [
+        title,
+        description,
+      ].filter(Boolean).join("\n"),
+      providedFields: {
+        name: customerName,
+        phone: customerPhone,
+      },
       conversationMetadata: context.conversation?.metadata || undefined,
       detectedIntent: {
         shouldCreate: true,
@@ -214,6 +229,8 @@ export const TOOL_EXECUTORS: Record<string, Function> = {
     }
 
     const fields = flow.collectedFields || {};
+    const resolvedCustomerName = String(fields.name || customerName || "").trim();
+    const resolvedCustomerPhone = String(fields.phone || customerPhone || "").trim();
     const ticket = await ensureTicketForConversation({
       tenantId: context.tenantId,
       botId,
@@ -227,8 +244,8 @@ export const TOOL_EXECUTORS: Record<string, Function> = {
       metadata: {
         tool: "create_ticket",
         aiWorkflow: true,
-        customerName: fields.name || "",
-        customerPhone: fields.phone || "",
+        customerName: resolvedCustomerName,
+        customerPhone: resolvedCustomerPhone,
         issueDescription: fields.issueDescription || "",
         crmTicketFlow: flow.state || null,
       },

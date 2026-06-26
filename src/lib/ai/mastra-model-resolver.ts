@@ -104,7 +104,7 @@ export async function resolveMastraModelForBot(input: {
       ? await AiProvider.findOne({ providerId: matchingProviderId, isActive: true }).lean()
       : null;
     const providerApiKey = providerDoc ? decryptSecret(providerDoc.apiKeyEncrypted) || "" : "";
-    const modelName = aiModel.model || DEFAULT_PROVIDER_MODELS[provider] || DEFAULT_PROVIDER_MODELS.openai;
+    const modelName = aiModel.model || (providerDoc?.defaultModel) || DEFAULT_PROVIDER_MODELS[provider] || DEFAULT_PROVIDER_MODELS.openai;
     const resolvedKey = apiKey || providerApiKey;
 
     if (resolvedKey) {
@@ -133,7 +133,7 @@ export async function resolveMastraModelForBot(input: {
     const apiKey = decryptSecret(providerDoc.apiKeyEncrypted) || "";
     if (!apiKey && provider !== "ollama") continue;
 
-    const modelName = DEFAULT_PROVIDER_MODELS[provider] || DEFAULT_PROVIDER_MODELS.openai;
+    const modelName = providerDoc.defaultModel || DEFAULT_PROVIDER_MODELS[provider] || DEFAULT_PROVIDER_MODELS.openai;
 
     return {
       model: buildModelConfig({

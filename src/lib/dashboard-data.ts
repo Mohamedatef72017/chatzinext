@@ -1,4 +1,4 @@
-import { Bot, Channel, Conversation, Message, Tenant, WebhookLog, AiSetting, AiModel, AiPersona, Ticket } from "@/lib/models";
+import { Bot, Channel, Conversation, Message, Tenant, WebhookLog, AiSetting, AiModel, AiPersona, Ticket, Lead, User, TenantSubscription } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 
 export async function getTenantSummary(tenantId: string) {
@@ -6,7 +6,11 @@ export async function getTenantSummary(tenantId: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [bots, conversations, messages, activeChannels, tenant, activeConversations, aiResolved, humanResolved, todayMessages, tickets] = await Promise.all([
+  const [
+    bots, conversations, messages, activeChannels, tenant, activeConversations, 
+    aiResolved, humanResolved, todayMessages, tickets,
+    resolvedTickets, totalTickets, totalLeads, totalUsers, subscription
+  ] = await Promise.all([
     Bot.countDocuments({ tenantId }),
     Conversation.countDocuments({ tenantId }),
     Message.countDocuments({ tenantId }),
@@ -17,6 +21,11 @@ export async function getTenantSummary(tenantId: string) {
     Conversation.countDocuments({ tenantId, status: { $in: ["resolved", "closed"] }, mode: { $in: ["human", "hybrid"] } }),
     Message.countDocuments({ tenantId, createdAt: { $gte: today } }),
     Ticket.countDocuments({ tenantId, status: { $in: ["open", "in_progress", "pending"] } }),
+    Ticket.countDocuments({ tenantId, status: "resolved" }),
+    Ticket.countDocuments({ tenantId }),
+    Lead.countDocuments({ tenantId }),
+    User.countDocuments({ tenantId }),
+    TenantSubscription.findOne({ tenantId }).lean()
   ]);
   const totalResolved = aiResolved + humanResolved;
   return {
@@ -26,6 +35,12 @@ export async function getTenantSummary(tenantId: string) {
     activeChannels,
     activeConversations,
     tickets,
+    resolvedTickets,
+    totalTickets,
+    totalLeads,
+    totalUsers,
+    subscriptionStatus: subscription?.status || "active",
+    subscriptionEndsAt: subscription?.currentPeriodEnd ? subscription.currentPeriodEnd.toISOString() : null,
     todayMessages,
     aiResolutionRate: totalResolved ? Math.round((aiResolved / totalResolved) * 100) : 0,
     humanResolutionRate: totalResolved ? Math.round((humanResolved / totalResolved) * 100) : 0,

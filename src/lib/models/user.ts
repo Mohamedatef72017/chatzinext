@@ -23,6 +23,22 @@ const userSchema = new Schema(
       maxlength: 180,
     },
 
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    phone: {
+      type: String,
+      trim: true,
+      maxlength: 30,
+    },
+
+    phoneVerified: {
+      type: Boolean,
+      default: false,
+    },
+
     password: {
       type: String,
       required: true,
