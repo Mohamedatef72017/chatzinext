@@ -26,7 +26,7 @@ type PlanRow = {
   interval: string;
   priceCents: number;
   currency: string;
-  aiMessageLimit: number;
+  aiMessageLimit?: number | null;
   stripePriceId: string;
   isPopular: boolean;
   isActive: boolean;

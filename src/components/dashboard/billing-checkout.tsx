@@ -20,7 +20,7 @@ type BillingItem = {
   currency: string;
   isActive: boolean;
   interval?: string;
-  aiMessageLimit?: number;
+  aiMessageLimit?: number | null;
   messageCredits?: number;
   isPopular?: boolean;
   features?: PlanFeature[];
