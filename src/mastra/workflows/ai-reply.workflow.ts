@@ -17,7 +17,7 @@ import {
   setCachedSystemPrompt,
 } from "@/lib/ai/prompt-cache";
 import { buildSafeCustomerReply } from "@/lib/ai/safe-customer-reply";
-import { detectBusinessIntent, isDirectKnowledgeIntent } from "@/lib/ai/business-intent";
+import { detectBusinessIntent, isDirectKnowledgeIntent, isPurchaseReadyIntent, isHighSensitivityIntent, type BusinessIntent } from "@/lib/ai/business-intent";
 import { buildEntitiesPrompt, searchKnowledgeEntities } from "@/lib/knowledge-entities";
 import { assertAndReserveQuota } from "@/lib/quota";
 import { buildKnowledgePrompt, searchKnowledge } from "@/lib/knowledge";
@@ -240,6 +240,17 @@ function buildRuntimeContext(inputData: AiReplyRunContext, ticketId?: string) {
 
   if (inputData.businessIntent) {
     parts.push(`businessIntent=${inputData.businessIntent}`);
+
+    const intent = inputData.businessIntent as BusinessIntent;
+    if (isPurchaseReadyIntent(intent)) {
+      parts.push(
+        "intentSignal=purchase_ready → customer is close to booking or buying; skip re-explaining services; move directly to the next concrete action; close warmly and concisely"
+      );
+    } else if (isHighSensitivityIntent(intent)) {
+      parts.push(
+        "intentSignal=high_sensitivity → customer needs careful emotional handling; lead with empathy and acknowledgment before anything else; do NOT upsell or cross-sell; prioritize resolution over all else"
+      );
+    }
   }
   if (inputData.reason) {
     parts.push(`reason=${inputData.reason}`);
