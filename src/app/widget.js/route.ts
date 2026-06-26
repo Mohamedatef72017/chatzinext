@@ -984,17 +984,21 @@ export async function GET() {
   });
 
   async function pollForAssistantReply(sinceIso) {
-    var maxAttempts = Number(window.CHATZI_WIDGET_POLL_ATTEMPTS || 18);
-    var delayMs = Number(window.CHATZI_WIDGET_POLL_DELAY_MS || 900);
+    var maxAttempts = Number(window.CHATZI_WIDGET_POLL_ATTEMPTS || 2);
+    var waitMs = Number(window.CHATZI_WIDGET_POLL_WAIT_MS || 12000);
+    var intervalMs = Number(window.CHATZI_WIDGET_POLL_INTERVAL_MS || 250);
+    var retryDelayMs = Number(window.CHATZI_WIDGET_POLL_RETRY_DELAY_MS || 500);
     var seen = {};
     for (var attempt = 0; attempt < maxAttempts; attempt += 1) {
-      await new Promise(function(resolve) { setTimeout(resolve, delayMs); });
+      if (attempt > 0) await new Promise(function(resolve) { setTimeout(resolve, retryDelayMs); });
       try {
         var url = apiBase + "/api/widget/messages?" + new URLSearchParams({
           botId: botId,
           conversationId: state.conversationId,
           visitorId: visitorId,
-          after: sinceIso
+          after: sinceIso,
+          waitMs: String(waitMs),
+          intervalMs: String(intervalMs)
         }).toString();
         var res = await fetch(url, { method: "GET" });
         var data = await res.json();

@@ -1,6 +1,7 @@
 import {
   buildTicketDedupeMatches,
   buildTicketIssueIdentityKey,
+  mergeTicketIssueTopics,
   type EnsureTicketInput,
 } from "@/lib/tickets";
 
@@ -24,7 +25,7 @@ function ticketInput(overrides: Partial<EnsureTicketInput> = {}): EnsureTicketIn
 }
 
 describe("ticket dedupe identity", () => {
-  it("dedupes by same customer and same issue, not by phone alone", () => {
+  it("aggregates different issues into one open customer ticket while keeping distinct topic identities", () => {
     const first = ticketInput();
     const second = ticketInput({
       subject: "Nokia 120 availability",
@@ -42,16 +43,13 @@ describe("ticket dedupe identity", () => {
     expect(firstIdentity).not.toBe(secondIdentity);
 
     const matches = buildTicketDedupeMatches(first, "same-request-fingerprint", firstIdentity);
-    expect(matches).toContainEqual({
-      "metadata.normalizedCustomerPhone": "01095843183",
-      "metadata.issueIdentityKey": firstIdentity,
-    });
-    expect(matches).not.toContainEqual({
-      "metadata.normalizedCustomerPhone": "01095843183",
-    });
-    expect(matches).not.toContainEqual({
-      "customFields.normalizedPhone": "01095843183",
-    });
+    expect(matches).toContainEqual({ "metadata.normalizedCustomerPhone": "01095843183" });
+    expect(matches).toContainEqual({ "customFields.normalizedPhone": "01095843183" });
+
+    const firstTopics = mergeTicketIssueTopics(first, firstIdentity);
+    const secondTopics = mergeTicketIssueTopics(second, secondIdentity, { issueTopics: firstTopics });
+    expect(secondTopics).toHaveLength(2);
+    expect(secondTopics.map((topic) => topic.title)).toEqual(["iPhone 15 256GB", "Nokia 120 availability"]);
   });
 
   it("keeps repeated wording for the same request on the same issue identity", () => {
@@ -66,6 +64,12 @@ describe("ticket dedupe identity", () => {
       },
     });
 
-    expect(buildTicketIssueIdentityKey(first)).toBe(buildTicketIssueIdentityKey(repeated));
+    const identity = buildTicketIssueIdentityKey(first);
+    expect(identity).toBe(buildTicketIssueIdentityKey(repeated));
+
+    const firstTopics = mergeTicketIssueTopics(first, identity);
+    const repeatedTopics = mergeTicketIssueTopics(repeated, identity, { issueTopics: firstTopics });
+    expect(repeatedTopics).toHaveLength(1);
+    expect(repeatedTopics[0].count).toBe(2);
   });
 });

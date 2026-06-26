@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Eye, MessageCircle, PlusCircle, TicketCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Eye, Layers3, MessageCircle, PlusCircle, TicketCheck } from "lucide-react";
 import { requireSession } from "@/lib/auth";
 import { getTicketsPage } from "@/lib/dashboard-data";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -114,12 +114,17 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
             <div className="mb-4 flex flex-wrap gap-2">
               <span className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${priorityClass(ticket.priority)}`}>{priorityLabels[ticket.priority] || ticket.priority}</span>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{categoryLabels[ticket.category] || ticket.category}</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+                <Layers3 size={13} />
+                {ticket.issueTopicCount || 1} topics
+              </span>
               <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">{ticket.channel || "channel"}</span>
             </div>
 
             <div className="space-y-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
               <p><span className="font-bold text-slate-900">Customer:</span> {ticket.requesterExternalId || "-"}</p>
               <p><span className="font-bold text-slate-900">Bot:</span> {ticket.botName || "-"}</p>
+              {ticket.latestIssueTopic ? <p><span className="font-bold text-slate-900">Latest topic:</span> {ticket.latestIssueTopic}</p> : null}
               <p className="flex gap-2"><AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-500" /> <span>{ticket.triggerReason || "CRM follow-up required"}</span></p>
               <p className="text-xs text-slate-400">Updated: {ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleString() : "-"}</p>
             </div>

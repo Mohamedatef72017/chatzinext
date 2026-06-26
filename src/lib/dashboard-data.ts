@@ -357,6 +357,7 @@ export async function getTicketsPage(tenantId: string, options: { page?: number;
       { description: { $regex: q, $options: "i" } },
       { requesterExternalId: { $regex: q, $options: "i" } },
       { category: { $regex: q, $options: "i" } },
+      { "metadata.issueTopics.title": { $regex: q, $options: "i" } },
     ];
   }
 
@@ -375,6 +376,8 @@ export async function getTicketsPage(tenantId: string, options: { page?: number;
         ticket.botId ? Bot.findById(ticket.botId).lean() : null,
         ticket.conversationId ? Conversation.findById(ticket.conversationId).lean() : null,
       ]);
+      const metadata = ticket.metadata && typeof ticket.metadata === "object" ? ticket.metadata as Record<string, any> : {};
+      const issueTopics = Array.isArray(metadata.issueTopics) ? metadata.issueTopics : [];
       return {
         id: ticket._id.toString(),
         number: ticket.number || 0,
@@ -388,6 +391,8 @@ export async function getTicketsPage(tenantId: string, options: { page?: number;
         conversationId: ticket.conversationId?.toString() || "",
         conversationStatus: conversation?.status || "-",
         triggerReason: ticket.triggerReason || "",
+        issueTopicCount: Number(metadata.issueTopicCount || issueTopics.length || 1),
+        latestIssueTopic: String(metadata.latestIssueTopic || issueTopics[issueTopics.length - 1]?.title || ""),
         createdAt: ticket.createdAt?.toISOString() || "",
         updatedAt: ticket.updatedAt?.toISOString() || "",
       };
@@ -447,6 +452,8 @@ export async function getTicketDetail(tenantId: string, id: string) {
       ? Message.find({ conversationId: ticket.conversationId, tenantId }).sort({ createdAt: 1 }).lean()
       : []
   ]);
+  const metadata = ticket.metadata && typeof ticket.metadata === "object" ? ticket.metadata as Record<string, any> : {};
+  const issueTopics = Array.isArray(metadata.issueTopics) ? metadata.issueTopics : [];
 
   return {
     id: ticket._id.toString(),
@@ -463,6 +470,16 @@ export async function getTicketDetail(tenantId: string, id: string) {
     conversationStatus: conversation?.status || "-",
     triggerReason: ticket.triggerReason || "",
     aiSummary: ticket.aiSummary || "",
+    issueTopicCount: Number(metadata.issueTopicCount || issueTopics.length || 1),
+    issueTopics: issueTopics.map((topic: any) => ({
+      key: String(topic.key || ""),
+      title: String(topic.title || ""),
+      category: String(topic.category || "general"),
+      priority: String(topic.priority || "medium"),
+      count: Number(topic.count || 1),
+      createdAt: String(topic.createdAt || ""),
+      lastSeenAt: String(topic.lastSeenAt || ""),
+    })).filter((topic: any) => topic.key && topic.title),
     createdAt: ticket.createdAt?.toISOString() || "",
     updatedAt: ticket.updatedAt?.toISOString() || "",
     messages: messages.map((message) => ({

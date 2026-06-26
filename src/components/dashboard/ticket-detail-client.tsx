@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { FileText, Save } from "lucide-react";
+import { FileText, Layers3, Save } from "lucide-react";
 
 type Attachment = {
   id: string;
@@ -37,6 +37,16 @@ type TicketDetail = {
   conversationStatus: string;
   triggerReason: string;
   aiSummary: string;
+  issueTopicCount: number;
+  issueTopics: Array<{
+    key: string;
+    title: string;
+    category: string;
+    priority: string;
+    count: number;
+    createdAt: string;
+    lastSeenAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
   messages: TicketMessage[];
@@ -60,6 +70,8 @@ const categoryLabels: Record<string, string> = {
   technical_support: "دعم فني",
   complaint: "شكوى",
   human_request: "طلب موظف",
+  booking_request: "حجز",
+  sales_request: "طلب شراء",
   ai_failed: "فشل AI",
   general: "عام",
 };
@@ -209,6 +221,41 @@ export function TicketDetailClient({ ticket }: { ticket: TicketDetail }) {
 
       <aside className="space-y-5">
         <div className="panel p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
+              <Layers3 size={18} />
+            </span>
+            <div>
+              <h2 className="font-bold text-ink">مواضيع التذكرة</h2>
+              <p className="text-xs text-slate-500">{ticket.issueTopicCount || ticket.issueTopics.length || 1} موضوع داخل نفس التذكرة</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {ticket.issueTopics.length ? ticket.issueTopics.map((topic, index) => (
+              <div key={topic.key} className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-sm">
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <p className="font-bold text-slate-900">{index + 1}. {topic.title}</p>
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-indigo-700">{topic.count}x</span>
+                </div>
+                <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
+                  <span>{categoryLabels[topic.category] || topic.category}</span>
+                  <span>·</span>
+                  <span>{priorityLabels[topic.priority] || topic.priority}</span>
+                  {topic.lastSeenAt ? (
+                    <>
+                      <span>·</span>
+                      <span>آخر مرة {new Date(topic.lastSeenAt).toLocaleString("ar")}</span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            )) : (
+              <p className="rounded-2xl bg-slate-50 p-3 text-sm text-slate-500">{ticket.subject}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="panel p-5">
           <h2 className="mb-4 font-bold text-ink">بيانات التذكرة</h2>
           <dl className="space-y-3 text-sm">
             <div>
@@ -292,4 +339,3 @@ function AttachmentPreview({ attachment }: { attachment: Attachment }) {
     </a>
   );
 }
-

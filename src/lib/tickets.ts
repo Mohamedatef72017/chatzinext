@@ -37,6 +37,16 @@ export type TicketIntentClassification = {
   reason: string;
 };
 
+export type TicketIssueTopic = {
+  key: string;
+  title: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  count: number;
+  createdAt: string;
+  lastSeenAt: string;
+};
+
 const OPEN_TICKET_STATUSES = ["open", "pending", "in_progress"];
 const EASTERN_ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
 const PERSIAN_ARABIC_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
@@ -119,31 +129,107 @@ export function buildTicketDedupeMatches(input: EnsureTicketInput, issueFingerpr
   const matches: Record<string, unknown>[] = [
     { conversationId: input.conversationId, "metadata.issueFingerprint": issueFingerprint },
     { conversationId: input.conversationId, "metadata.issueIdentityKey": issueIdentityKey },
+    { conversationId: input.conversationId },
   ];
 
   if (normalizedCustomerPhone) {
     matches.push(
-      {
-        "metadata.normalizedCustomerPhone": normalizedCustomerPhone,
-        "metadata.issueIdentityKey": issueIdentityKey,
-      },
-      {
-        "customFields.normalizedPhone": normalizedCustomerPhone,
-        "metadata.issueIdentityKey": issueIdentityKey,
-      }
+      { "metadata.normalizedCustomerPhone": normalizedCustomerPhone },
+      { "metadata.customerPhone": normalizedCustomerPhone },
+      { "metadata.phone": normalizedCustomerPhone },
+      { "customFields.normalizedPhone": normalizedCustomerPhone },
+      { "customFields.phone": normalizedCustomerPhone }
     );
   }
 
   return matches;
 }
 
-function withTicketCustomerMetadata(input: EnsureTicketInput, issueFingerprint: string, issueIdentityKey: string) {
+function getIssueTopicTitle(input: EnsureTicketInput) {
+  const metadata = getInputMetadata(input) as Record<string, unknown>;
+  const candidates = [
+    metadata.issueDescription,
+    metadata.interest,
+    input.subject,
+    input.description,
+    input.triggerReason,
+  ];
+  for (const candidate of candidates) {
+    const title = String(candidate || "").replace(/\s+/g, " ").trim();
+    if (title) return title.slice(0, 160);
+  }
+  return input.category.replace(/_/g, " ");
+}
+
+function normalizeExistingIssueTopics(value: unknown): TicketIssueTopic[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+    .map((item) => ({
+      key: String(item.key || ""),
+      title: String(item.title || "").slice(0, 160),
+      category: (String(item.category || "general") as TicketCategory),
+      priority: (String(item.priority || "medium") as TicketPriority),
+      count: Math.max(1, Number(item.count || 1)),
+      createdAt: String(item.createdAt || new Date().toISOString()),
+      lastSeenAt: String(item.lastSeenAt || item.createdAt || new Date().toISOString()),
+    }))
+    .filter((item) => item.key && item.title);
+}
+
+export function mergeTicketIssueTopics(input: EnsureTicketInput, issueIdentityKey: string, existingMetadata?: Record<string, unknown>) {
+  const now = new Date().toISOString();
+  const topics = normalizeExistingIssueTopics(existingMetadata?.issueTopics);
+  const title = getIssueTopicTitle(input);
+  const index = topics.findIndex((topic) => topic.key === issueIdentityKey);
+
+  if (index >= 0) {
+    topics[index] = {
+      ...topics[index],
+      title: topics[index].title || title,
+      category: input.category,
+      priority: input.priority || topics[index].priority || "medium",
+      count: topics[index].count + 1,
+      lastSeenAt: now,
+    };
+  } else {
+    topics.push({
+      key: issueIdentityKey,
+      title,
+      category: input.category,
+      priority: input.priority || "medium",
+      count: 1,
+      createdAt: now,
+      lastSeenAt: now,
+    });
+  }
+
+  return topics.slice(-50);
+}
+
+function buildAggregatedDescription(existingDescription: string, input: EnsureTicketInput, topics: TicketIssueTopic[]) {
+  const latestTitle = topics[topics.length - 1]?.title || getIssueTopicTitle(input);
+  const latestDescription = String(input.description || latestTitle || "").trim();
+  const topicHeader = `موضوع ${topics.length}: ${latestTitle}`;
+  const current = String(existingDescription || "").trim();
+
+  if (!current) return latestDescription || topicHeader;
+  if (current.includes(topicHeader) || (latestDescription && current.includes(latestDescription))) return current;
+
+  return [current, [topicHeader, latestDescription].filter(Boolean).join("\n")].filter(Boolean).join("\n\n");
+}
+
+function withTicketCustomerMetadata(input: EnsureTicketInput, issueFingerprint: string, issueIdentityKey: string, existingMetadata?: Record<string, unknown>) {
   const metadata = getInputMetadata(input);
   const normalizedCustomerPhone = getCustomerPhoneForTicket(input);
+  const issueTopics = mergeTicketIssueTopics(input, issueIdentityKey, existingMetadata);
   return {
     ...metadata,
     issueFingerprint,
     issueIdentityKey,
+    issueTopics,
+    issueTopicCount: issueTopics.length,
+    latestIssueTopic: issueTopics[issueTopics.length - 1]?.title || "",
     ...(normalizedCustomerPhone
       ? {
           customerPhone: String((metadata as any).customerPhone || (metadata as any).phone || normalizedCustomerPhone),
@@ -180,10 +266,7 @@ export async function ensureTicketForConversation(input: EnsureTicketInput) {
   const existingTicketMatches = buildTicketDedupeMatches(input, issueFingerprint, issueIdentityKey);
 
   if (conversation.contactId) {
-    existingTicketMatches.push({
-      contactId: conversation.contactId,
-      "metadata.issueIdentityKey": issueIdentityKey,
-    });
+    existingTicketMatches.push({ contactId: conversation.contactId });
   }
 
   const existing = await Ticket.findOne({
@@ -193,20 +276,23 @@ export async function ensureTicketForConversation(input: EnsureTicketInput) {
   });
 
   if (existing) {
+    const existingMetadata = existing.metadata && typeof existing.metadata === "object" ? existing.metadata as Record<string, unknown> : {};
+    const nextMetadata = withTicketCustomerMetadata(input, issueFingerprint, issueIdentityKey, existingMetadata);
+    const issueTopics = normalizeExistingIssueTopics(nextMetadata.issueTopics);
     const update: Record<string, unknown> = {
       triggerReason: input.triggerReason,
       category: input.category,
       priority: input.priority || existing.priority,
       metadata: {
-        ...(existing.metadata && typeof existing.metadata === "object" ? existing.metadata : {}),
-        ...withTicketCustomerMetadata(input, issueFingerprint, issueIdentityKey),
+        ...existingMetadata,
+        ...nextMetadata,
         issueFingerprint,
         issueIdentityKey,
         lastTriggerReason: input.triggerReason,
       },
     };
     if (input.aiSummary) update.aiSummary = input.aiSummary;
-    if (input.description) update.description = input.description;
+    update.description = buildAggregatedDescription(String(existing.description || ""), input, issueTopics);
 
     await existing.updateOne({ $set: update });
     const refreshed = await Ticket.findById(existing._id);
@@ -220,6 +306,7 @@ export async function ensureTicketForConversation(input: EnsureTicketInput) {
           status: refreshed.status,
           priority: refreshed.priority,
           category: refreshed.category,
+          issueTopicCount: Number((refreshed.metadata as any)?.issueTopicCount || 1),
           updatedAt: refreshed.updatedAt?.toISOString?.() || new Date().toISOString(),
         },
         conversation: { id: input.conversationId },
@@ -286,6 +373,7 @@ export async function ensureTicketForConversation(input: EnsureTicketInput) {
       status: createdTicket.status,
       priority: createdTicket.priority,
       category: createdTicket.category,
+      issueTopicCount: Number((createdTicket.metadata as any)?.issueTopicCount || 1),
       createdAt: createdTicket.createdAt?.toISOString?.() || new Date().toISOString(),
     },
     conversation: { id: input.conversationId },
