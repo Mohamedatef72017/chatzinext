@@ -1,0 +1,193 @@
+CHANGES BY MAHMOUD - 2026-06-26
+================================
+
+Project: ChatZi CRM
+Date: 2026-06-26
+Prepared for: Mahmoud
+
+
+1. AI Chat Behavior Improvements
+--------------------------------
+- Improved the bot reply style so it sounds more natural, warmer, and less rigid.
+- Reduced repeated questions from the bot when the customer had already provided context.
+- Improved order continuity so the bot remembers the customer's requested product and add-ons during the same conversation.
+- Added prompt guidance to avoid over-questioning and to preserve the accumulated customer request.
+- Kept the CRM logic AI-driven without adding hardcoded phrase-based customer-intent rules.
+- Added safer fallback behavior when the AI provider fails, so the bot does not silently stop replying.
+
+
+2. CRM Ticket Logic
+-------------------
+- Improved ticket creation and follow-up logic.
+- Changed behavior from creating many duplicate tickets for the same customer to aggregating related topics on the same open ticket.
+- Added topic tracking on tickets:
+  - issueTopics
+  - issueTopicCount
+  - latestIssueTopic
+- Updated ticket views to show the number of topics from outside the ticket.
+- Preserved the ability to track multiple customer needs without creating unnecessary duplicate open tickets.
+
+
+3. Leads From Tickets
+---------------------
+- Improved lead synchronization from tickets.
+- Kept lead creation tied to meaningful CRM ticket data instead of hardcoded customer phrases.
+- Preserved phone-based deduplication behavior for customer follow-up.
+
+
+4. AI Reliability and Fallback Handling
+--------------------------------------
+- Investigated why the bot sometimes did not reply.
+- Found provider-side failures such as quota/key issues.
+- Added operational fallback replies so the customer receives a safe response instead of no response.
+- Improved AI router behavior for model/provider compatibility.
+- Added logging around reply validation and skipped/no-safe-reply cases.
+
+
+5. Sidebar and Dashboard Navigation
+-----------------------------------
+- Hid dashboard links that should not be visible to normal users:
+  - AI key link
+  - Bots link
+- Converted the sidebar from role-only rendering to permission-based rendering.
+- Dashboard navigation is now filtered based on the actual permissions assigned to the logged-in user.
+- Sidebar counters now respect scoped permissions, so limited agents do not see global tenant counts.
+
+
+6. Empty Workspace After Register
+---------------------------------
+- Removed automatic random/sample knowledge data creation after new user registration.
+- New tenants now start with a cleaner, more natural empty database state.
+- The user is expected to fill knowledge and business data manually.
+
+
+7. Support Agents Page
+----------------------
+- Added/expanded the Support Agents management page.
+- Each tenant can manage support users according to the configured limits:
+  - 4 support agents
+  - 2 support managers
+- The page can add, activate/deactivate, delete, and update support team members.
+
+
+8. Custom Permission System
+---------------------------
+- Added real user-level permissions instead of depending only on roles.
+- Added permission mode support:
+  - role: use default role permissions
+  - custom: use selected permissions only
+  - full: grant full control
+- Added full control warning in the support agent form.
+- Added permission selection UI when adding or editing a support agent/manager.
+- Added server-side permission enforcement through the auth guards.
+- Added effective permission resolution so the server and UI use the same permission logic.
+
+
+9. Support Agent Access Scope
+-----------------------------
+- Support agents without management permissions are now limited to:
+  - conversations assigned to them only
+  - tickets generated from conversations assigned to them only
+- Direct links are also protected from the server side.
+- A limited agent cannot open another agent's conversation or ticket by manually entering the URL.
+- Realtime inbox updates and notification lists were adjusted so limited users do not receive tenant-wide data.
+
+
+10. Tickets and Conversations Security
+-------------------------------------
+- Protected dashboard pages and APIs with permissions.
+- Added server-side checks for:
+  - conversation list
+  - conversation detail
+  - messages
+  - replies
+  - notes
+  - attachments
+  - tickets list
+  - ticket detail
+  - ticket updates/deletes
+- Ticket delete/update controls are restricted to users with ticket management permission.
+
+
+11. Unauthorized Page
+---------------------
+- Added a friendly dashboard Unauthorized page.
+- Users who open a page without the required permission are redirected to:
+  /dashboard/unauthorized
+- This replaced the previous ugly server-side application error page.
+- The Unauthorized page explains that the user needs extra permission from the account manager.
+- The required permission is shown on the page when available.
+
+
+12. Password Live Validation
+----------------------------
+- Added live password validation to the support agent creation form.
+- Password must include:
+  - at least 12 characters
+  - lowercase letter
+  - uppercase letter
+  - number
+  - special symbol
+- The submit button is disabled until the password is strong.
+- Server-side password validation also enforces the same complexity rules.
+
+
+13. Support Agent Duplicate Email / Form Reset Fix
+--------------------------------------------------
+- Fixed a frontend crash:
+  Cannot read properties of null (reading 'reset')
+- Root cause:
+  The form reset was called from event.currentTarget after an async request, where currentTarget could become null.
+- Fix:
+  Store the form element before the async request and reset that stored element.
+- Added a creating state to prevent double-submit while adding a support agent.
+- Improved duplicate email server response to explain the existing user's role inside the same tenant.
+
+
+14. Billing, Channels, AI, Contacts, Leads, and Personas Permissions
+-------------------------------------------------------------------
+- Billing pages and APIs now use billing permissions.
+- Channels pages and APIs now use settings management permission.
+- AI settings, bots, simulator, and personas now use AI permissions.
+- Contacts and leads now use contacts permissions.
+- Support agents and users APIs now use user management/read permissions.
+
+
+15. Tests and Verification
+--------------------------
+- Added a focused permission test:
+  tests/permissions-effective.test.ts
+- Verified:
+  - default support agents remain scoped
+  - full control grants all permissions
+  - custom permissions only allow selected permissions
+- Ran targeted tests successfully:
+  - permissions-effective.test.ts
+  - crm-ticket-flow-engine.test.ts
+  - ticket-dedupe.test.ts
+  - safe-customer-reply related verification from previous changes
+
+
+16. Known Remaining Issue
+-------------------------
+- npm run typecheck still fails because of old unrelated TypeScript errors in:
+  - tests/quota.test.ts
+  - tests/rate-limit.test.ts
+- These errors existed before the current permission/support-agent changes.
+- No new typecheck errors were introduced by the latest permission and support-agent work.
+
+
+17. Important Notes
+-------------------
+- The permission system is not only UI-based.
+- Access is enforced at the server/API level.
+- Hiding sidebar links is now only the first layer of UX.
+- Direct URL access is protected too.
+- The AI/chat improvements remain AI-driven and do not rely on hardcoded customer phrase matching.
+
+
+Summary
+-------
+The system moved from a mostly role-based dashboard to a real permission-aware CRM workspace.
+Support agents now have a limited workspace, managers can be configured with custom permissions,
+full control is explicit and warned, and unauthorized access is handled cleanly.
