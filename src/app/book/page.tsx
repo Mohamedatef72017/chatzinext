@@ -63,8 +63,10 @@ const labels = {
   }
 } as const;
 
-export default function BookPage() {
-  const { locale, dir } = useI18n();
+export function BookContent({ localeOverride }: { localeOverride?: "en" | "ar" }) {
+  const i18n = useI18n();
+  const locale = localeOverride || i18n.locale;
+  const dir = locale === "ar" ? "rtl" : "ltr";
   const copy = labels[locale];
   const [formData, setFormData] = useState({
     firstName: "",
@@ -233,6 +235,10 @@ export default function BookPage() {
       </div>
     </main>
   );
+}
+
+export default function BookPage() {
+  return <BookContent />;
 }
 
 function Field({

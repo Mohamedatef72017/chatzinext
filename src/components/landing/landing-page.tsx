@@ -19,6 +19,7 @@ import {
   Key,
   Languages,
   LockKeyhole,
+  Menu,
   MessageSquare,
   Play,
   PlugZap,
@@ -33,6 +34,7 @@ import {
 import { LoginForm } from "@/components/auth/login-form";
 import { landingContent, type LandingLocale } from "@/lib/landing-content";
 import { sectorsData } from "@/lib/sectors-content";
+import { useAuthStatus } from "@/components/landing/use-auth-status";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -77,12 +79,14 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
   const ArrowIcon = isEnglish ? ArrowRight : ArrowLeft;
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSectorsOpen, setIsSectorsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isAuthenticated = useAuthStatus();
 
   return (
     <main
       dir={copy.dir}
       lang={copy.lang}
-      className="min-h-screen bg-slate-50 font-sans text-slate-950 selection:bg-[#6119E6]/10 dark:bg-[#06030e] dark:text-white dark:selection:bg-[#E13382]/20"
+      className="min-h-screen bg-slate-50 font-sans text-slate-950 selection:bg-[#6119E6]/10 dark:bg-[#06030e] dark:text-white dark:selection:bg-[#E13382]/20 overflow-x-hidden"
     >
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl text-slate-950 dark:border-white/10 dark:bg-[#06030e]/90 dark:text-white">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -165,22 +169,76 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
               })}
             </div>
 
-            <button
-              onClick={() => setIsLoginOpen(true)}
-              className="hidden rounded-lg px-3 py-2 text-sm font-extrabold text-slate-600 transition hover:bg-slate-55 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white sm:inline-flex"
-            >
-              {copy.login}
-            </button>
+            {isAuthenticated ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
+              >
+                <span>{copy.secondary}</span>
+                <ArrowIcon size={16} />
+              </Link>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsLoginOpen(true)}
+                  className="inline-flex rounded-lg px-3 py-2 text-sm font-extrabold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
+                >
+                  {copy.login}
+                </button>
 
-            <Link
-              href="/register"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
+                <Link
+                  href="/register"
+                  className="hidden sm:inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
+                >
+                  <span>{copy.start}</span>
+                  <ArrowIcon size={16} />
+                </Link>
+              </>
+            )}
+
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="inline-flex lg:hidden rounded-lg px-2 py-2 text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
             >
-              <span>{copy.start}</span>
-              <ArrowIcon size={16} />
-            </Link>
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden border-t border-slate-200 bg-white dark:border-white/10 dark:bg-[#06030e]">
+            <nav className="flex flex-col space-y-4 p-4">
+              {copy.nav.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-base font-extrabold text-slate-600 transition hover:text-primary-700 dark:text-slate-300 dark:hover:text-white"
+                >
+                  {item.label}
+                </a>
+              ))}
+              
+              <div className="pt-4 border-t border-slate-100 dark:border-white/5 flex flex-col gap-3">
+                <div className="text-sm font-extrabold text-slate-500">{isEnglish ? "Sectors" : "القطاعات"}</div>
+                {sectorsData[locale as keyof typeof sectorsData]?.map((sector) => (
+                  <Link 
+                    key={sector.id} 
+                    href={`/sectors/${sector.id}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 rounded-lg p-2 transition hover:bg-slate-50 dark:hover:bg-white/5"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-sm dark:bg-white/5">
+                      {sector.icon}
+                    </span>
+                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">{sector.title}</h4>
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          </div>
+        )}
       </header>
 
       <section className="relative overflow-hidden bg-white text-slate-950 py-14 dark:bg-[#06030e] dark:text-white sm:py-24">
@@ -240,25 +298,23 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row flex-wrap">
-              <Link
-                href="/book"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#6119E6] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382] dark:shadow-[#E13382]/25"
-              >
-                {copy.heroButtons?.demo}
-              </Link>
-              <Link
-                href="/register"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
-              >
-                {copy.heroButtons?.signup}
-              </Link>
-              <Link
-                href="/register"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-emerald-500/20 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
-              >
-                <Zap size={16} />
-                {copy.heroButtons?.try}
-              </Link>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  href="/book"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#6119E6] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382] dark:shadow-[#E13382]/25"
+                >
+                  {copy.heroButtons?.demo}
+                </Link>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  href="/register"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-500/20 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
+                >
+                  <Zap size={16} />
+                  {copy.heroButtons?.try}
+                </Link>
+              </motion.div>
             </div>
             <p className="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">
               {copy.heroButtons?.trySub}
@@ -279,7 +335,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
 
           <motion.div variants={fadeUp} className="relative w-full max-w-2xl lg:mx-0 mx-auto">
             <Image
-              src="/newheroooo.png"
+              src="/newhero.png"
               alt={copy.imageAlt.hero}
               width={800}
               height={800}

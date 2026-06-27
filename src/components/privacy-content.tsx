@@ -42,8 +42,10 @@ const privacyCopy = {
   }
 } as const;
 
-export function PrivacyContent() {
-  const { locale, dir } = useI18n();
+export function PrivacyContent({ localeOverride }: { localeOverride?: "en" | "ar" }) {
+  const i18n = useI18n();
+  const locale = localeOverride || i18n.locale;
+  const dir = locale === "ar" ? "rtl" : "ltr";
   const copy = privacyCopy[locale];
 
   return (

@@ -44,8 +44,10 @@ const termsCopy = {
   }
 } as const;
 
-export function TermsContent() {
-  const { locale, dir } = useI18n();
+export function TermsContent({ localeOverride }: { localeOverride?: "en" | "ar" }) {
+  const i18n = useI18n();
+  const locale = localeOverride || i18n.locale;
+  const dir = locale === "ar" ? "rtl" : "ltr";
   const copy = termsCopy[locale];
 
   return (
