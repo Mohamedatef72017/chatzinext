@@ -11,6 +11,7 @@ import {
   BarChart3,
   Bot,
   CheckCircle2,
+  ChevronDown,
   Cpu,
   Database,
   Globe,
@@ -31,6 +32,7 @@ import {
 } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
 import { landingContent, type LandingLocale } from "@/lib/landing-content";
+import { sectorsData } from "@/lib/sectors-content";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
@@ -42,10 +44,10 @@ const stagger: Variants = {
   visible: { opacity: 1, transition: { staggerChildren: 0.09 } }
 };
 
-const localeLinks: Array<{ locale: LandingLocale; href: string; label: string; short: string }> = [
-  { locale: "en", href: "/", label: "English", short: "EN" },
-  { locale: "ar-ae", href: "/ar-ae", label: "الإمارات", short: "AE" },
-  { locale: "ar-jo", href: "/ar-jo", label: "الأردن", short: "JO" }
+const localeLinks: Array<{ locale: LandingLocale; href: string; label: string; short: string; flag: string }> = [
+  { locale: "en", href: "/", label: "English", short: "EN", flag: "🇺🇸" },
+  { locale: "ar-ae", href: "/ar-ae", label: "الإمارات", short: "AE", flag: "🇦🇪" },
+  { locale: "ar-jo", href: "/ar-jo", label: "الأردن", short: "JO", flag: "🇯🇴" }
 ];
 
 const workflowIcons = [Globe, Cpu, Send];
@@ -74,14 +76,15 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
   const isEnglish = copy.dir === "ltr";
   const ArrowIcon = isEnglish ? ArrowRight : ArrowLeft;
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSectorsOpen, setIsSectorsOpen] = useState(false);
 
   return (
     <main
       dir={copy.dir}
       lang={copy.lang}
-      className="min-h-screen bg-slate-100 font-sans text-slate-950 selection:bg-secondary-100 selection:text-secondary-900 dark:bg-primary-950 dark:text-secondary-50 dark:selection:bg-secondary-500 dark:selection:text-white"
+      className="min-h-screen bg-slate-50 font-sans text-slate-950 selection:bg-[#6119E6]/10 dark:bg-[#06030e] dark:text-white dark:selection:bg-[#E13382]/20"
     >
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl dark:border-secondary-300/25 dark:bg-primary-900/90">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl text-slate-950 dark:border-white/10 dark:bg-[#06030e]/90 dark:text-white">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href={isEnglish ? "/" : locale === "ar-jo" ? "/ar-jo" : "/ar-ae"} className="flex items-center">
             <BrandLogo />
@@ -92,30 +95,71 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
               <a
                 key={item.href}
                 href={item.href}
-                className="text-sm font-extrabold text-slate-600 transition hover:text-primary-700 dark:text-secondary-100 dark:hover:text-secondary-300"
+                className="text-sm font-extrabold text-slate-600 transition hover:text-primary-700 dark:text-slate-300 dark:hover:text-white"
               >
                 {item.label}
               </a>
             ))}
+
+            {/* Mega Menu for Sectors */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setIsSectorsOpen(true)}
+              onMouseLeave={() => setIsSectorsOpen(false)}
+            >
+              <button 
+                onClick={() => setIsSectorsOpen(!isSectorsOpen)}
+                className="flex items-center gap-1 text-sm font-extrabold text-slate-600 transition hover:text-primary-700 dark:text-slate-300 dark:hover:text-white"
+              >
+                {isEnglish ? "Sectors" : "القطاعات"}
+                <ChevronDown size={14} className={`transition-transform duration-200 ${isSectorsOpen ? "rotate-180" : ""}`} />
+              </button>
+              
+              {isSectorsOpen && (
+                <div className="absolute top-full end-[-150px] pt-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="w-[800px] rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-white/10 dark:bg-[#0c081c] dark:shadow-2xl dark:backdrop-blur-xl">
+                    <div className="grid grid-cols-2 gap-4">
+                      {sectorsData[locale as keyof typeof sectorsData]?.map((sector) => (
+                        <Link 
+                          key={sector.id} 
+                          href={`/sectors/${sector.id}`}
+                          onClick={() => setIsSectorsOpen(false)}
+                          className="flex items-start gap-4 rounded-lg p-3 transition hover:bg-slate-50 dark:hover:bg-white/5"
+                        >
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-xl dark:bg-white/5">
+                            {sector.icon}
+                          </span>
+                          <div>
+                            <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">{sector.title}</h4>
+                            <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">{sector.desc}</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 sm:flex dark:border-secondary-300/25 dark:bg-primary-900/70">
-              <Languages size={15} className="mx-1 text-slate-500 dark:text-secondary-200" />
+            <div className="hidden items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 sm:flex dark:border-white/10 dark:bg-white/5">
+              <Languages size={15} className="mx-1 text-slate-500 dark:text-slate-400" />
               {localeLinks.map((item) => {
                 const active = item.locale === locale;
                 return (
                   <Link
                     key={item.locale}
                     href={item.href}
-                    className={`rounded-md px-2.5 py-1.5 text-xs font-extrabold transition ${
+                    className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-extrabold transition ${
                       active
-                        ? "bg-white text-primary-700 shadow-sm dark:bg-secondary-500 dark:text-white"
-                        : "text-slate-500 hover:text-slate-900 dark:text-secondary-100 dark:hover:text-white"
+                        ? "bg-white text-primary-700 shadow-sm dark:bg-white/10 dark:text-white"
+                        : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                     }`}
                     title={item.label}
                   >
-                    {item.short}
+                    <span className="text-base">{item.flag}</span>
+                    <span>{item.short}</span>
                   </Link>
                 );
               })}
@@ -123,14 +167,14 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
 
             <button
               onClick={() => setIsLoginOpen(true)}
-              className="hidden rounded-lg px-3 py-2 text-sm font-extrabold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 dark:text-secondary-100 dark:hover:bg-secondary-500/20 dark:hover:text-white sm:inline-flex"
+              className="hidden rounded-lg px-3 py-2 text-sm font-extrabold text-slate-600 transition hover:bg-slate-55 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white sm:inline-flex"
             >
               {copy.login}
             </button>
 
             <Link
               href="/register"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-primary-600/20 transition hover:bg-primary-700 dark:bg-secondary-500 dark:shadow-secondary-950/20 dark:hover:bg-secondary-600"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
             >
               <span>{copy.start}</span>
               <ArrowIcon size={16} />
@@ -139,84 +183,111 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
         </div>
       </header>
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-14 dark:from-primary-950 dark:via-primary-900 dark:to-primary-950 sm:py-20">
-        <div className="absolute end-[-5rem] top-24 hidden h-72 w-72 rotate-45 rounded-[2rem] bg-primary-600/90 dark:bg-secondary-500/25 lg:block" />
-        <div className="absolute start-10 top-24 h-12 w-12 rotate-12 rounded-lg bg-primary-100 dark:bg-secondary-500/35" />
-        <div className="absolute bottom-16 end-24 h-10 w-10 -rotate-12 rounded-lg bg-secondary-100 dark:bg-secondary-400/35" />
+      <section className="relative overflow-hidden bg-white text-slate-950 py-14 dark:bg-[#06030e] dark:text-white sm:py-24">
+        {/* Radiating perspective lines */}
+        <div className="absolute inset-0 opacity-[0.06] dark:opacity-[0.12] pointer-events-none">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="line-glow" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="1" />
+                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {Array.from({ length: 24 }).map((_, i) => {
+              const x2 = (i / 23) * 100;
+              return (
+                <line
+                  key={i}
+                  x1="50%"
+                  y1="20%"
+                  x2={`${x2}%`}
+                  y2="100%"
+                  stroke="url(#line-glow)"
+                  strokeWidth="0.75"
+                />
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* Centered abstract glow - Semi-circle dome behind image */}
+        <div className="absolute left-1/2 bottom-0 -translate-x-1/2 h-[350px] w-[800px] sm:w-[1000px] rounded-t-full bg-[#6119E6]/25 blur-[80px] dark:bg-[#E13382]/35 pointer-events-none" />
 
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="visible"
-          className="relative z-10 mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:px-8"
+          className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-4 text-center sm:px-6 lg:px-8"
         >
-          <motion.div variants={fadeUp}>
-            <span className="inline-flex items-center gap-2 rounded-md bg-primary-100 px-3 py-1.5 text-xs font-extrabold text-primary-700 dark:bg-primary-900/70 dark:text-secondary-200">
-              <Sparkles size={15} className="text-secondary-500" />
-              {copy.heroLabel}
+          <motion.div variants={fadeUp} className="flex flex-col items-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm border border-slate-200/60 dark:bg-white/10 dark:text-slate-200 dark:border-white/5">
+              <span className="rounded-full bg-[#6119E6] px-2 py-0.5 text-xs text-white dark:bg-[#E13382]">New</span>
+              {copy.heroLabel} <ArrowIcon size={14} className="opacity-50" />
             </span>
 
-            <h1 className="mt-6 max-w-3xl text-4xl font-extrabold leading-tight tracking-normal text-slate-950 dark:text-secondary-100 sm:text-6xl">
-              {copy.title}
+            <h1 className="mt-8 max-w-5xl text-5xl font-extrabold leading-[1.15] tracking-tight text-slate-950 dark:text-white sm:text-7xl">
+              {copy.title.split(' ').map((word, i, arr) => 
+                i === Math.floor(arr.length / 2) ? (
+                  <span key={i} className="text-[#6119E6] dark:text-[#E13382]"> {word} </span>
+                ) : (
+                  <span key={i}> {word} </span>
+                )
+              )}
             </h1>
 
-            <p className="mt-5 max-w-2xl text-base font-semibold leading-8 text-slate-600 dark:text-secondary-100/85 sm:text-lg">
+            <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-slate-600 dark:text-slate-300 sm:text-xl">
               {copy.subtitle}
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
               <Link
                 href="/register"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary-600 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-primary-700/25 transition hover:bg-primary-700 dark:bg-secondary-500 dark:hover:bg-secondary-600"
+                className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-[#6119E6] px-8 py-3 text-base font-bold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382] dark:shadow-[#E13382]/25"
               >
                 {copy.primary}
-                <ArrowIcon size={18} />
               </Link>
               <Link
                 href="/dashboard"
-                className="inline-flex min-h-12 items-center justify-center rounded-lg border border-primary-200 bg-white px-6 py-3 text-sm font-extrabold text-primary-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50 dark:border-secondary-300/30 dark:bg-primary-900/40 dark:text-secondary-100 dark:hover:bg-secondary-500/15"
+                className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full border-2 border-slate-200 bg-white px-8 py-3 text-base font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
               >
                 {copy.secondary}
               </Link>
             </div>
 
-            <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
+            <div className="mt-10 flex flex-wrap justify-center gap-6">
               {(isEnglish
                 ? ["No credit card required", "14-day free trial", "Cancel anytime"]
                 : ["لا حاجة لبطاقة", "تجربة 14 يوم", "إلغاء في أي وقت"]
               ).map((item) => (
-                <div key={item} className="flex items-center gap-2 text-xs font-extrabold text-slate-500 dark:text-secondary-100">
-                  <CheckCircle2 size={16} className="text-primary-600 dark:text-secondary-300" />
+                <div key={item} className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+                  <CheckCircle2 size={16} className="text-[#6119E6] dark:text-[#E13382]" />
                   {item}
                 </div>
               ))}
             </div>
           </motion.div>
 
-          <motion.div variants={fadeUp} className="relative">
-            <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-2xl shadow-primary-950/10 dark:border-secondary-300/30 dark:bg-primary-900/60 dark:shadow-primary-950/25">
-              <div className="flex h-9 items-center gap-2 rounded-t-md border-b border-slate-100 bg-slate-50 px-3 dark:border-secondary-300/20 dark:bg-primary-900/45">
+          <motion.div variants={fadeUp} className="relative mt-16 w-full max-w-2xl">
+            <div className="rounded-2xl border border-slate-200/50 bg-white/40 p-2 shadow-2xl shadow-[#6119E6]/10 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-[#E13382]/20">
+              <div className="flex h-9 items-center gap-2 rounded-t-xl border-b border-slate-200/60 bg-slate-50/80 px-4 dark:border-white/5 dark:bg-white/5">
                 <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
                 <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                <span className="mx-auto rounded-full bg-white px-16 py-1 text-[10px] font-bold text-slate-400 dark:bg-primary-900 dark:text-secondary-100">
-                  chatzi.io
-                </span>
               </div>
-              <div className="relative overflow-hidden rounded-b-md bg-slate-50 dark:bg-primary-900/40">
+              <div className="relative overflow-hidden rounded-b-xl border-x border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-slate-950">
                 <Image
-                  src="/images/chatzi-hero.png"
+                  src="/heronew.png.png"
                   alt={copy.imageAlt.hero}
-                  width={1672}
-                  height={941}
+                  width={800}
+                  height={500}
                   priority
                   className="aspect-[16/10] w-full object-cover object-top"
                 />
                 <div className="absolute inset-x-4 bottom-4 grid gap-3 sm:grid-cols-3">
                   {copy.stats.slice(0, 3).map(([value, label]) => (
-                    <div key={`${value}-${label}`} className="rounded-lg border border-white/60 bg-white/90 p-3 shadow-sm backdrop-blur dark:border-secondary-300/30 dark:bg-primary-900/90">
-                      <p className="text-xl font-extrabold text-primary-700 dark:text-secondary-300">{value}</p>
-                      <p className="text-xs font-bold text-slate-500 dark:text-secondary-100">{label}</p>
+                    <div key={`${value}-${label}`} className="rounded-xl border border-slate-200/60 bg-white/90 p-4 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-[#0c081c]/90">
+                      <p className="text-2xl font-extrabold text-[#6119E6] dark:text-[#E13382]">{value}</p>
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-300">{label}</p>
                     </div>
                   ))}
                 </div>
