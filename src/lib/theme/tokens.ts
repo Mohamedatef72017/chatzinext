@@ -80,12 +80,11 @@ export const colorTokens = {
 export const typographyTokens = {
   /**
    * Font stack for Arabic + Latin.
-   * Tajawal is an Arabic-optimised typeface from Google Fonts.
-   * Inter is the companion Latin face — both share similar optical metrics.
+   * Cairo is used across Arabic + Latin UI for a unified landing/dashboard feel.
    * Falls back gracefully to system fonts when fonts fail to load.
    */
   fontFamily: {
-    sans: ["Tajawal", "Inter", "Segoe UI", "system-ui", "sans-serif"].join(", "),
+    sans: ["Cairo", "Segoe UI", "system-ui", "sans-serif"].join(", "),
     mono: ["JetBrains Mono", "Fira Code", "Courier New", "monospace"].join(", "),
   },
 

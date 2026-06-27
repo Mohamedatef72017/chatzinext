@@ -10,7 +10,6 @@ import {
   Users,
   Activity,
   Gauge,
-  ShieldCheck,
   LayoutDashboard,
   Terminal
 } from "lucide-react";
@@ -50,11 +49,11 @@ export function SidebarAdmin() {
       >
         <div className="flex flex-col overflow-y-auto min-h-0 flex-1 no-scrollbar">
           {/* Header */}
-          <div className="p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent text-white">
-                  <ShieldCheck size={20} />
+          <div className={collapsed ? "p-3" : "p-4"}>
+            <div className={`flex gap-3 ${collapsed ? "flex-col items-center" : "items-center justify-between"}`}>
+              <Link href="/admin" className={`flex min-w-0 items-center gap-3 ${collapsed ? "justify-center" : ""}`} title="ChatZi Admin">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-1.5 shadow-md shadow-indigo-600/20">
+                  <img src="/profile_white_trans.png" alt="ChatZi" className="h-full w-full object-contain" />
                 </span>
                 {!collapsed ? (
                   <div className="min-w-0">
@@ -62,7 +61,7 @@ export function SidebarAdmin() {
                     <p className="text-xs text-slate-300">الإدارة (Admin)</p>
                   </div>
                 ) : null}
-              </div>
+              </Link>
               <button
                 className="hidden rounded-md p-2 text-slate-200 hover:bg-white/10 lg:block"
                 onClick={() => setCollapsed((value) => !value)}

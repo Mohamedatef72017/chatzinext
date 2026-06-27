@@ -63,7 +63,7 @@ const labels = {
   }
 } as const;
 
-export function BookContent({ localeOverride }: { localeOverride?: "en" | "ar" }) {
+export function BookContent({ localeOverride }: { localeOverride?: "en" | "ar" } = {}) {
   const i18n = useI18n();
   const locale = localeOverride || i18n.locale;
   const dir = locale === "ar" ? "rtl" : "ltr";

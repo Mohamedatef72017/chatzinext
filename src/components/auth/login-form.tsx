@@ -78,9 +78,15 @@ export function LoginForm() {
     <form
       dir={dir}
       onSubmit={onSubmit}
-      className="theme-rescue relative z-10 flex min-h-[520px] w-full max-w-[390px] flex-col rounded-[10px] bg-white px-6 py-10 shadow-[0_3px_20px_0px_rgba(0,0,0,0.1)] dark:bg-slate-950 sm:px-[50px] sm:py-[60px]"
+      className="theme-rescue relative z-10 flex min-h-[460px] w-full max-w-[560px] flex-col justify-center rounded-2xl border border-slate-200 bg-white px-8 py-8 shadow-[0_24px_80px_rgba(2,6,23,0.18)] dark:border-white/10 dark:bg-[#0b0418] sm:px-10 sm:py-10"
     >
-      <h1 className="mb-10 text-center text-[30px] font-bold leading-[1.2] text-slate-900 sm:mb-[50px]">
+      <div className="mb-8 flex items-center justify-center">
+        <span className="inline-flex rounded-full bg-[#6119E6]/10 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.25em] text-[#6119E6] dark:bg-[#E13382]/15 dark:text-[#E13382]">
+          ChatZi
+        </span>
+      </div>
+
+      <h1 className="mb-8 text-center text-[32px] font-extrabold leading-[1.15] text-slate-950 dark:text-white">
         {copy.title}
       </h1>
 
@@ -91,7 +97,7 @@ export function LoginForm() {
           <button
             type="button"
             onClick={() => signIn("google", { callbackUrl })}
-            className="mb-6 flex w-full items-center justify-center gap-3 rounded-[25px] border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            className="mb-6 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white py-3.5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-100"
           >
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white font-bold text-[#4285f4]">G</span>
             {locale === "ar" ? "المتابعة باستخدام Google" : "Continue with Google"}
@@ -105,13 +111,13 @@ export function LoginForm() {
       ) : null}
 
       <div className="mb-7">
-        <label className="mb-2 block text-sm font-semibold text-slate-800" htmlFor="email">
+        <label className="mb-2 block text-sm font-bold text-slate-800 dark:text-slate-200" htmlFor="email">
           {copy.username}
         </label>
-        <div className="flex items-center border-b-2 border-slate-200 pb-2 pt-1 transition-colors focus-within:border-primary-500 dark:border-slate-800">
-          <User className="mx-3 shrink-0 text-slate-400" size={16} strokeWidth={2.5} />
+        <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 transition-colors focus-within:border-[#6119E6] focus-within:bg-white dark:border-white/10 dark:bg-white/5 dark:focus-within:border-[#E13382]">
+          <User className="mx-2 shrink-0 text-slate-400" size={16} strokeWidth={2.5} />
           <input
-            className="w-full bg-transparent text-[15px] font-medium text-slate-900 outline-none placeholder:text-slate-400"
+            className="w-full bg-transparent py-2 text-[15px] font-medium text-slate-950 outline-none placeholder:text-slate-400 dark:text-white"
             id="email"
             name="email"
             type="email"
@@ -123,13 +129,13 @@ export function LoginForm() {
       </div>
 
       <div className="mb-5">
-        <label className="mb-2 block text-sm font-semibold text-slate-800" htmlFor="password">
+        <label className="mb-2 block text-sm font-bold text-slate-800 dark:text-slate-200" htmlFor="password">
           {copy.password}
         </label>
-        <div className="flex items-center border-b-2 border-slate-200 pb-2 pt-1 transition-colors focus-within:border-primary-500 dark:border-slate-800">
-          <Lock className="mx-3 shrink-0 text-slate-400" size={16} strokeWidth={2.5} />
+        <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 transition-colors focus-within:border-[#6119E6] focus-within:bg-white dark:border-white/10 dark:bg-white/5 dark:focus-within:border-[#E13382]">
+          <Lock className="mx-2 shrink-0 text-slate-400" size={16} strokeWidth={2.5} />
           <input
-            className="w-full bg-transparent text-[15px] font-medium text-slate-900 outline-none placeholder:text-slate-400"
+            className="w-full bg-transparent py-2 text-[15px] font-medium text-slate-950 outline-none placeholder:text-slate-400 dark:text-white"
             id="password"
             name="password"
             type={showPassword ? "text" : "password"}
@@ -139,7 +145,7 @@ export function LoginForm() {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="text-slate-400 transition-colors hover:text-primary-500 focus:outline-none"
+            className="text-slate-400 transition-colors hover:text-[#6119E6] focus:outline-none dark:hover:text-[#E13382]"
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -148,21 +154,21 @@ export function LoginForm() {
       </div>
 
       <div className="mb-7 flex justify-end">
-        <a href="#" className="text-[13px] text-slate-500 transition-colors hover:text-primary-600">
+        <a href="#" className="text-[13px] font-semibold text-slate-500 transition-colors hover:text-[#6119E6] dark:hover:text-[#E13382]">
           {copy.forgotPassword}
         </a>
       </div>
 
       <button
-        className="mb-8 w-full rounded-[25px] bg-primary-600 py-[15px] text-sm font-bold uppercase tracking-widest text-white shadow-[0_10px_30px_-10px_rgba(166,75,244,0.6)] transition-all hover:scale-[1.02] hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-70"
+        className="mb-8 w-full rounded-xl bg-[#6119E6] py-4 text-sm font-extrabold uppercase tracking-[0.2em] text-white shadow-[0_14px_34px_-12px_rgba(97,25,230,0.75)] transition-all hover:scale-[1.01] hover:bg-[#4f13c2] dark:bg-[#E13382] dark:shadow-[0_14px_34px_-12px_rgba(225,51,130,0.75)] dark:hover:bg-[#c91f6c] disabled:cursor-not-allowed disabled:opacity-70"
         disabled={loading}
       >
         {loading ? copy.loading : copy.submit}
       </button>
 
       <div className="mt-auto text-center">
-        <span className="mb-2 block text-sm text-slate-500">{copy.signUpHint}</span>
-        <a href="/register" className="text-sm font-bold uppercase tracking-widest text-slate-900 transition-colors hover:text-primary-600">
+        <span className="mb-2 block text-sm font-semibold text-slate-500 dark:text-slate-300">{copy.signUpHint}</span>
+        <a href="/register" className="text-sm font-extrabold uppercase tracking-[0.2em] text-slate-950 transition-colors hover:text-[#6119E6] dark:text-white dark:hover:text-[#E13382]">
           {copy.signUp}
         </a>
       </div>

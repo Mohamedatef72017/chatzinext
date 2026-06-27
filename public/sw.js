@@ -1,9 +1,7 @@
-const CACHE_NAME = "chatzi-shell-v3";
+const CACHE_NAME = "chatzi-shell-v4";
 const OFFLINE_URL = "/offline";
 const CORE_ASSETS = [
-  OFFLINE_URL,
-  "/manifest.webmanifest",
-  "/images/logo.png",
+  OFFLINE_URL
 ];
 
 self.addEventListener("install", (event) => {
@@ -33,6 +31,14 @@ self.addEventListener("fetch", (event) => {
   if (!isSameOrigin) return;
 
   if (
+    requestUrl.pathname.startsWith("/_next/") ||
+    requestUrl.pathname === "/sw.js" ||
+    requestUrl.pathname === "/manifest.webmanifest"
+  ) {
+    return;
+  }
+
+  if (
     requestUrl.pathname.startsWith("/api/") ||
     requestUrl.pathname.startsWith("/dashboard") ||
     requestUrl.pathname.startsWith("/admin")
@@ -43,13 +49,13 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(async () => (await caches.match(request)) || caches.match(OFFLINE_URL))
+        .catch(async () => (await caches.match(OFFLINE_URL)) || Response.error())
     );
+    return;
+  }
+
+  const cacheableDestinations = new Set(["font", "image"]);
+  if (!cacheableDestinations.has(request.destination)) {
     return;
   }
 

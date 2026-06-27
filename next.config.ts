@@ -30,10 +30,34 @@ const nextConfig: NextConfig = {
       }
     ];
 
+    const noStoreHeaders = [
+      { key: "Cache-Control", value: "no-store, must-revalidate" }
+    ];
+
+    const revalidateHeaders = [
+      { key: "Cache-Control", value: "no-cache, must-revalidate" }
+    ];
+
+    const immutableAssetHeaders = [
+      { key: "Cache-Control", value: "public, max-age=31536000, immutable" }
+    ];
+
     return [
       {
         source: "/:path*",
-        headers: securityHeaders
+        headers: [...securityHeaders, ...noStoreHeaders]
+      },
+      {
+        source: "/sw.js",
+        headers: [...securityHeaders, ...noStoreHeaders]
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [...securityHeaders, ...revalidateHeaders]
+      },
+      {
+        source: "/_next/static/:path*",
+        headers: [...immutableAssetHeaders]
       }
     ];
   },

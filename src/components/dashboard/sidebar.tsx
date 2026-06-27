@@ -9,7 +9,6 @@ import {
   UserPlus,
   CreditCard,
   Gauge,
-  Inbox,
   KeyRound,
   Menu,
   MessageSquare,
@@ -135,11 +134,11 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
         }`}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto no-scrollbar">
-          <div className="p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-600/30">
-                  <Inbox size={20} />
+          <div className={collapsed ? "p-3" : "p-4"}>
+            <div className={`flex gap-3 ${collapsed ? "flex-col items-center" : "items-center justify-between"}`}>
+              <Link href="/dashboard" className={`flex min-w-0 items-center gap-3 ${collapsed ? "justify-center" : ""}`} title="ChatZi">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-1.5 shadow-md shadow-indigo-600/20">
+                  <img src="/profile_white_trans.png" alt="ChatZi" className="h-full w-full object-contain" />
                 </span>
                 {!collapsed ? (
                   <div className="min-w-0">
@@ -147,7 +146,7 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
                     <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">{t.common.dashboard}</p>
                   </div>
                 ) : null}
-              </div>
+              </Link>
               <button
                 className="rounded-md p-2 text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
                 onClick={() => setCollapsed((value) => !value)}
@@ -243,8 +242,8 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
           <aside className="safe-top safe-bottom fixed inset-0 z-50 flex flex-col bg-[#0B0C1E] text-white lg:hidden">
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 shadow-md shadow-indigo-600/30">
-                  <Inbox size={22} />
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-1.5 shadow-md shadow-indigo-600/20">
+                  <img src="/profile_white_trans.png" alt="ChatZi" className="h-full w-full object-contain" />
                 </span>
                 <div>
                   <p className="text-lg font-extrabold">ChatZi</p>

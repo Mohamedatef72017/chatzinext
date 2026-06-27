@@ -27,6 +27,8 @@ export function RegisterForm() {
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [agreedPrivacy, setAgreedPrivacy] = useState(false);
   const { t, locale, setLocale } = useI18n();
+  const legalBasePath = locale === "ar" ? "/ar-ae" : "";
+  const loginHref = "/login";
 
   // Step 2 State
   const [industry, setIndustry] = useState<Industry>(null);
@@ -226,7 +228,7 @@ export function RegisterForm() {
   const renderStep = () => {
     if (step === 4) {
       return (
-        <div className="w-full max-w-2xl animate-in fade-in zoom-in-95 duration-300 mx-auto">
+        <div className="w-full max-w-3xl animate-in fade-in zoom-in-95 duration-300 mx-auto">
           {renderProgress()}
           <div className="mb-8 text-center">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 text-primary-600 shadow-sm ring-8 ring-primary-50">
@@ -268,7 +270,7 @@ export function RegisterForm() {
 
     if (step === 3) {
       return (
-      <div className="w-full max-w-lg animate-in fade-in zoom-in-95 duration-300 mx-auto">
+      <div className="w-full max-w-4xl animate-in fade-in zoom-in-95 duration-300 mx-auto">
         {renderProgress()}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 text-primary-600 shadow-sm ring-4 ring-primary-50">
@@ -382,7 +384,7 @@ export function RegisterForm() {
 
     if (step === 2) {
       return (
-      <div className="w-full max-w-2xl animate-in fade-in zoom-in-95 duration-300 mx-auto">
+      <div className="w-full max-w-5xl animate-in fade-in zoom-in-95 duration-300 mx-auto">
         {renderProgress()}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 text-primary-600 shadow-sm ring-4 ring-primary-50">
@@ -442,7 +444,7 @@ export function RegisterForm() {
     }
 
     return (
-      <form onSubmit={onRegisterSubmit} className="w-full max-w-md mx-auto animate-in fade-in zoom-in-95 duration-300">
+      <form onSubmit={onRegisterSubmit} className="w-full max-w-5xl mx-auto animate-in fade-in zoom-in-95 duration-300">
         {renderProgress()}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t.auth.registerTitle}</h1>
@@ -519,7 +521,7 @@ export function RegisterForm() {
             />
             <label htmlFor="terms" className="text-xs text-slate-500 cursor-pointer select-none">
               {locale === "en" ? "I agree to the " : "أوافق على "}
-              <a href="/terms" className="text-slate-800 dark:text-slate-300 hover:text-primary-600 hover:underline" target="_blank" onClick={(e) => e.stopPropagation()}>
+              <a href={`${legalBasePath}/terms`} className="text-slate-800 dark:text-slate-300 hover:text-primary-600 hover:underline" target="_blank" onClick={(e) => e.stopPropagation()}>
                 {locale === "en" ? "Terms and Conditions" : "شروط الخدمة"}
               </a>
             </label>
@@ -536,7 +538,7 @@ export function RegisterForm() {
             />
             <label htmlFor="privacy" className="text-xs text-slate-500 cursor-pointer select-none">
               {locale === "en" ? "I agree to the " : "أقر بموافقتي على "}
-              <a href="/privacy" className="text-slate-800 dark:text-slate-300 hover:text-primary-600 hover:underline" target="_blank" onClick={(e) => e.stopPropagation()}>
+              <a href={`${legalBasePath}/privacy`} className="text-slate-800 dark:text-slate-300 hover:text-primary-600 hover:underline" target="_blank" onClick={(e) => e.stopPropagation()}>
                 {locale === "en" ? "Privacy Policy" : "سياسة الخصوصية"}
               </a>
             </label>
@@ -551,49 +553,66 @@ export function RegisterForm() {
           {loading ? t.auth.registering : (locale === "en" ? "Register" : "إنشاء حساب")}
         </button>
         
-        <div className="mt-8 text-center text-sm text-slate-500">
-          {locale === "en" ? "Already a member? " : "لديك حساب بالفعل؟ "}
-          <a href="/login" className="text-primary-600 hover:underline font-bold transition">
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center text-sm text-slate-500 sm:flex-row">
+          <span>{locale === "en" ? "Already a member?" : "لديك حساب بالفعل؟"}</span>
+          <Link
+            href={loginHref}
+            className="inline-flex min-h-10 items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-5 py-2 text-sm font-bold text-primary-700 transition hover:border-primary-300 hover:bg-primary-100 dark:border-primary-500/25 dark:bg-primary-500/10 dark:text-primary-200 dark:hover:bg-primary-500/20"
+          >
             {locale === "en" ? "Login" : "تسجيل الدخول"}
-          </a>
+          </Link>
         </div>
       </form>
     );
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col md:flex-row bg-white dark:bg-slate-950">
-      {/* Left Panel */}
-      <div className="w-full md:w-4/12 lg:w-5/12 bg-[#2c2d43] p-10 lg:p-16 text-white flex flex-col relative overflow-hidden">
-        {/* Abstract Background Shapes */}
-        <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-primary-500/20 blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-purple-500/20 blur-3xl"></div>
-        
-        <div className="relative z-10 flex flex-col h-full">
-          <div className="mb-auto">
-            <img src="/images/logo.png" alt="ChatZi Logo" className="h-10" />
-          </div>
-          
-          <div className="my-16">
-            <h2 className="text-4xl lg:text-5xl font-bold mb-6 text-white leading-tight">
-              {locale === "en" ? "Start our journey" : "ابدأ رحلتنا"}
+    <div className="flex min-h-screen w-full items-center justify-center bg-[radial-gradient(circle_at_top,#f7f8fb_0%,#ffffff_60%,#eef2ff_100%)] px-4 py-6 dark:bg-[radial-gradient(circle_at_top,#12061f_0%,#0b0418_58%,#06030e_100%)] sm:px-6 lg:px-8">
+      <div className="relative flex w-full max-w-7xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_30px_90px_rgba(2,6,23,0.14)] dark:border-white/10 dark:bg-[#0b0418]">
+        <div className="absolute -start-24 top-8 h-72 w-72 rounded-full bg-[#6119E6]/10 blur-3xl dark:bg-[#E13382]/10" />
+        <div className="absolute -bottom-24 end-16 h-80 w-80 rounded-full bg-[#E13382]/10 blur-3xl dark:bg-[#6119E6]/10" />
+
+        <aside className="hidden w-[38%] flex-col justify-between border-e border-slate-200 bg-gradient-to-br from-white via-slate-50 to-[#f6f1ff] p-10 text-slate-950 dark:border-white/10 dark:from-[#0e071b] dark:via-[#0b0418] dark:to-[#11112a] lg:flex lg:p-14">
+          <div>
+            <div className="mb-10 flex items-center gap-3">
+              <img src="/profile_black_trans.png" alt="ChatZi Logo" className="h-12 w-auto dark:hidden" />
+              <img src="/profile_white_trans.png" alt="ChatZi Logo" className="hidden h-12 w-auto dark:block" />
+            </div>
+            <span className="inline-flex rounded-full bg-[#6119E6]/10 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.25em] text-[#6119E6] dark:bg-[#E13382]/15 dark:text-[#E13382]">
+              {locale === "en" ? "Join ChatZi" : "انضم إلى ChatZi"}
+            </span>
+            <h2 className="mt-6 max-w-md text-4xl font-extrabold leading-tight text-slate-950 dark:text-white">
+              {locale === "en" ? "Create a clearer onboarding flow" : "أنشئ تجربة تسجيل أوضح"}
             </h2>
-            <p className="text-base text-slate-300 leading-relaxed max-w-sm">
-              {locale === "en" 
-                ? "Join ChatZi today and revolutionize the way you communicate with your customers. Experience the power of omnichannel AI to build better relationships."
-                : "انضم إلى منصة ChatZi اليوم وطوّر طريقة تواصلك مع عملائك لتجربة استثنائية وبناء علاقات أفضل من خلال الذكاء الاصطناعي."}
+            <p className="mt-5 max-w-md text-base leading-8 text-slate-600 dark:text-slate-300">
+              {locale === "en"
+                ? "A bright, spacious registration flow with bigger controls and clearer hierarchy for first-time users."
+                : "تجربة تسجيل بيضاء وواضحة مع عناصر أكبر وتسلسل بصري أبسط للمستخدم الجديد."}
             </p>
           </div>
-          
-          <div className="mt-auto">
-            <p className="text-sm text-slate-400">© {new Date().getFullYear()} ChatZi. All rights reserved.</p>
+
+          <div className="grid gap-3 text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+              {locale === "en" ? "Large form cards" : "بطاقات نموذج أكبر"}
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+              {locale === "en" ? "High contrast inputs" : "حقول واضحة التباين"}
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 dark:border-white/10 dark:bg-white/5">
+              {locale === "en" ? "Cleaner steps" : "خطوات أبسط"}
+            </div>
           </div>
-        </div>
-      </div>
-      
-      {/* Right Panel */}
-      <div className="w-full md:w-8/12 lg:w-7/12 p-8 md:p-16 flex flex-col justify-center overflow-y-auto">
-        {renderStep()}
+
+          <p className="mt-8 text-xs font-medium text-slate-400 dark:text-slate-500">
+            © {new Date().getFullYear()} ChatZi
+          </p>
+        </aside>
+
+        <section className="flex w-full flex-1 items-center justify-center p-6 sm:p-10 lg:w-[62%] lg:p-14">
+          <div className="w-full max-w-3xl">
+            {renderStep()}
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -7,11 +7,13 @@ const arabicCopy = (marketName: "الإمارات" | "الأردن", marketLabel
     { label: "آلية العمل", href: "#workflow" },
     { label: "المميزات", href: "#features" },
     { label: "القنوات", href: "#channels" },
-    { label: "الأمان", href: "#security" }
+    { label: "الأمان", href: "#security" },
+    { label: "الأسعار", href: "#pricing" },
+    { label: "اتصل بنا", href: "#contact" }
   ],
   login: "دخول",
   start: "ابدأ الآن",
-  heroLabel: `منصة AI لخدمة العملاء في ${marketName}`,
+  heroLabel: "منصة محادثات ذكية لخدمة العملاء",
   title: "حوّل محادثاتك إلى موظف استقبال ذكي",
   subtitle: "يعمل 24/7 من منصة موحدة لإدارة العملاء والمحادثات.",
   primary: "إنشاء حساب",
@@ -71,9 +73,9 @@ const arabicCopy = (marketName: "الإمارات" | "الأردن", marketLabel
   securityTitle: "تحكم وأمان مناسب لفرق العمل",
   security:
     "عزل بيانات كل شركة، صلاحيات واضحة، مفاتيح AI مخفية ومشفرة، وسجل Webhooks يساعدك على مراقبة ما حدث في كل قناة.",
-  pricingTitle: "ابدأ بمسار واضح",
+  pricingTitle: "أربع باقات مرنة حسب مسار نمو أعمالك",
   pricing:
-    "اختر أول سير عمل متكرر في شركتك: استفسارات المبيعات، الدعم، الحجز، أو متابعة العملاء. بعدها نوسع القنوات والأتمتة حسب الحاجة.",
+    "من التجربة المجانية للانطلاق، ثم النمو، ثم التوسع، ثم الحل المؤسسي المخصص. مسار واضح بدون مفاجآت.",
   faqTitle: "أسئلة سريعة",
   faq: [
     ["هل يدعم العربية والإنجليزية؟", `نعم، الصفحة تدعم الإنجليزية ونسختين عربيتين موجهتين إلى ${marketName}.`],
@@ -101,12 +103,14 @@ export const landingContent = {
       { label: "How it works", href: "#workflow" },
       { label: "Features", href: "#features" },
       { label: "Channels", href: "#channels" },
-      { label: "Security", href: "#security" }
+      { label: "Security", href: "#security" },
+      { label: "Pricing", href: "#pricing" },
+      { label: "Contact", href: "#contact" }
     ],
     login: "Sign in",
     start: "Start now",
     heroLabel: "AI receptionist and operations hub",
-    title: "ChatZi turns customer conversations into clear team action",
+    title: "Chatzi turns customer conversations into clear team action",
     subtitle:
       "Unify website chat, WhatsApp, social inboxes, AI replies, workflow automation, and human handoff in one workspace for teams in the UAE and Jordan.",
     primary: "Create account",
@@ -143,7 +147,7 @@ export const landingContent = {
     features: [
       ["Smart Receptionist", "Replies to your customers 24/7 in their language naturally."],
       ["All Conversations in One Place", "WhatsApp, Instagram, Messenger, and more from one platform."],
-      ["Human Handoff When Needed", "When human intervention is needed, the chat is routed with full details."],
+      ["Team Routing When Needed", "When a person should step in, the conversation is routed with full details."],
       ["Knows Your Business", "Trained on your products, services, offers, and specific questions."],
       ["Never Lose a Request", "Collects customer data and creates tickets or notifications automatically."],
       ["Know Everything That Happens", "Smart reports, CRM, and analytics to help you grow your business."]
@@ -167,13 +171,13 @@ export const landingContent = {
     securityTitle: "Governed, visible, and team-friendly",
     security:
       "Tenant-scoped data, role-aware access, encrypted AI secrets, visible webhook logs, and clean handoff rules keep automation controlled instead of opaque.",
-    pricingTitle: "Start from one real workflow",
+    pricingTitle: "Four flexible plans for every growth stage",
     pricing:
-      "Use the first rollout to map one repeated customer journey: lead qualification, support, appointment booking, or customer follow-up. Then scale channels and automation from there.",
+      "Start lean, grow into a dedicated AI receptionist, then scale into enterprise coverage with clear monthly message limits and support tiers.",
     faqTitle: "Quick questions",
     faq: [
       ["Does it support Arabic and English?", "Yes. The landing experience now supports English, Arabic for the UAE, and Arabic for Jordan."],
-      ["Is ChatZi only a chatbot?", "No. It combines AI replies, a Smart Inbox, knowledge training, workflow routing, lightweight CRM, and human handoff."],
+      ["Is ChatZi only a chatbot?", "No. It combines AI replies, a unified inbox, knowledge training, workflow routing, lightweight CRM, and team escalation."],
       ["Can it learn from my business data?", "Yes. Train it with files, website URLs, help pages, internal documents, and connected data sources."]
     ],
     ctaTitle: "Ready to transform your customer service?",

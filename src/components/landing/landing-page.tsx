@@ -9,28 +9,40 @@ import {
   ArrowLeft,
   ArrowRight,
   BarChart3,
+  BadgeCheck,
   Bot,
+  CalendarClock,
   CheckCircle2,
   ChevronDown,
+  CircleDollarSign,
   Cpu,
   Database,
   Globe,
+  Handshake,
+  Headphones,
   Inbox,
   Key,
+  Layers3,
   Languages,
   LockKeyhole,
   Menu,
   MessageSquare,
+  MessagesSquare,
   Play,
   PlugZap,
+  Route,
   Send,
   Settings,
   ShieldCheck,
   Sparkles,
+  Workflow,
   User,
   X,
-  Zap
+  Zap,
+  Building,
+  MapPin
 } from "lucide-react";
+import { FaWhatsapp, FaFacebookMessenger, FaEnvelope, FaLinkedinIn, FaTwitter, FaInstagram, FaYoutube } from "react-icons/fa";
 import { LoginForm } from "@/components/auth/login-form";
 import { landingContent, type LandingLocale } from "@/lib/landing-content";
 import { sectorsData } from "@/lib/sectors-content";
@@ -53,7 +65,7 @@ const localeLinks: Array<{ locale: LandingLocale; href: string; label: string; s
 ];
 
 const workflowIcons = [Globe, Cpu, Send];
-const featureIcons = [Bot, Inbox, MessageSquare, User, Database, PlugZap];
+const featureIcons = [Bot, MessagesSquare, Handshake, Database, Workflow, BarChart3];
 const channelIcons = [MessageSquare, Zap, Sparkles, Inbox, Bot, Settings];
 
 function BrandLogo({ compact = false }: { compact?: boolean }) {
@@ -67,7 +79,7 @@ function BrandLogo({ compact = false }: { compact?: boolean }) {
       <img
         src="/profile_white_trans.png"
         alt="ChatZi"
-        className="hidden h-full w-full object-contain object-left dark:block"
+        className="hidden h-full w-full object-contain object-left dark:block scale-[1.3] origin-left"
       />
     </span>
   );
@@ -80,13 +92,35 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSectorsOpen, setIsSectorsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+  const activeLocale = localeLinks.find((item) => item.locale === locale) || localeLinks[0];
+  const sectorBasePath = isEnglish ? "" : locale === "ar-jo" ? "/ar-jo" : "/ar-ae";
+  const localizedPath = (path: string) => (isEnglish ? path : `${sectorBasePath}${path}`);
   const isAuthenticated = useAuthStatus();
+  const signupLabel = isAuthenticated ? (isEnglish ? "Open dashboard" : "دخول لوحة التحكم") : copy.heroButtons?.signup;
+  const tryLabel = isAuthenticated ? (isEnglish ? "Open dashboard" : "دخول لوحة التحكم") : copy.heroButtons?.try;
+  const dashboardLabel = isEnglish ? "Dashboard" : "لوحة التحكم";
+  const renderHeroTitle = () => {
+    const words = copy.title.split(" ");
+    return words.map((word, index) => {
+      const normalized = word.replace(/[؟?،,.!]/g, "").toLowerCase();
+      const isBrand = normalized === "chatzi";
+      const shouldAccent = isBrand || (!copy.title.includes("ChatZi") && index === Math.floor(words.length / 2));
+
+      return (
+        <span key={`${word}-${index}`} className={shouldAccent ? "text-[#6119E6] dark:text-[#E13382]" : undefined}>
+          {index === 0 ? "" : " "}
+          {word}
+        </span>
+      );
+    });
+  };
 
   return (
     <main
       dir={copy.dir}
       lang={copy.lang}
-      className="min-h-screen bg-slate-50 font-sans text-slate-950 selection:bg-[#6119E6]/10 dark:bg-[#06030e] dark:text-white dark:selection:bg-[#E13382]/20 overflow-x-hidden"
+      className="relative min-h-screen overflow-x-hidden bg-slate-50 font-sans text-slate-950 selection:bg-[#6119E6]/10 dark:bg-[#06030e] dark:text-white dark:selection:bg-[#E13382]/20"
     >
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl text-slate-950 dark:border-white/10 dark:bg-[#06030e]/90 dark:text-white">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -106,27 +140,27 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
             ))}
 
             {/* Mega Menu for Sectors */}
-            <div 
+            <div
               className="relative"
               onMouseEnter={() => setIsSectorsOpen(true)}
               onMouseLeave={() => setIsSectorsOpen(false)}
             >
-              <button 
+              <button
                 onClick={() => setIsSectorsOpen(!isSectorsOpen)}
                 className="flex items-center gap-1 text-sm font-extrabold text-slate-600 transition hover:text-primary-700 dark:text-slate-300 dark:hover:text-white"
               >
                 {isEnglish ? "Sectors" : "القطاعات"}
                 <ChevronDown size={14} className={`transition-transform duration-200 ${isSectorsOpen ? "rotate-180" : ""}`} />
               </button>
-              
+
               {isSectorsOpen && (
                 <div className="absolute top-full end-[-150px] pt-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="w-[800px] rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-white/10 dark:bg-[#0c081c] dark:shadow-2xl dark:backdrop-blur-xl">
                     <div className="grid grid-cols-2 gap-4">
                       {sectorsData[locale as keyof typeof sectorsData]?.map((sector) => (
-                        <Link 
-                          key={sector.id} 
-                          href={`/sectors/${sector.id}`}
+                        <Link
+                          key={sector.id}
+                          href={`${sectorBasePath}/sectors/${sector.id}`}
                           onClick={() => setIsSectorsOpen(false)}
                           className="flex items-start gap-4 rounded-lg p-3 transition hover:bg-slate-50 dark:hover:bg-white/5"
                         >
@@ -147,26 +181,44 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 sm:flex dark:border-white/10 dark:bg-white/5">
-              <Languages size={15} className="mx-1 text-slate-500 dark:text-slate-400" />
-              {localeLinks.map((item) => {
-                const active = item.locale === locale;
-                return (
-                  <Link
-                    key={item.locale}
-                    href={item.href}
-                    className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-extrabold transition ${
-                      active
-                        ? "bg-white text-primary-700 shadow-sm dark:bg-white/10 dark:text-white"
-                        : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                    }`}
-                    title={item.label}
-                  >
-                    <span className="text-base">{item.flag}</span>
-                    <span>{item.short}</span>
-                  </Link>
-                );
-              })}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsLanguageOpen((open) => !open)}
+                aria-expanded={isLanguageOpen}
+                aria-label={isEnglish ? "Choose language" : "اختيار اللغة"}
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-sm font-extrabold text-slate-700 transition hover:border-[#6119E6]/30 hover:bg-white hover:text-[#6119E6] dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-[#E13382]/40 dark:hover:bg-white/10 dark:hover:text-[#E13382]"
+              >
+                <Languages size={15} className="text-slate-500 dark:text-slate-300" />
+                <span className="text-base leading-none">{activeLocale.flag}</span>
+                <span className="hidden sm:inline">{activeLocale.short}</span>
+                <ChevronDown size={14} className={`transition-transform duration-200 ${isLanguageOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {isLanguageOpen && (
+                <div className="absolute end-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/10 dark:border-white/10 dark:bg-[#0c081c] dark:shadow-black/30">
+                  {localeLinks.map((item) => {
+                    const active = item.locale === locale;
+                    return (
+                      <Link
+                        key={item.locale}
+                        href={item.href}
+                        onClick={() => setIsLanguageOpen(false)}
+                        className={`flex min-h-11 items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-extrabold transition ${active
+                          ? "bg-[#6119E6]/10 text-[#6119E6] dark:bg-[#E13382]/15 dark:text-[#E13382]"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
+                          }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="text-lg leading-none">{item.flag}</span>
+                          <span>{item.label}</span>
+                        </span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">{item.short}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {isAuthenticated ? (
@@ -174,21 +226,21 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
                 href="/dashboard"
                 className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
               >
-                <span>{copy.secondary}</span>
+                <span>{dashboardLabel}</span>
                 <ArrowIcon size={16} />
               </Link>
             ) : (
               <>
                 <button
                   onClick={() => setIsLoginOpen(true)}
-                  className="inline-flex rounded-lg px-3 py-2 text-sm font-extrabold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
+                  className="hidden rounded-lg px-3 py-2 text-sm font-extrabold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white sm:inline-flex"
                 >
                   {copy.login}
                 </button>
 
                 <Link
                   href="/register"
-                  className="hidden sm:inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
                 >
                   <span>{copy.start}</span>
                   <ArrowIcon size={16} />
@@ -225,7 +277,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
                 {sectorsData[locale as keyof typeof sectorsData]?.map((sector) => (
                   <Link 
                     key={sector.id} 
-                    href={`/sectors/${sector.id}`}
+                    href={`${sectorBasePath}/sectors/${sector.id}`}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center gap-3 rounded-lg p-2 transition hover:bg-slate-50 dark:hover:bg-white/5"
                   >
@@ -241,7 +293,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
         )}
       </header>
 
-      <section className="relative overflow-hidden bg-white text-slate-950 py-14 dark:bg-[#06030e] dark:text-white sm:py-24">
+      <section className="relative overflow-hidden bg-white text-slate-950 pt-8 pb-32 dark:bg-[#06030e] dark:text-white sm:pt-12 sm:pb-48">
         {/* Radiating perspective lines */}
         <div className="absolute inset-0 opacity-[0.06] dark:opacity-[0.12] pointer-events-none">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -251,17 +303,17 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
                 <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
               </linearGradient>
             </defs>
-            {Array.from({ length: 24 }).map((_, i) => {
-              const x2 = (i / 23) * 100;
+            {Array.from({ length: 48 }).map((_, i) => {
+              const x2 = (i / 47) * 200 - 50;
               return (
                 <line
                   key={i}
                   x1="50%"
-                  y1="20%"
+                  y1="-30%"
                   x2={`${x2}%`}
                   y2="100%"
                   stroke="url(#line-glow)"
-                  strokeWidth="0.75"
+                  strokeWidth="1"
                 />
               );
             })}
@@ -277,50 +329,46 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
           animate="visible"
           className="relative z-10 mx-auto grid max-w-7xl gap-12 px-4 lg:grid-cols-2 lg:items-center sm:px-6 lg:px-8"
         >
-          <motion.div variants={fadeUp} className="flex flex-col items-start text-start">
-            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm border border-slate-200/60 dark:bg-white/10 dark:text-slate-200 dark:border-white/5">
+          <motion.div variants={fadeUp} className="flex flex-col items-center text-center lg:items-start lg:text-start">
+            <span className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm border border-slate-200/60 dark:bg-white/10 dark:text-slate-200 dark:border-white/5">
               <span className="rounded-full bg-[#6119E6] px-2 py-0.5 text-xs text-white dark:bg-[#E13382]">New</span>
               {copy.heroLabel} <ArrowIcon size={14} className="opacity-50" />
             </span>
 
             <h1 className="mt-6 max-w-3xl text-4xl font-extrabold leading-[1.15] tracking-tight text-slate-950 dark:text-white sm:text-6xl">
-              {copy.title.split(' ').map((word, i, arr) => 
-                i === Math.floor(arr.length / 2) ? (
-                  <span key={i} className="text-[#6119E6] dark:text-[#E13382]"> {word} </span>
-                ) : (
-                  <span key={i}> {word} </span>
-                )
-              )}
+              {renderHeroTitle()}
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-slate-600 dark:text-slate-300 sm:text-xl">
               {copy.subtitle}
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row flex-wrap">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link
-                  href="/book"
-                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#6119E6] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382] dark:shadow-[#E13382]/25"
-                >
-                  {copy.heroButtons?.demo}
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link
-                  href="/register"
-                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-emerald-500/20 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
-                >
-                  <Zap size={16} />
-                  {copy.heroButtons?.try}
-                </Link>
-              </motion.div>
+            <div className="mt-8 flex w-full max-w-sm flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:flex-wrap sm:items-center sm:justify-center lg:justify-start">
+              <Link
+                href={localizedPath("/book")}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#6119E6] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382] dark:shadow-[#E13382]/25"
+              >
+                {copy.heroButtons?.demo}
+              </Link>
+              <Link
+                href={isAuthenticated ? "/dashboard" : "/register"}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+              >
+                {signupLabel}
+              </Link>
+              <Link
+                href={isAuthenticated ? "/dashboard" : "/register"}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-emerald-500/20 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
+              >
+                <Zap size={16} />
+                {tryLabel}
+              </Link>
             </div>
             <p className="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">
               {copy.heroButtons?.trySub}
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-6">
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6 lg:justify-start">
               {(isEnglish
                 ? ["No credit card required", "14-day free trial", "Cancel anytime"]
                 : ["لا حاجة لبطاقة", "تجربة 14 يوم", "إلغاء في أي وقت"]
@@ -333,7 +381,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
             </div>
           </motion.div>
 
-          <motion.div variants={fadeUp} className="relative w-full max-w-2xl lg:mx-0 mx-auto">
+          <motion.div variants={fadeUp} className="relative mx-auto w-full max-w-xl sm:max-w-2xl lg:mx-0">
             <Image
               src="/newhero.png"
               alt={copy.imageAlt.hero}
@@ -344,9 +392,45 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
             />
           </motion.div>
         </motion.div>
+
       </section>
 
-      <section id="workflow" className="bg-white py-20 dark:bg-primary-950 sm:py-24">
+      <section id="features" className="relative z-10 -mt-20 sm:-mt-32 pb-20 sm:pb-24 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl rounded-3xl bg-white p-8 sm:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:bg-[#0c081c] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-200/50 dark:border-white/5">
+          <div className="text-center">
+            <h2 className="mx-auto max-w-3xl text-3xl font-extrabold leading-tight text-slate-950 dark:text-white sm:text-5xl">{copy.featuresTitle}</h2>
+            {copy.featuresSubtitle && <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">{copy.featuresSubtitle}</p>}
+          </div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-120px" }}
+            className="mt-16 grid gap-10 sm:gap-6 md:grid-cols-2 lg:grid-cols-3"
+          >
+            {copy.features.map(([title, text], index) => {
+              const Icon = featureIcons[index] || Bot;
+              return (
+                <motion.article
+                  variants={fadeUp}
+                  key={title}
+                  className="flex flex-col items-center text-center rounded-3xl border border-slate-100 bg-white p-8 shadow-sm transition hover:shadow-md dark:border-white/5 dark:bg-[#0c081c]/50"
+                >
+                  <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#6119E6]/10 text-[#6119E6] dark:bg-[#E13382]/20 dark:text-[#E13382]">
+                    <Icon size={32} strokeWidth={1.5} />
+                  </span>
+                  <h3 className="mt-6 text-xl font-extrabold text-slate-950 dark:text-white">{title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{text}</p>
+                </motion.article>
+              );
+            })}
+          </motion.div>
+        </div>
+      </section>
+
+      <section id="workflow" className="relative z-20 py-20 sm:py-24">
+        <div className="absolute left-0 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#6119E6]/30 dark:bg-[#6119E6]/20 blur-[120px] pointer-events-none" />
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={stagger}
@@ -373,7 +457,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
                     <motion.div
                       variants={fadeUp}
                       key={step.title}
-                      className="grid gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-secondary-300/30 dark:bg-primary-900/70 sm:grid-cols-[3rem_1fr]"
+                      className="grid gap-4 rounded-lg border border-slate-200 bg-white/50 p-4 shadow-sm dark:border-secondary-300/30 dark:bg-primary-900/70 sm:grid-cols-[3rem_1fr]"
                     >
                       <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 text-primary-700 dark:bg-secondary-500 dark:text-white">
                         <Icon size={22} />
@@ -403,66 +487,15 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
                   className="aspect-[4/3] w-full object-cover object-center"
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-5 dark:border-secondary-300/30 dark:bg-primary-900/70">
-                  <div className="flex items-center gap-2 text-sm font-extrabold text-slate-950 dark:text-secondary-100">
-                    <Inbox size={18} className="text-primary-700 dark:text-secondary-300" />
-                    Smart Inbox
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-secondary-100/80">
-                    {isEnglish ? "One queue for every customer entry point." : "صندوق واحد لكل نقاط دخول العملاء."}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-5 dark:border-secondary-300/30 dark:bg-primary-900/70">
-                  <div className="flex items-center gap-2 text-sm font-extrabold text-slate-950 dark:text-secondary-100">
-                    <ShieldCheck size={18} className="text-secondary-600 dark:text-secondary-300" />
-                    Human handoff
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-secondary-100/80">
-                    {isEnglish ? "Escalate with context, not confusion." : "تصعيد واضح مع كامل سياق المحادثة."}
-                  </p>
-                </div>
-              </div>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      <section id="features" className="bg-slate-50 py-20 dark:bg-[#06030e] sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="mx-auto max-w-3xl text-3xl font-extrabold leading-tight text-slate-950 dark:text-white sm:text-5xl">{copy.featuresTitle}</h2>
-            {copy.featuresSubtitle && <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">{copy.featuresSubtitle}</p>}
-          </div>
 
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-120px" }}
-            className="mt-16 grid gap-10 sm:gap-6 md:grid-cols-2 lg:grid-cols-3"
-          >
-            {copy.features.map(([title, text], index) => {
-              const Icon = featureIcons[index] || Bot;
-              return (
-                <motion.article
-                  variants={fadeUp}
-                  key={title}
-                  className="flex flex-col items-center text-center px-4"
-                >
-                  <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-[#6119E6] shadow-xl shadow-slate-200/50 dark:bg-white/5 dark:text-[#E13382] dark:shadow-none">
-                    <Icon size={32} strokeWidth={1.5} />
-                  </span>
-                  <h3 className="mt-6 text-xl font-extrabold text-slate-950 dark:text-white">{title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{text}</p>
-                </motion.article>
-              );
-            })}
-          </motion.div>
-        </div>
-      </section>
 
-      <section id="channels" className="bg-white py-20 dark:bg-primary-950 sm:py-24">
+      <section id="channels" className="relative z-10 py-20 sm:py-24">
+        <div className="absolute right-0 top-1/2 h-[600px] w-[600px] translate-x-1/3 -translate-y-1/2 rounded-full bg-[#E13382]/30 dark:bg-[#E13382]/20 blur-[120px] pointer-events-none" />
         <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:px-8">
           <div>
             <p className="text-sm font-extrabold uppercase tracking-wide text-secondary-600 dark:text-secondary-300">{isEnglish ? "Our services" : "خدماتنا"}</p>
@@ -498,7 +531,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
         </div>
       </section>
 
-      <section id="security" className="bg-slate-50 py-20 dark:bg-primary-900 sm:py-24">
+      <section id="security" className="relative z-10 py-20 sm:py-24">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:px-8">
           <div>
             <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50 text-primary-700 dark:bg-secondary-500 dark:text-white">
@@ -513,7 +546,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
               [ShieldCheck, isEnglish ? "Tenant-scoped data" : "عزل بيانات كل شركة"],
               [Key, isEnglish ? "Encrypted AI secrets" : "تشفير مفاتيح AI"],
               [BarChart3, isEnglish ? "Visible webhook logs" : "سجلات Webhook واضحة"],
-              [User, isEnglish ? "Human handoff control" : "تحكم بالتسليم البشري"]
+              [User, isEnglish ? "Team routing control" : "تحكم بتوجيه المحادثات"]
             ].map(([Icon, label]) => {
               const SafeIcon = Icon as typeof ShieldCheck;
               return (
@@ -527,52 +560,96 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
         </div>
       </section>
 
-      <section className="bg-white py-20 dark:bg-primary-950 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 dark:border-secondary-300/30 dark:bg-primary-900/70">
-              <p className="text-sm font-extrabold uppercase tracking-wide text-primary-700 dark:text-secondary-300">{isEnglish ? "Pricing" : "الأسعار"}</p>
-              <h2 className="mt-3 text-3xl font-extrabold leading-tight text-slate-950 dark:text-secondary-100">{copy.pricingTitle}</h2>
-              <p className="mt-4 text-base leading-8 text-slate-600 dark:text-secondary-100/80">{copy.pricing}</p>
-              <Link
-                href="/book"
-                className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-5 py-3 text-sm font-extrabold text-white transition hover:opacity-90 dark:bg-[#E13382]"
-              >
-                {isEnglish ? "Book a workflow review" : "احجز مراجعة سير العمل"}
-                <ArrowIcon size={17} />
-              </Link>
-            </div>
 
-            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-secondary-300/30 dark:bg-primary-900/70">
-               <p className="text-sm font-extrabold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">{copy.contact?.title}</p>
-               <h3 className="mt-3 text-2xl font-extrabold text-slate-950 dark:text-secondary-100">{copy.contact?.subtitle}</h3>
-               
-               <div className="mt-6 space-y-4">
-                 <div className="flex items-center gap-4">
-                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300">
-                     <MessageSquare size={20} />
-                   </div>
-                   <div>
-                     <p className="text-sm font-bold text-slate-900 dark:text-white">Email</p>
-                     <a href={`mailto:${copy.contact?.email}`} className="text-sm text-slate-500 hover:text-[#6119E6] dark:text-slate-400 dark:hover:text-[#E13382]">{copy.contact?.email}</a>
-                   </div>
-                 </div>
-                 <div className="flex items-center gap-4">
-                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300">
-                     <Zap size={20} />
-                   </div>
-                   <div>
-                     <p className="text-sm font-bold text-slate-900 dark:text-white">WhatsApp / Phone</p>
-                     <a href={`tel:${copy.contact?.phone}`} className="text-sm text-slate-500 hover:text-[#6119E6] dark:text-slate-400 dark:hover:text-[#E13382]" dir="ltr">{copy.contact?.phone}</a>
-                   </div>
-                 </div>
-               </div>
-            </div>
+      <section id="pricing" className="relative z-10 py-20 sm:py-24">
+        <div className="absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#6119E6]/30 dark:bg-[#6119E6]/20 blur-[150px] pointer-events-none" />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-extrabold leading-tight text-slate-950 dark:text-white sm:text-5xl">{copy.pricingTitle}</h2>
+            <p className="mt-4 max-w-2xl mx-auto text-lg text-slate-600 dark:text-slate-300">{copy.pricing}</p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-4 mb-24">
+            {[
+              {
+                name: isEnglish ? "Starter" : "الانطلاق",
+                price: isEnglish ? "$39" : "39$",
+                period: isEnglish ? "/month" : "/شهر",
+                description: isEnglish ? "Start with a light setup. Includes 14 days free." : "ابدأ بنظام تشغيل خفيف من اليوم الأول. وتوسع عليه لاحقاً بدون ما تبدأ من صفر.",
+                features: isEnglish
+                  ? ["2,500 AI messages included/mo", "$10 per integration feature", "WhatsApp + Messenger + Instagram + Telegram + Web", "Omnichannel platform available for +$25"]
+                  : ["2,500 رسالة ذكاء اصطناعي مشمولة شهرياً", "10$ لكل ميزة تكامل", "واتساب + ماسنجر + انستغرام + تيليغرام + الموقع", "المنصة متعددة القنوات متاحة بـ25$ إضافية"],
+                button: isEnglish ? "Start Free Trial" : "ابدأ تجربتك المجانية",
+                highlighted: false,
+              },
+              {
+                name: isEnglish ? "Pro" : "النمو",
+                price: isEnglish ? "$299" : "299$",
+                period: isEnglish ? "/month" : "/شهر",
+                description: isEnglish ? "Everything in Starter, plus dedicated human receptionist during working hours." : "كل شيء في Starter، مع موظف استقبال بشري مخصص خلال ساعات الدوام.",
+                features: isEnglish
+                  ? ["5,000 AI messages included/mo", "$10 per integration feature", "Human receptionist: 8 hours - Mon to Fri", "300 human conversations included/mo", "$0.25 per additional human conversation", "WhatsApp + Messenger + Instagram + Telegram + Web", "Omnichannel platform included"]
+                  : ["5,000 رسالة ذكاء اصطناعي مشمولة شهرياً", "10$ لكل ميزة تكامل", "موظف استقبال بشري: 8 ساعات - الإثنين للجمعة", "300 محادثة بشرية مشمولة شهرياً", "0.25$ لكل محادثة بشرية إضافية", "واتساب + ماسنجر + انستغرام + تيليغرام + الموقع", "المنصة متعددة القنوات مشمولة"],
+                button: isEnglish ? "Book a Demo" : "احجز عرضاً",
+                highlighted: true,
+              },
+              {
+                name: isEnglish ? "Enterprise" : "التوسع",
+                price: isEnglish ? "$799" : "799$",
+                period: isEnglish ? "/month" : "/شهر",
+                description: isEnglish ? "Everything in Pro, with 24/7 human coverage for non-stop businesses." : "كل شيء في Pro، مع تغطية بشرية على مدار الساعة للأعمال اللي لا تتوقف.",
+                features: isEnglish
+                  ? ["10,000 AI messages included/mo", "$10 per integration feature", "Human receptionist: 24 hours - Mon to Fri", "600 human conversations included/mo", "$0.25 per additional human conversation", "WhatsApp + Messenger + Instagram + Telegram + Web", "Omnichannel platform included"]
+                  : ["10,000 رسالة ذكاء اصطناعي مشمولة شهرياً", "10$ لكل ميزة تكامل", "موظف استقبال بشري: 24 ساعة - الإثنين للجمعة", "600 محادثة بشرية مشمولة شهرياً", "0.25$ لكل محادثة بشرية إضافية", "واتساب + ماسنجر + انستغرام + تيليغرام + الموقع", "المنصة متعددة القنوات مشمولة"],
+                button: isEnglish ? "Book a Demo" : "احجز عرضاً",
+                highlighted: false,
+              },
+              {
+                name: isEnglish ? "+Enterprise" : "متخصص",
+                price: isEnglish ? "Custom" : "مخصص",
+                period: "",
+                description: isEnglish ? "Full workflow design and custom launch planning suited for your operating environment." : "تصميم كامل لسير العمل، وتخطيط مخصص للإطلاق يناسب بيئتك التشغيلية.",
+                features: isEnglish
+                  ? ["Unlimited AI messages and full features", "Everything in Enterprise with custom workflow design", "Dedicated support and detailed launch planning", "Enterprise-grade human team model", "Omnichannel platform fully included", "Pricing based on your organization's needs"]
+                  : ["رسائل ذكاء اصطناعي غير محدودة وميزات كاملة", "كل شيء في Enterprise مع تصميم مخصص لسير العمل", "دعم مخصص وتخطيط تفصيلي للإطلاق", "نموذج فريق بشري بمستوى المؤسسات", "المنصة متعددة القنوات مشمولة بالكامل", "التسعير يحدد وفق احتياجات مؤسستك"],
+                button: isEnglish ? "Request Custom Pricing" : "اطلب عرض سعر مخصص",
+                highlighted: false,
+              }
+            ].map((plan, i) => (
+              <div key={i} className={`relative flex flex-col rounded-2xl border ${plan.highlighted ? 'border-[#6119E6] dark:border-[#E13382] shadow-2xl shadow-[#6119E6]/20' : 'border-slate-200 dark:border-white/10'} bg-white/50 dark:bg-[#0c081c]/50 p-6 backdrop-blur-xl`}>
+                {plan.highlighted && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#6119E6] to-[#E13382] px-4 py-1 text-xs font-bold text-white whitespace-nowrap">
+                    {isEnglish ? "Most Popular" : "الأكثر شهرة"}
+                  </div>
+                )}
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">{plan.name}</h3>
+                <div className="mt-4 flex items-baseline text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white">
+                  {plan.price}
+                  <span className="ml-1 text-base lg:text-xl font-medium text-slate-500 dark:text-slate-400">{plan.period}</span>
+                </div>
+                <p className="mt-4 text-sm text-slate-500 dark:text-slate-400 min-h-[60px]">{plan.description}</p>
+                <ul className="mt-8 flex-1 space-y-4">
+                  {plan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
+                      <CheckCircle2 size={18} className="shrink-0 text-[#6119E6] dark:text-[#E13382] mt-0.5" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/book"
+                  className={`mt-8 block rounded-xl px-6 py-3 text-center text-sm font-bold transition ${plan.highlighted ? 'bg-[#6119E6] text-white hover:opacity-90 dark:bg-[#E13382]' : 'bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/20'}`}
+                >
+                  {plan.button}
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-slate-50 py-16 dark:bg-[#06030e] sm:py-20">
+      <section className="relative z-10 py-16 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 shadow-2xl dark:border-white/10">
             <video src="/promo.mp4" autoPlay loop muted playsInline className="aspect-video w-full object-cover" />
@@ -580,7 +657,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
         </div>
       </section>
 
-      <section className="bg-white py-16 dark:bg-primary-950 sm:py-20">
+      <section className="relative z-10 py-16 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-3xl border border-primary-100 bg-primary-950 px-6 py-12 text-white shadow-2xl shadow-primary-950/20 dark:border-secondary-300/25 dark:bg-[#06030e] sm:px-12">
             <div className="absolute end-0 top-0 h-full w-1 bg-[#6119E6] dark:bg-[#E13382]" />
@@ -592,7 +669,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
               </div>
               <h2 className="max-w-3xl text-4xl font-extrabold leading-tight text-white sm:text-5xl">{copy.ctaTitle}</h2>
               <p className="max-w-2xl text-lg leading-8 text-slate-300">{copy.ctaSubtitle}</p>
-              
+
               <div className="mt-4 flex flex-col gap-4 sm:flex-row flex-wrap justify-center">
                 <Link
                   href="/book"
@@ -619,14 +696,88 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 bg-white py-10 text-sm text-slate-500 dark:border-secondary-300/25 dark:bg-primary-900 dark:text-secondary-100">
+      <section id="contact" className="relative z-10 py-16 sm:py-20 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-transparent">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-2 items-stretch">
+            {/* Contact Us Card */}
+            <div className="rounded-3xl border border-slate-200 bg-white/50 p-8 shadow-lg backdrop-blur-xl dark:border-white/5 dark:bg-[#0c081c]/50">
+               <h3 className="text-2xl font-extrabold text-slate-950 dark:text-white mb-8 text-center">{isEnglish ? "Contact Us" : "تواصل معنا"}</h3>
+               <div className="flex flex-col gap-6">
+                 {/* Company */}
+                 <div className="flex items-center gap-4 justify-between">
+                   <div className="text-right flex-1" dir={copy.dir}>
+                     <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{isEnglish ? "Company" : "الشركة"}</p>
+                     <p className="font-bold text-slate-900 dark:text-white">Chatzi AI Solutions FZE LLC</p>
+                   </div>
+                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#6119E6]/10 text-[#6119E6] dark:bg-[#E13382]/20 dark:text-[#E13382]">
+                     <Building size={20} />
+                   </div>
+                 </div>
+                 {/* Phone (WhatsApp) */}
+                 <div className="flex items-center gap-4 justify-between">
+                   <div className="text-right flex-1" dir={copy.dir}>
+                     <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{isEnglish ? "WhatsApp" : "الهاتف (واتساب)"}</p>
+                     <a href={`https://wa.me/${copy.contact?.phone?.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="font-bold text-slate-900 hover:text-[#25D366] dark:text-white" dir="ltr">{copy.contact?.phone}</a>
+                   </div>
+                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#25D366]/15 text-[#25D366]">
+                     <FaWhatsapp size={22} />
+                   </div>
+                 </div>
+                 {/* Email */}
+                 <div className="flex items-center gap-4 justify-between">
+                   <div className="text-right flex-1" dir={copy.dir}>
+                     <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{isEnglish ? "Email" : "البريد الإلكتروني"}</p>
+                     <a href={`mailto:${copy.contact?.email}`} className="font-bold text-slate-900 hover:text-rose-500 dark:text-white">{copy.contact?.email}</a>
+                   </div>
+                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-500">
+                     <FaEnvelope size={20} />
+                   </div>
+                 </div>
+                 {/* Address */}
+                 <div className="flex items-center gap-4 justify-between">
+                   <div className="text-right flex-1" dir={copy.dir}>
+                     <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{isEnglish ? "Address" : "العنوان"}</p>
+                     <p className="text-sm font-bold text-slate-900 dark:text-white" dir="ltr">UAE, Ajman, Sheikh Khalifa Street, Amber Gem Tower, 26th Floor</p>
+                   </div>
+                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#6119E6]/10 text-[#6119E6] dark:bg-[#E13382]/20 dark:text-[#E13382]">
+                     <MapPin size={20} />
+                   </div>
+                 </div>
+               </div>
+            </div>
+
+            {/* Follow Us Card */}
+            <div className="rounded-3xl border border-slate-200 bg-white/50 p-8 shadow-lg backdrop-blur-xl dark:border-white/5 dark:bg-[#0c081c]/50 flex flex-col">
+               <h3 className="text-2xl font-extrabold text-slate-950 dark:text-white mb-8 text-center">{isEnglish ? "Follow Us" : "تابعنا"}</h3>
+               <div className="flex-1 flex items-center justify-center gap-4 flex-wrap">
+                  <a href="#" className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#6119E6]/10 text-[#6119E6] dark:bg-[#E13382]/20 dark:text-[#E13382] transition hover:scale-110">
+                     <FaLinkedinIn size={28} />
+                  </a>
+                  <a href="#" className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#6119E6]/10 text-[#6119E6] dark:bg-[#E13382]/20 dark:text-[#E13382] transition hover:scale-110">
+                     <FaTwitter size={28} />
+                  </a>
+                  <a href="#" className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#6119E6]/10 text-[#6119E6] dark:bg-[#E13382]/20 dark:text-[#E13382] transition hover:scale-110">
+                     <FaInstagram size={28} />
+                  </a>
+                  <a href="#" className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#6119E6]/10 text-[#6119E6] dark:bg-[#E13382]/20 dark:text-[#E13382] transition hover:scale-110">
+                     <FaYoutube size={28} />
+                  </a>
+               </div>
+            </div>
+
+
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-slate-200 bg-white py-10 text-sm text-slate-500 dark:border-secondary-500/25 dark:bg-[#090615] dark:text-slate-300">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-4 sm:px-6 md:flex-row lg:px-8">
           <BrandLogo />
           <p className="text-center font-semibold">{copy.footer}</p>
           <div className="flex flex-wrap justify-center gap-4 text-xs font-extrabold">
-            <Link href="/privacy" className="hover:text-primary-700 dark:hover:text-secondary-300">{isEnglish ? "Privacy" : "الخصوصية"}</Link>
-            <Link href="/terms" className="hover:text-primary-700 dark:hover:text-secondary-300">{isEnglish ? "Terms" : "الشروط"}</Link>
-            <Link href="/data-deletion" className="hover:text-primary-700 dark:hover:text-secondary-300">{isEnglish ? "Data deletion" : "حذف البيانات"}</Link>
+            <Link href={localizedPath("/privacy")} className="hover:text-primary-700 dark:hover:text-white">{isEnglish ? "Privacy" : "الخصوصية"}</Link>
+            <Link href={localizedPath("/terms")} className="hover:text-primary-700 dark:hover:text-white">{isEnglish ? "Terms" : "الشروط"}</Link>
+            <Link href={localizedPath("/data-deletion")} className="hover:text-primary-700 dark:hover:text-white">{isEnglish ? "Data deletion" : "حذف البيانات"}</Link>
           </div>
         </div>
       </footer>

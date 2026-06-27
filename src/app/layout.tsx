@@ -46,9 +46,7 @@ export default async function RootLayout({
       <head>
         {/*
          * Google Fonts preconnect — critical for performance.
-         * Tajawal: Arabic-optimised face (400, 500, 600, 700, 800)
-         * Inter:   Latin companion — same optical metrics as Tajawal
-         * Both are loaded in globals.css via @import.
+         * Cairo is loaded in globals.css and used across Arabic + Latin UI.
          */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -72,6 +70,87 @@ export default async function RootLayout({
                   document.documentElement.lang = locale;
                   document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
                 } catch (e) {}
+              })();
+            `,
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var recoveryKey = 'chatzi:chunk-recovery';
+
+                function clearRuntimeCaches() {
+                  var tasks = [];
+
+                  if ('serviceWorker' in navigator) {
+                    tasks.push(
+                      navigator.serviceWorker
+                        .getRegistrations()
+                        .then(function(registrations) {
+                          return Promise.all(registrations.map(function(registration) {
+                            return registration.unregister();
+                          }));
+                        })
+                    );
+                  }
+
+                  if ('caches' in window) {
+                    tasks.push(
+                      caches.keys().then(function(keys) {
+                        return Promise.all(keys.map(function(key) {
+                          return caches.delete(key);
+                        }));
+                      })
+                    );
+                  }
+
+                  return Promise.all(tasks);
+                }
+
+                function recoverFromChunkError() {
+                  try {
+                    if (sessionStorage.getItem(recoveryKey) === '1') return;
+                    sessionStorage.setItem(recoveryKey, '1');
+                  } catch (error) {
+                    return;
+                  }
+
+                  clearRuntimeCaches().finally(function() {
+                    window.location.reload();
+                  });
+                }
+
+                function isChunkMessage(message) {
+                  return /ChunkLoadError|Loading chunk [\\w-]+ failed/i.test(String(message || ''));
+                }
+
+                window.addEventListener('error', function(event) {
+                  var target = event && event.target;
+                  var src = target && target.src;
+                  var message = event && (event.message || (event.error && event.error.message));
+
+                  if ((src && src.indexOf('/_next/static/chunks/') !== -1) || isChunkMessage(message)) {
+                    recoverFromChunkError();
+                  }
+                }, true);
+
+                window.addEventListener('unhandledrejection', function(event) {
+                  var reason = event && event.reason;
+                  var message = reason && (reason.message || reason.toString());
+
+                  if (isChunkMessage(message)) {
+                    recoverFromChunkError();
+                  }
+                });
+
+                window.addEventListener('load', function() {
+                  window.setTimeout(function() {
+                    try {
+                      sessionStorage.removeItem(recoveryKey);
+                    } catch (error) {}
+                  }, 5000);
+                });
               })();
             `,
           }}
