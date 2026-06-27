@@ -18,18 +18,34 @@
 // COLOR PALETTE
 // ---------------------------------------------------------------------------
 export const colorTokens = {
-  /** Brand / Primary — Violet/Purple family */
+  /** Brand / Primary — ChatZi violet (#6119E6) */
   primary: {
-    50:  "#faf5ff",
-    100: "#f3e8ff",
-    200: "#e9d5ff",
-    300: "#d8b4fe",
-    400: "#c084fc",
-    500: "#9b59d0", // ← default accent base (#9b59d0)
-    600: "#843db0",
-    700: "#6c2e93",
-    800: "#562276",
-    900: "#44185c",
+    50:  "#f4f0ff",
+    100: "#e8ddff",
+    200: "#d4c1ff",
+    300: "#b896ff",
+    400: "#9661ff",
+    500: "#7835f2",
+    600: "#6119e6",
+    700: "#5012c3",
+    800: "#42119f",
+    900: "#35107e",
+    950: "#21064f",
+  },
+
+  /** Brand / Secondary — ChatZi pink (#E13382) */
+  secondary: {
+    50:  "#fdf1f7",
+    100: "#fce3ef",
+    200: "#fac8df",
+    300: "#f69dc6",
+    400: "#ee67a6",
+    500: "#e13382",
+    600: "#c91f6c",
+    700: "#a91657",
+    800: "#8c164b",
+    900: "#751640",
+    950: "#470620",
   },
 
   /** Neutrals — Slate family (UI backgrounds, borders, text) */
@@ -54,8 +70,8 @@ export const colorTokens = {
   error:   { light: "#fef2f2", border: "#fca5a5", text: "#b91c1c", base: "#ef4444" },
   info:    { light: "#eff6ff", border: "#93c5fd", text: "#1d4ed8", base: "#3b82f6" },
 
-  /** Accent override — Coral (CTAs / badges) */
-  coral: "#dc6b4d",
+  /** Accent override — kept for backward compatibility */
+  coral: "#E13382",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -149,7 +165,7 @@ export const shadowTokens = {
   soft:   "0 14px 38px rgba(23, 32, 42, 0.08)",  // kept from legacy
   md:     "0 4px 16px rgba(15, 23, 42, 0.10)",
   lg:     "0 12px 40px rgba(15, 23, 42, 0.14)",
-  focus:  "0 0 0 3px rgba(132, 61, 176, 0.25)", // primary/600 ring
+  focus:  "0 0 0 3px rgba(97, 25, 230, 0.24)", // primary/600 ring
 } as const;
 
 // ---------------------------------------------------------------------------

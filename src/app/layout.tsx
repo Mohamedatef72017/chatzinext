@@ -78,7 +78,7 @@ export default async function RootLayout({
         />
       </head>
       <body>
-        <NextTopLoader color="#9b59d0" height={3} showSpinner={false} />
+        <NextTopLoader color="#6119E6" height={3} showSpinner={false} />
         <I18nProvider initialLocale={locale}>
           <ThemeProvider>
             {children}

@@ -20,6 +20,7 @@ export const tailwindThemeExtension = {
   colors: {
     // Brand
     primary:     colorTokens.primary,
+    secondary:   colorTokens.secondary,
     // Semantic
     success:     colorTokens.success,
     warning:     colorTokens.warning,

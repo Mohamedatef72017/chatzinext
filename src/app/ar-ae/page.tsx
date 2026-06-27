@@ -4,7 +4,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Bot } from "@/lib/models/bot";
 import { LandingPage } from "@/components/landing/landing-page";
 
-export default async function ArabicHomePage() {
+export default async function ArabicUaeHomePage() {
   await connectToDatabase();
   let query: any = { isActive: true };
   if (process.env.DEFAULT_TENANT_ID) query.tenantId = process.env.DEFAULT_TENANT_ID;
