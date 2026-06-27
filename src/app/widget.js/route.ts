@@ -39,9 +39,9 @@ export async function GET() {
       height: 60px;
       border-radius: 50%;
       border: 0;
-      background: linear-gradient(135deg, #9b59d0 0%, #7c3aed 100%);
+      background: linear-gradient(135deg, #6119E6 0%, #E13382 100%);
       color: #fff;
-      box-shadow: 0 8px 32px rgba(155, 89, 208, 0.4);
+      box-shadow: 0 8px 32px rgba(97, 25, 230, 0.4);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -52,7 +52,7 @@ export async function GET() {
     }
     .cz-widget-button:hover {
       transform: scale(1.08) translateY(-2px);
-      box-shadow: 0 12px 36px rgba(155, 89, 208, 0.5);
+      box-shadow: 0 12px 36px rgba(97, 25, 230, 0.5);
     }
     .cz-widget-button svg {
       width: 26px;
@@ -85,20 +85,20 @@ export async function GET() {
       height: 44px;
       border-radius: 50%;
       background: #fff;
-      border: 1px solid rgba(155, 89, 208, 0.2);
-      box-shadow: 0 4px 12px rgba(155, 89, 208, 0.1);
+      border: 1px solid rgba(97, 25, 230, 0.2);
+      box-shadow: 0 4px 12px rgba(97, 25, 230, 0.1);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       position: relative;
       transition: all 0.2s;
-      color: #7c3aed;
+      color: #E13382;
     }
     .cz-persona-icon:hover {
       transform: scale(1.1);
-      box-shadow: 0 6px 16px rgba(155, 89, 208, 0.2);
-      border-color: #7c3aed;
+      box-shadow: 0 6px 16px rgba(97, 25, 230, 0.2);
+      border-color: #E13382;
     }
     .cz-persona-icon svg {
       width: 22px;
@@ -106,7 +106,7 @@ export async function GET() {
       fill: currentColor;
     }
     .cz-persona-icon.active {
-      background: linear-gradient(135deg, #9b59d0 0%, #7c3aed 100%);
+      background: linear-gradient(135deg, #6119E6 0%, #E13382 100%);
       color: #fff;
     }
     .cz-persona-tooltip {
@@ -145,9 +145,9 @@ export async function GET() {
       height: 600px;
       max-height: calc(100vh - 100px);
       background: #ffffff;
-      border: 1px solid rgba(155, 89, 208, 0.1);
+      border: 1px solid rgba(97, 25, 230, 0.1);
       border-radius: 20px;
-      box-shadow: 0 20px 50px rgba(132, 61, 176, 0.15);
+      box-shadow: 0 20px 50px rgba(97, 25, 230, 0.15);
       overflow: hidden;
       margin-bottom: 16px;
       display: flex;
@@ -168,7 +168,7 @@ export async function GET() {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: linear-gradient(135deg, #9b59d0 0%, #7c3aed 100%);
+      background: linear-gradient(135deg, #6119E6 0%, #E13382 100%);
       color: #fff;
       padding: 16px 20px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -301,7 +301,7 @@ export async function GET() {
       background: #64748b;
     }
     .cz-msg-avatar.assistant {
-      background: linear-gradient(135deg, #9b59d0 0%, #7c3aed 100%);
+      background: linear-gradient(135deg, #6119E6 0%, #E13382 100%);
     }
     .cz-msg-avatar img {
       width: 100%;
@@ -320,19 +320,19 @@ export async function GET() {
       max-width: 75%;
       font-size: 13.5px;
       white-space: pre-wrap;
-      box-shadow: 0 2px 12px rgba(155, 89, 208, 0.04);
+      box-shadow: 0 2px 12px rgba(97, 25, 230, 0.04);
       position: relative;
     }
     .cz-msg.user {
-      background: linear-gradient(135deg, #9b59d0 0%, #843db0 100%);
+      background: linear-gradient(135deg, #6119E6 0%, #E13382 100%);
       color: #fff;
       border-bottom-right-radius: 4px;
-      box-shadow: 0 4px 12px rgba(155, 89, 208, 0.2);
+      box-shadow: 0 4px 12px rgba(97, 25, 230, 0.2);
     }
     .cz-msg.assistant {
       background: #ffffff;
       color: #1e293b;
-      border: 1px solid rgba(155, 89, 208, 0.08);
+      border: 1px solid rgba(97, 25, 230, 0.08);
       border-bottom-left-radius: 4px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
     }
@@ -350,7 +350,7 @@ export async function GET() {
     .cz-suggestions {
       padding: 12px 16px;
       background: #ffffff;
-      border-top: 1px solid rgba(155, 89, 208, 0.06);
+      border-top: 1px solid rgba(97, 25, 230, 0.06);
       display: flex;
       gap: 8px;
       overflow-x: auto;
@@ -362,8 +362,8 @@ export async function GET() {
     }
     .cz-suggest-pill {
       background: #f5f0fa;
-      border: 1px solid rgba(155, 89, 208, 0.12);
-      color: #9b59d0;
+      border: 1px solid rgba(97, 25, 230, 0.12);
+      color: #6119E6;
       border-radius: 20px;
       padding: 8px 16px;
       font-size: 12px;
@@ -372,18 +372,18 @@ export async function GET() {
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       font-family: inherit;
       flex-shrink: 0;
-      box-shadow: 0 2px 6px rgba(155, 89, 208, 0.04);
+      box-shadow: 0 2px 6px rgba(97, 25, 230, 0.04);
     }
     .cz-suggest-pill:hover {
-      background: #9b59d0;
+      background: #6119E6;
       color: #ffffff;
-      border-color: #9b59d0;
+      border-color: #6119E6;
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(155, 89, 208, 0.2);
+      box-shadow: 0 4px 12px rgba(97, 25, 230, 0.2);
     }
     .cz-attachments {
       padding: 10px 16px;
-      border-top: 1px solid rgba(155, 89, 208, 0.08);
+      border-top: 1px solid rgba(97, 25, 230, 0.08);
       background: #fbfbfd;
       display: flex;
       flex-wrap: wrap;
@@ -394,8 +394,8 @@ export async function GET() {
       align-items: center;
       gap: 6px;
       background: #f5f0fa;
-      color: #9b59d0;
-      border: 1px solid rgba(155, 89, 208, 0.12);
+      color: #6119E6;
+      border: 1px solid rgba(97, 25, 230, 0.12);
       border-radius: 12px;
       padding: 4px 10px;
       font-size: 11.5px;
@@ -428,7 +428,7 @@ export async function GET() {
       align-items: center;
       gap: 10px;
       padding: 16px;
-      border-top: 1px solid rgba(155, 89, 208, 0.08);
+      border-top: 1px solid rgba(97, 25, 230, 0.08);
       background: #fff;
     }
     .cz-input-wrapper {
@@ -442,9 +442,9 @@ export async function GET() {
       transition: all 0.25s ease;
     }
     .cz-input-wrapper:focus-within {
-      border-color: #9b59d0;
+      border-color: #6119E6;
       background: #fff;
-      box-shadow: 0 0 0 3px rgba(155, 89, 208, 0.15);
+      box-shadow: 0 0 0 3px rgba(97, 25, 230, 0.15);
     }
     .cz-input {
       flex: 1;
@@ -472,8 +472,8 @@ export async function GET() {
       border-radius: 50%;
     }
     .cz-btn-audio:hover, .cz-btn-image:hover {
-      color: #9b59d0;
-      background: rgba(155, 89, 208, 0.08);
+      color: #6119E6;
+      background: rgba(97, 25, 230, 0.08);
     }
     .cz-btn-audio svg, .cz-btn-image svg {
       width: 18px;
@@ -493,7 +493,7 @@ export async function GET() {
     .cz-btn-submit {
       border: 0;
       border-radius: 50%;
-      background: linear-gradient(135deg, #9b59d0 0%, #843db0 100%);
+      background: linear-gradient(135deg, #6119E6 0%, #E13382 100%);
       color: #fff;
       width: 38px;
       height: 38px;
@@ -503,11 +503,11 @@ export async function GET() {
       cursor: pointer;
       transition: all 0.2s;
       flex-shrink: 0;
-      box-shadow: 0 4px 10px rgba(155, 89, 208, 0.25);
+      box-shadow: 0 4px 10px rgba(97, 25, 230, 0.25);
     }
     .cz-btn-submit:hover {
       transform: scale(1.05);
-      box-shadow: 0 6px 14px rgba(155, 89, 208, 0.35);
+      box-shadow: 0 6px 14px rgba(97, 25, 230, 0.35);
     }
     .cz-btn-submit svg {
       width: 16px;
@@ -529,7 +529,7 @@ export async function GET() {
       align-items: center;
       gap: 4px;
       background: #ffffff;
-      border: 1px solid rgba(155, 89, 208, 0.08);
+      border: 1px solid rgba(97, 25, 230, 0.08);
       border-radius: 16px;
       border-bottom-left-radius: 4px;
       padding: 12px 16px;
@@ -540,7 +540,7 @@ export async function GET() {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #9b59d0;
+      background: #6119E6;
       animation: cz-bounce 1.4s infinite ease-in-out both;
     }
     .cz-typing-dot:nth-child(1) { animation-delay: -0.32s; }
