@@ -555,12 +555,16 @@ export function RegisterForm() {
         
         <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center text-sm text-slate-500 sm:flex-row">
           <span>{locale === "en" ? "Already a member?" : "لديك حساب بالفعل؟"}</span>
-          <Link
-            href={loginHref}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push(loginHref);
+            }}
             className="inline-flex min-h-10 items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-5 py-2 text-sm font-bold text-primary-700 transition hover:border-primary-300 hover:bg-primary-100 dark:border-primary-500/25 dark:bg-primary-500/10 dark:text-primary-200 dark:hover:bg-primary-500/20"
           >
             {locale === "en" ? "Login" : "تسجيل الدخول"}
-          </Link>
+          </button>
         </div>
       </form>
     );

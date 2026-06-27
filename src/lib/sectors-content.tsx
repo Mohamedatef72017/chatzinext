@@ -1,3 +1,6 @@
+import React from "react";
+import { Hospital, Building2, GraduationCap, ShoppingBag, Utensils, ShieldCheck, Car, Hotel, Scale, Store } from "lucide-react";
+
 export type Sector = {
   id: string;
   title: string;
@@ -13,7 +16,7 @@ export const sectorsData = {
       id: "medical",
       title: "Medical Clinics",
       desc: "Auto-replies, appointments, and 24/7 visits confirmation.",
-      icon: "🏥",
+      icon: <Hospital className="w-5 h-5 text-indigo-500" />,
       benefits: [
         "Answer appointment questions and clinic hours instantly.",
         "Collect patient name, phone, preferred doctor, and visit reason.",
@@ -25,7 +28,7 @@ export const sectorsData = {
       id: "real-estate",
       title: "Real Estate",
       desc: "Answer inquiries, qualify leads, and follow up.",
-      icon: "🏢",
+      icon: <Building2 className="w-5 h-5 text-blue-500" />,
       benefits: [
         "Qualify buyers and tenants by budget, area, property type, and timeline.",
         "Share available units and capture viewing requests automatically.",
@@ -37,7 +40,7 @@ export const sectorsData = {
       id: "education",
       title: "Schools & Institutes",
       desc: "Handle parent inquiries and manage registration requests.",
-      icon: "🎓",
+      icon: <GraduationCap className="w-5 h-5 text-green-500" />,
       benefits: [
         "Answer admission, fees, curriculum, and schedule questions.",
         "Collect student details and preferred grade or course.",
@@ -49,7 +52,7 @@ export const sectorsData = {
       id: "ecommerce",
       title: "E-commerce",
       desc: "Order tracking, customer support, and sales assistance.",
-      icon: "🛍️",
+      icon: <ShoppingBag className="w-5 h-5 text-pink-500" />,
       benefits: [
         "Track order status and answer delivery questions at any time.",
         "Recommend products based on customer needs and previous interest.",
@@ -61,7 +64,7 @@ export const sectorsData = {
       id: "restaurants",
       title: "Restaurants & Cafes",
       desc: "Receive orders, manage reservations, and answer queries.",
-      icon: "🍽️",
+      icon: <Utensils className="w-5 h-5 text-orange-500" />,
       benefits: [
         "Handle table reservations with date, time, and guest count.",
         "Answer menu, branch, delivery, and opening-hours questions.",
@@ -73,7 +76,7 @@ export const sectorsData = {
       id: "insurance",
       title: "Insurance Companies",
       desc: "Receive claims, collect data, and route to agents.",
-      icon: "🛡️",
+      icon: <ShieldCheck className="w-5 h-5 text-teal-500" />,
       benefits: [
         "Collect claim type, policy number, documents, and contact details.",
         "Explain policy coverage and required next steps simply.",
@@ -85,7 +88,7 @@ export const sectorsData = {
       id: "automotive",
       title: "Automotive & Showrooms",
       desc: "Book maintenance, follow up with customers, and schedule test drives.",
-      icon: "🚗",
+      icon: <Car className="w-5 h-5 text-red-500" />,
       benefits: [
         "Book service appointments with vehicle model and preferred timing.",
         "Qualify test-drive requests by model, budget, and location.",
@@ -97,7 +100,7 @@ export const sectorsData = {
       id: "hospitality",
       title: "Hotels & Hospitality",
       desc: "Manage bookings, assist guests, and provide customer service.",
-      icon: "🏨",
+      icon: <Hotel className="w-5 h-5 text-cyan-500" />,
       benefits: [
         "Answer room, rate, check-in, and facility questions instantly.",
         "Collect booking dates, guest count, and special requests.",
@@ -109,7 +112,7 @@ export const sectorsData = {
       id: "consulting",
       title: "Consulting & Services",
       desc: "Book meetings, qualify clients, and manage communications.",
-      icon: "⚖️",
+      icon: <Scale className="w-5 h-5 text-slate-500" />,
       benefits: [
         "Qualify client needs before booking a consultation.",
         "Collect case details, service type, budget, and preferred time.",
@@ -121,7 +124,7 @@ export const sectorsData = {
       id: "retail",
       title: "Retail Stores",
       desc: "Customer service, order tracking, and upselling opportunities.",
-      icon: "🛒",
+      icon: <Store className="w-5 h-5 text-purple-500" />,
       benefits: [
         "Answer product availability, branch, and pricing questions.",
         "Suggest alternatives and complementary products.",
@@ -135,7 +138,7 @@ export const sectorsData = {
       id: "medical",
       title: "العيادات والمراكز الطبية",
       desc: "رد تلقائي، حجز المواعيد، وتأكيد الزيارات 24/7.",
-      icon: "🏥",
+      icon: <Hospital className="w-5 h-5 text-indigo-500" />,
       benefits: [
         "يرد فوراً على أسئلة المواعيد وساعات العمل والتخصصات.",
         "يجمع اسم المريض ورقم الهاتف والطبيب المفضل وسبب الزيارة.",
@@ -147,72 +150,72 @@ export const sectorsData = {
       id: "real-estate",
       title: "العقارات",
       desc: "الرد على الاستفسارات وتأهيل العملاء المحتملين ومتابعتهم.",
-      icon: "🏢",
+      icon: <Building2 className="w-5 h-5 text-blue-500" />,
       benefits: [
-        "يؤهل العميل حسب الميزانية والمنطقة ونوع العقار ووقت الشراء.",
-        "يعرض الوحدات المناسبة ويجمع طلبات المعاينة تلقائياً.",
-        "يتابع العملاء المهتمين قبل أن ينسوا الطلب أو ينتقلوا لمنافس.",
-        "يحوّل الفرص الجادة للوسيط أو فريق المبيعات المناسب."
+        "يؤهل المشترين والمستأجرين حسب الميزانية والمنطقة ونوع العقار.",
+        "يعرض الوحدات المتاحة ويسجل طلبات المعاينة تلقائياً.",
+        "يتابع مع العملاء المحتملين لضمان عدم ضياع أي فرصة.",
+        "يحوّل العملاء الجادين للوسيط العقاري أو فريق المبيعات فوراً."
       ],
     },
     {
       id: "education",
       title: "المدارس والمعاهد",
-      desc: "استقبال استفسارات أولياء الأمور وإدارة طلبات التسجيل.",
-      icon: "🎓",
+      desc: "الرد على أولياء الأمور وإدارة طلبات التسجيل.",
+      icon: <GraduationCap className="w-5 h-5 text-green-500" />,
       benefits: [
-        "يرد على أسئلة القبول والرسوم والمناهج ومواعيد الدراسة.",
+        "يجيب على أسئلة القبول والرسوم والمناهج والجداول.",
         "يجمع بيانات الطالب والصف أو الدورة المطلوبة.",
-        "يرسل متطلبات التسجيل والخطوات التالية بشكل واضح.",
-        "ينبه فريق القبول عندما يكون ولي الأمر جاهزاً للتواصل."
+        "يرسل متطلبات التسجيل والخطوات التالية بوضوح.",
+        "يبلغ قسم القبول عندما يكون ولي الأمر جاهزاً للتواصل."
       ],
     },
     {
       id: "ecommerce",
-      title: "التجارة الإلكترونية",
-      desc: "متابعة الطلبات، الإجابة على العملاء، ودعم المبيعات.",
-      icon: "🛍️",
+      title: "المتاجر الإلكترونية",
+      desc: "تتبع الطلبات، خدمة العملاء، والمساعدة في المبيعات.",
+      icon: <ShoppingBag className="w-5 h-5 text-pink-500" />,
       benefits: [
-        "يتابع حالة الطلب ويجيب على أسئلة التوصيل في أي وقت.",
-        "يقترح منتجات مناسبة حسب حاجة العميل واهتمامه.",
-        "يجمع تفاصيل الاستبدال أو الإرجاع أو الشكوى قبل التحويل.",
-        "يعيد تنشيط المحادثات المتروكة برسائل متابعة ذكية."
+        "يتتبع حالة الطلب ويجيب على أسئلة التوصيل في أي وقت.",
+        "يقترح منتجات بناءً على احتياجات العميل واهتماماته السابقة.",
+        "يجمع تفاصيل الاسترجاع والاستبدال والشكاوى قبل تدخل الموظف.",
+        "يستعيد المحادثات المتروكة برسائل متابعة ذكية لتحفيز الشراء."
       ],
     },
     {
       id: "restaurants",
       title: "المطاعم والمقاهي",
-      desc: "استقبال الطلبات، الحجوزات، والرد على الاستفسارات.",
-      icon: "🍽️",
+      desc: "استقبال الطلبات، إدارة الحجوزات، والرد على الاستفسارات.",
+      icon: <Utensils className="w-5 h-5 text-orange-500" />,
       benefits: [
-        "يدير حجوزات الطاولات حسب التاريخ والوقت وعدد الضيوف.",
-        "يرد على أسئلة المنيو والفروع والتوصيل وساعات العمل.",
-        "يجمع ملاحظات الطلب قبل تحويلها للفريق.",
-        "يعرض العروض والأصناف الأكثر طلباً داخل المحادثة."
+        "يدير حجوزات الطاولات مع التاريخ والوقت وعدد الأشخاص.",
+        "يجيب على أسئلة المنيو والفروع والتوصيل وساعات العمل.",
+        "يجمع ملاحظات الطلب قبل إرسالها لفريقك.",
+        "يروج للعروض والأطباق الأكثر مبيعاً داخل المحادثة."
       ],
     },
     {
       id: "insurance",
       title: "شركات التأمين",
-      desc: "استقبال طلبات العملاء، جمع البيانات، وتحويلها للموظفين.",
-      icon: "🛡️",
+      desc: "استقبال المطالبات، جمع البيانات، والتوجيه للموظفين.",
+      icon: <ShieldCheck className="w-5 h-5 text-teal-500" />,
       benefits: [
         "يجمع نوع المطالبة ورقم الوثيقة والمستندات وبيانات التواصل.",
-        "يشرح التغطية والخطوات المطلوبة بلغة بسيطة.",
+        "يشرح تغطية البوليصة والخطوات المطلوبة ببساطة.",
         "يحوّل المطالبات المعقدة للموظف أو القسم المختص.",
-        "يبقي العميل مطلعاً على الخطوة التالية قبل رد الفريق."
+        "يبقي العملاء على اطلاع قبل رد فريق الدعم."
       ],
     },
     {
       id: "automotive",
       title: "السيارات والمعارض",
-      desc: "حجز مواعيد الصيانة، متابعة العملاء، وجدولة التجارب.",
-      icon: "🚗",
+      desc: "حجز الصيانة، متابعة العملاء، وتحديد مواعيد تجربة القيادة.",
+      icon: <Car className="w-5 h-5 text-red-500" />,
       benefits: [
-        "يحجز مواعيد الصيانة مع موديل السيارة والوقت المناسب.",
+        "يحجز مواعيد الصيانة مع تحديد موديل السيارة والوقت المفضل.",
         "يؤهل طلبات تجربة القيادة حسب الموديل والميزانية والموقع.",
-        "يرد على أسئلة الضمان والتمويل والتوفر.",
-        "يرسل تذكيرات بالصيانة والمتابعات المفتوحة."
+        "يجيب على أسئلة الضمان والتمويل وتوفر السيارات.",
+        "يذكّر العملاء بمواعيد الصيانة والمتابعات المعلقة."
       ],
     },
     {

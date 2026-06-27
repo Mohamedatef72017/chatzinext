@@ -108,7 +108,10 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
       const shouldAccent = isBrand || (!copy.title.includes("ChatZi") && index === Math.floor(words.length / 2));
 
       return (
-        <span key={`${word}-${index}`} className={shouldAccent ? "text-[#6119E6] dark:text-[#E13382]" : undefined}>
+        <span 
+          key={`${word}-${index}`} 
+          className={shouldAccent ? "text-transparent bg-clip-text bg-gradient-to-r from-[#6119E6] to-[#9333EA] dark:from-[#E13382] dark:to-[#FF6B6B] drop-shadow-[0_4px_16px_rgba(97,25,230,0.5)] dark:drop-shadow-[0_4px_16px_rgba(225,51,130,0.6)]" : undefined}
+        >
           {index === 0 ? "" : " "}
           {word}
         </span>
@@ -238,9 +241,19 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
                   {copy.login}
                 </button>
 
+                {/* Mobile Login Button */}
+                <button
+                  onClick={() => setIsLoginOpen(true)}
+                  className="inline-flex sm:hidden min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
+                >
+                  <span>{isEnglish ? "Login" : "دخول"}</span>
+                  <ArrowIcon size={16} />
+                </button>
+
+                {/* Desktop Register Button */}
                 <Link
                   href="/register"
-                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
+                  className="hidden sm:inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
                 >
                   <span>{copy.start}</span>
                   <ArrowIcon size={16} />
@@ -350,17 +363,20 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
               >
                 {copy.heroButtons?.demo}
               </Link>
-              <Link
-                href={isAuthenticated ? "/dashboard" : "/register"}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
-              >
-                {signupLabel}
-              </Link>
+              {!isAuthenticated && (
+                <Link
+                  href="/register"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                >
+                  <span>{isEnglish ? "Start now" : "ابدأ الآن"}</span>
+                  <ArrowIcon size={16} />
+                </Link>
+              )}
               <Link
                 href={isAuthenticated ? "/dashboard" : "/register"}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-emerald-500/20 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
               >
-                <Zap size={16} />
+                {isAuthenticated ? null : <Zap size={16} />}
                 {tryLabel}
               </Link>
             </div>
@@ -565,8 +581,15 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
         <div className="absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#6119E6]/30 dark:bg-[#6119E6]/20 blur-[150px] pointer-events-none" />
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
 
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold leading-tight text-slate-950 dark:text-white sm:text-5xl">{copy.pricingTitle}</h2>
+          <div className="text-center">
+            <div className="flex justify-center mb-6">
+              <span className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm border border-slate-200/60 dark:bg-white/10 dark:text-slate-200 dark:border-white/5">
+                <span className="rounded-full bg-[#6119E6] px-2 py-0.5 text-xs text-white dark:bg-[#E13382]">New</span>
+                {isEnglish ? "Next generation features" : "مميزات الجيل القادم"}
+                <ArrowIcon size={14} className="opacity-50" />
+              </span>
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl">{copy.featuresTitle}</h2>
             <p className="mt-4 max-w-2xl mx-auto text-lg text-slate-600 dark:text-slate-300">{copy.pricing}</p>
           </div>
 
