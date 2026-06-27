@@ -23,37 +23,47 @@ const arabicCopy = (marketName: "الإمارات" | "الأردن", marketLabel
     ["AI + Team", "تسليم بشري واضح"],
     [marketName, "تجربة عربية محلية"]
   ],
-  workflowTitle: "كيف يعمل ChatZi؟",
-  workflowSubtitle:
-    "بدلاً من توزيع المحادثات بين أدوات منفصلة، يجمع ChatZi الاستقبال، الذكاء الاصطناعي، سير العمل، والتسليم للفريق داخل تجربة واحدة.",
+  workflowTitle: "كيف بيشتغل؟",
+  workflowSubtitle: "ثلاث خطوات فقط:",
   workflow: [
     {
-      title: "التقاط الطلب من كل قناة",
-      text: "يستقبل رسائل الموقع، واتساب، ماسنجر، إنستغرام، تليجرام والقنوات الرقمية في Inbox واحد بدل تبديل الأدوات.",
-      metric: "Omnichannel intake"
+      title: "اربط قنوات التواصل",
+      text: "استقبل رسائل الموقع، واتساب، ماسنجر، وغيرها.",
+      metric: "1"
     },
     {
-      title: "فهم نية العميل والرد",
-      text: "يستخدم قاعدة المعرفة الخاصة بالشركة للرد على الأسئلة المتكررة، تلخيص الطلب، وتجميع البيانات اللازمة.",
-      metric: "AI handling"
+      title: "درّب Chatzi على معلومات شركتك",
+      text: "ارفع ملفاتك أو موقعك ليتعلم الرد.",
+      metric: "2"
     },
     {
-      title: "تشغيل الإجراء أو التصعيد",
-      text: "عندما تحتاج المحادثة إجراء، يحولها إلى مسار عمل واضح أو يسلمها للموظف مع كل السياق.",
-      metric: "Workflow + handoff"
+      title: "ابدأ باستقبال العملاء",
+      text: "دع الذكاء الاصطناعي يقوم بالمهمة نيابة عنك.",
+      metric: "3"
     }
   ],
-  featuresTitle: "المميزات الأساسية",
-  featuresSubtitle:
-    "هذه نسخة أبسط من رسالة الموقع القديم: ChatZi ليس شات بوت فقط، بل طبقة تشغيل تربط المحادثة بالعمل اليومي.",
+  featuresTitle: "المميزات",
+  featuresSubtitle: "",
   features: [
-    ["AI Chatbot & Reception", "ردود ذكية على الأسئلة المتكررة مع تصعيد الحالات الحساسة للفريق بدون فقدان السياق."],
-    ["Smart Omnichannel Inbox", "كل محادثات العملاء من الموقع والسوشال والقنوات الفورية داخل مساحة واحدة منظمة."],
-    ["Website Widget", "إضافة محادثة ذكية للموقع مع نماذج قبل المحادثة ورسائل تفاعلية وتجميع بيانات الزائر."],
-    ["Workspace CRM", "ملفات عملاء، سجل محادثات، ملاحظات داخلية، وتوزيع المحادثات على الموظفين."],
-    ["Knowledge Base Training", "تدريب AI من ملفات PDF وWord وروابط الموقع والبيانات الداخلية للحصول على إجابات دقيقة."],
-    ["Integrations & AI Control", "إدارة مفاتيح AI، Webhooks، وربط الأنظمة الخارجية من لوحة واحدة آمنة."]
+    ["موظف استقبال ذكي", "يرد على عملائك 24/7 بلغتهم وبأسلوب طبيعي."],
+    ["جميع المحادثات في مكان واحد", "WhatsApp وInstagram وMessenger وباقي القنوات من منصة واحدة."],
+    ["يحوّل العميل لموظفك عند الحاجة", "عندما يحتاج تدخل بشري، يتم تحويل المحادثة مباشرة مع جميع تفاصيلها."],
+    ["يعرف شركتك كما يعرفها موظفوك", "يتم تدريبه على منتجاتك وخدماتك والعروض والأسئلة الخاصة بشركتك فقط."],
+    ["لا تضيع أي طلب", "يجمع بيانات العميل وينشئ تذكرة أو إشعاراً لفريقك تلقائياً."],
+    ["اعرف كل ما يحدث", "تقارير ذكية، CRM، وإحصائيات تساعدك على تطوير أعمالك."]
   ],
+  heroButtons: {
+    demo: "احجز عرضاً شخصياً",
+    signup: "أنشئ حساباً مجانياً",
+    try: "جرّب Chatzi خلال أقل من دقيقة",
+    trySub: "أدخل موقع شركتك وسننشئ لك تجربة AI مخصصة خلال أقل من دقيقة."
+  },
+  contact: {
+    title: "طرق التواصل",
+    subtitle: "نحن هنا لمساعدتك",
+    email: "support@chatzi.ai",
+    phone: "+971 50 123 4567"
+  },
   channelsTitle: "قنوات جاهزة للانتشار",
   channelsSubtitle:
     "ابدأ من القناة الأهم ثم وسع التغطية تدريجياً بدون أن تتغير طريقة العمل خلف الكواليس.",
@@ -70,9 +80,9 @@ const arabicCopy = (marketName: "الإمارات" | "الأردن", marketLabel
     ["هل هو مجرد شات بوت؟", "لا. ChatZi يجمع الرد الآلي، Inbox موحد، قاعدة معرفة، CRM خفيف، وتسليم بشري واضح."],
     ["هل يمكن تدريبه على بياناتي؟", "نعم، يمكن تدريبه من ملفاتك وروابط موقعك ومصادر المعرفة الخاصة بنشاطك."]
   ],
-  ctaTitle: "حوّل المحادثات المتكررة إلى تشغيل منظم",
+  ctaTitle: "جاهز لتحويل خدمة العملاء لديك؟",
   ctaSubtitle:
-    "ابدأ بأكثر طلب يستهلك وقت فريقك، واجعل ChatZi يستقبله، يفهمه، ويرسله للمسار الصحيح.",
+    "انضم للعديد من الشركات التي تدير محادثاتها بذكاء.",
   footer: `ChatZi AI Solutions FZE LLC - تجربة عربية مخصصة لـ ${marketName}`,
   imageAlt: {
     hero: "لقطة من لوحة ChatZi للمحادثات والقنوات",
@@ -108,37 +118,48 @@ export const landingContent = {
       ["AI + Team", "Clear human handoff"],
       ["UAE + JO", "Regional bilingual rollout"]
     ],
-    workflowTitle: "How ChatZi works",
+    workflowTitle: "How does it work?",
     workflowSubtitle:
-      "ChatZi works best when intake, AI handling, workflow execution, and escalation live inside one operating model instead of disconnected tools.",
+      "Just three simple steps:",
     workflow: [
       {
-        title: "Capture intent across channels",
-        text: "Bring inquiries from website chat, WhatsApp, Messenger, Instagram, Telegram, and digital inboxes into one Smart Inbox.",
-        metric: "Omnichannel intake"
+        title: "Connect your channels",
+        text: "Receive messages from Website, WhatsApp, Messenger, and more.",
+        metric: "1"
       },
       {
-        title: "Let AI handle the first line",
-        text: "Answer repeat questions, summarize requests, qualify leads, and collect structured details from your own knowledge base.",
-        metric: "AI handling"
+        title: "Train Chatzi on your business",
+        text: "Upload your files or website for it to learn.",
+        metric: "2"
       },
       {
-        title: "Route actions or hand off",
-        text: "Move the conversation into a workflow or escalate to a human agent with the customer context still visible.",
-        metric: "Workflow + handoff"
+        title: "Start receiving customers",
+        text: "Let AI handle the rest for you automatically.",
+        metric: "3"
       }
     ],
-    featuresTitle: "Core capabilities",
-    featuresSubtitle:
-      "A simplified version of the old ChatZi message: not just a chatbot, but an operational layer for customer communication.",
+    featuresTitle: "Features",
+    featuresSubtitle: "",
     features: [
-      ["AI Chatbot & Reception", "Natural automated replies for common questions with intelligent escalation when a person should step in."],
-      ["Smart Omnichannel Inbox", "One organized workspace for customer conversations across website, WhatsApp, Messenger, Instagram, Telegram, and more."],
-      ["Website Widget", "Embed conversational AI on your site with pre-chat forms, interactive messages, and visitor data capture."],
-      ["Workspace CRM", "Customer profiles, conversation history, internal notes, drafts, assignment, and team workload control."],
-      ["Knowledge Base Training", "Train AI on PDFs, Word documents, websites, help pages, internal docs, or external APIs."],
-      ["Integrations & AI Control", "Manage AI keys, webhooks, API integrations, and external systems from one secure dashboard."]
+      ["Smart Receptionist", "Replies to your customers 24/7 in their language naturally."],
+      ["All Conversations in One Place", "WhatsApp, Instagram, Messenger, and more from one platform."],
+      ["Human Handoff When Needed", "When human intervention is needed, the chat is routed with full details."],
+      ["Knows Your Business", "Trained on your products, services, offers, and specific questions."],
+      ["Never Lose a Request", "Collects customer data and creates tickets or notifications automatically."],
+      ["Know Everything That Happens", "Smart reports, CRM, and analytics to help you grow your business."]
     ],
+    heroButtons: {
+      demo: "Book a Demo",
+      signup: "Sign Up Free",
+      try: "Try Chatzi in 1 minute",
+      trySub: "Enter your website and we'll create a custom AI experience in under a minute."
+    },
+    contact: {
+      title: "Contact Us",
+      subtitle: "We are here to help",
+      email: "support@chatzi.ai",
+      phone: "+971 50 123 4567"
+    },
     channelsTitle: "Deploy where customers already ask",
     channelsSubtitle:
       "Start with the most important channel, then expand without changing the operating logic behind every conversation.",
@@ -155,9 +176,9 @@ export const landingContent = {
       ["Is ChatZi only a chatbot?", "No. It combines AI replies, a Smart Inbox, knowledge training, workflow routing, lightweight CRM, and human handoff."],
       ["Can it learn from my business data?", "Yes. Train it with files, website URLs, help pages, internal documents, and connected data sources."]
     ],
-    ctaTitle: "Make every repeated conversation easier to operate",
+    ctaTitle: "Ready to transform your customer service?",
     ctaSubtitle:
-      "Start with the customer request that costs your team the most time, then let ChatZi receive it, understand it, and route it clearly.",
+      "Join many companies managing their conversations smartly.",
     footer: "ChatZi AI Solutions FZE LLC - AI receptionist and operations assistant",
     imageAlt: {
       hero: "ChatZi customer conversations dashboard",

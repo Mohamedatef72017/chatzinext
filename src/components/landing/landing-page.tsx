@@ -217,15 +217,15 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
           variants={stagger}
           initial="hidden"
           animate="visible"
-          className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-4 text-center sm:px-6 lg:px-8"
+          className="relative z-10 mx-auto grid max-w-7xl gap-12 px-4 lg:grid-cols-2 lg:items-center sm:px-6 lg:px-8"
         >
-          <motion.div variants={fadeUp} className="flex flex-col items-center">
+          <motion.div variants={fadeUp} className="flex flex-col items-start text-start">
             <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm border border-slate-200/60 dark:bg-white/10 dark:text-slate-200 dark:border-white/5">
               <span className="rounded-full bg-[#6119E6] px-2 py-0.5 text-xs text-white dark:bg-[#E13382]">New</span>
               {copy.heroLabel} <ArrowIcon size={14} className="opacity-50" />
             </span>
 
-            <h1 className="mt-8 max-w-5xl text-5xl font-extrabold leading-[1.15] tracking-tight text-slate-950 dark:text-white sm:text-7xl">
+            <h1 className="mt-6 max-w-3xl text-4xl font-extrabold leading-[1.15] tracking-tight text-slate-950 dark:text-white sm:text-6xl">
               {copy.title.split(' ').map((word, i, arr) => 
                 i === Math.floor(arr.length / 2) ? (
                   <span key={i} className="text-[#6119E6] dark:text-[#E13382]"> {word} </span>
@@ -239,22 +239,32 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
               {copy.subtitle}
             </p>
 
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row flex-wrap">
+              <Link
+                href="/book"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#6119E6] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382] dark:shadow-[#E13382]/25"
+              >
+                {copy.heroButtons?.demo}
+              </Link>
               <Link
                 href="/register"
-                className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-[#6119E6] px-8 py-3 text-base font-bold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382] dark:shadow-[#E13382]/25"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
               >
-                {copy.primary}
+                {copy.heroButtons?.signup}
               </Link>
               <Link
-                href="/dashboard"
-                className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full border-2 border-slate-200 bg-white px-8 py-3 text-base font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                href="/register"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-emerald-500/20 bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
               >
-                {copy.secondary}
+                <Zap size={16} />
+                {copy.heroButtons?.try}
               </Link>
             </div>
+            <p className="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+              {copy.heroButtons?.trySub}
+            </p>
 
-            <div className="mt-10 flex flex-wrap justify-center gap-6">
+            <div className="mt-8 flex flex-wrap items-center gap-6">
               {(isEnglish
                 ? ["No credit card required", "14-day free trial", "Cancel anytime"]
                 : ["لا حاجة لبطاقة", "تجربة 14 يوم", "إلغاء في أي وقت"]
@@ -267,32 +277,15 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
             </div>
           </motion.div>
 
-          <motion.div variants={fadeUp} className="relative mt-16 w-full max-w-2xl">
-            <div className="rounded-2xl border border-slate-200/50 bg-white/40 p-2 shadow-2xl shadow-[#6119E6]/10 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-[#E13382]/20">
-              <div className="flex h-9 items-center gap-2 rounded-t-xl border-b border-slate-200/60 bg-slate-50/80 px-4 dark:border-white/5 dark:bg-white/5">
-                <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-              </div>
-              <div className="relative overflow-hidden rounded-b-xl border-x border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-slate-950">
-                <Image
-                  src="/heronew.png.png"
-                  alt={copy.imageAlt.hero}
-                  width={800}
-                  height={500}
-                  priority
-                  className="aspect-[16/10] w-full object-cover object-top"
-                />
-                <div className="absolute inset-x-4 bottom-4 grid gap-3 sm:grid-cols-3">
-                  {copy.stats.slice(0, 3).map(([value, label]) => (
-                    <div key={`${value}-${label}`} className="rounded-xl border border-slate-200/60 bg-white/90 p-4 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-[#0c081c]/90">
-                      <p className="text-2xl font-extrabold text-[#6119E6] dark:text-[#E13382]">{value}</p>
-                      <p className="text-sm font-bold text-slate-500 dark:text-slate-300">{label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <motion.div variants={fadeUp} className="relative w-full max-w-2xl lg:mx-0 mx-auto">
+            <Image
+              src="/newheroooo.png"
+              alt={copy.imageAlt.hero}
+              width={800}
+              height={800}
+              priority
+              className="w-full object-contain drop-shadow-2xl"
+            />
           </motion.div>
         </motion.div>
       </section>
@@ -379,12 +372,11 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
         </div>
       </section>
 
-      <section id="features" className="bg-slate-50 py-20 dark:bg-primary-900 sm:py-24">
+      <section id="features" className="bg-slate-50 py-20 dark:bg-[#06030e] sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <p className="text-sm font-extrabold uppercase tracking-wide text-primary-700 dark:text-secondary-300">{isEnglish ? "Powerful features" : "مميزات قوية"}</p>
-            <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-extrabold leading-tight text-slate-950 dark:text-secondary-100 sm:text-5xl">{copy.featuresTitle}</h2>
-            <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-secondary-100/85">{copy.featuresSubtitle}</p>
+            <h2 className="mx-auto max-w-3xl text-3xl font-extrabold leading-tight text-slate-950 dark:text-white sm:text-5xl">{copy.featuresTitle}</h2>
+            {copy.featuresSubtitle && <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">{copy.featuresSubtitle}</p>}
           </div>
 
           <motion.div
@@ -392,7 +384,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-120px" }}
-            className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+            className="mt-16 grid gap-10 sm:gap-6 md:grid-cols-2 lg:grid-cols-3"
           >
             {copy.features.map(([title, text], index) => {
               const Icon = featureIcons[index] || Bot;
@@ -400,13 +392,13 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
                 <motion.article
                   variants={fadeUp}
                   key={title}
-                  className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md dark:border-secondary-300/30 dark:bg-primary-900/65"
+                  className="flex flex-col items-center text-center px-4"
                 >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary-50 text-primary-700 dark:bg-secondary-500 dark:text-white">
-                    <Icon size={21} />
+                  <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-[#6119E6] shadow-xl shadow-slate-200/50 dark:bg-white/5 dark:text-[#E13382] dark:shadow-none">
+                    <Icon size={32} strokeWidth={1.5} />
                   </span>
-                  <h3 className="mt-5 text-lg font-extrabold text-slate-950 dark:text-secondary-100">{title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-secondary-100/80">{text}</p>
+                  <h3 className="mt-6 text-xl font-extrabold text-slate-950 dark:text-white">{title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{text}</p>
                 </motion.article>
               );
             })}
@@ -483,64 +475,88 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 dark:border-secondary-300/30 dark:bg-primary-900/70">
-              <p className="text-sm font-extrabold uppercase tracking-wide text-primary-700 dark:text-secondary-300">{isEnglish ? "Rollout" : "البداية"}</p>
+              <p className="text-sm font-extrabold uppercase tracking-wide text-primary-700 dark:text-secondary-300">{isEnglish ? "Pricing" : "الأسعار"}</p>
               <h2 className="mt-3 text-3xl font-extrabold leading-tight text-slate-950 dark:text-secondary-100">{copy.pricingTitle}</h2>
               <p className="mt-4 text-base leading-8 text-slate-600 dark:text-secondary-100/80">{copy.pricing}</p>
               <Link
                 href="/book"
-                className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-primary-700 dark:bg-secondary-500 dark:hover:bg-secondary-600"
+                className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-5 py-3 text-sm font-extrabold text-white transition hover:opacity-90 dark:bg-[#E13382]"
               >
                 {isEnglish ? "Book a workflow review" : "احجز مراجعة سير العمل"}
                 <ArrowIcon size={17} />
               </Link>
             </div>
 
-            <div className="space-y-3">
-              <h3 className="text-2xl font-extrabold text-slate-950 dark:text-secondary-100">{copy.faqTitle}</h3>
-              {copy.faq.map(([question, answer]) => (
-                <details key={question} className="group rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-secondary-300/30 dark:bg-primary-900/70">
-                  <summary className="cursor-pointer list-none text-base font-extrabold text-slate-950 dark:text-secondary-100">
-                    <span className="inline-flex w-full items-center justify-between gap-4">
-                      {question}
-                      <CheckCircle2 size={18} className="shrink-0 text-secondary-600 transition group-open:rotate-45 dark:text-secondary-300" />
-                    </span>
-                  </summary>
-                  <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-secondary-100/80">{answer}</p>
-                </details>
-              ))}
+            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-secondary-300/30 dark:bg-primary-900/70">
+               <p className="text-sm font-extrabold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">{copy.contact?.title}</p>
+               <h3 className="mt-3 text-2xl font-extrabold text-slate-950 dark:text-secondary-100">{copy.contact?.subtitle}</h3>
+               
+               <div className="mt-6 space-y-4">
+                 <div className="flex items-center gap-4">
+                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300">
+                     <MessageSquare size={20} />
+                   </div>
+                   <div>
+                     <p className="text-sm font-bold text-slate-900 dark:text-white">Email</p>
+                     <a href={`mailto:${copy.contact?.email}`} className="text-sm text-slate-500 hover:text-[#6119E6] dark:text-slate-400 dark:hover:text-[#E13382]">{copy.contact?.email}</a>
+                   </div>
+                 </div>
+                 <div className="flex items-center gap-4">
+                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300">
+                     <Zap size={20} />
+                   </div>
+                   <div>
+                     <p className="text-sm font-bold text-slate-900 dark:text-white">WhatsApp / Phone</p>
+                     <a href={`tel:${copy.contact?.phone}`} className="text-sm text-slate-500 hover:text-[#6119E6] dark:text-slate-400 dark:hover:text-[#E13382]" dir="ltr">{copy.contact?.phone}</a>
+                   </div>
+                 </div>
+               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-slate-50 py-16 dark:bg-[#06030e] sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 shadow-2xl dark:border-white/10">
+            <video src="/promo.mp4" autoPlay loop muted playsInline className="aspect-video w-full object-cover" />
           </div>
         </div>
       </section>
 
       <section className="bg-white py-16 dark:bg-primary-950 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-lg border border-primary-100 bg-primary-950 px-6 py-10 text-white shadow-2xl shadow-primary-950/20 dark:border-secondary-300/25 dark:bg-primary-900 sm:px-10">
-            <div className="absolute end-0 top-0 h-full w-1 bg-secondary-500" />
-            <div className="absolute -start-16 -top-16 h-40 w-40 rounded-full bg-secondary-500/20 blur-2xl" />
-            <div className="absolute -bottom-20 end-20 h-48 w-48 rounded-full bg-primary-600/40 blur-3xl" />
-            <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
-              <div>
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-secondary-500 text-white shadow-lg shadow-secondary-950/20">
-                  <Zap size={24} />
-                </div>
-                <h2 className="mt-5 max-w-3xl text-3xl font-extrabold leading-tight text-white sm:text-5xl">{copy.ctaTitle}</h2>
-                <p className="mt-4 max-w-2xl text-base leading-8 text-secondary-100/90 sm:text-lg">{copy.ctaSubtitle}</p>
+          <div className="relative overflow-hidden rounded-3xl border border-primary-100 bg-primary-950 px-6 py-12 text-white shadow-2xl shadow-primary-950/20 dark:border-secondary-300/25 dark:bg-[#06030e] sm:px-12">
+            <div className="absolute end-0 top-0 h-full w-1 bg-[#6119E6] dark:bg-[#E13382]" />
+            <div className="absolute -start-16 -top-16 h-40 w-40 rounded-full bg-[#6119E6]/20 blur-2xl dark:bg-[#E13382]/20" />
+            <div className="absolute -bottom-20 end-20 h-48 w-48 rounded-full bg-[#6119E6]/40 blur-3xl dark:bg-[#E13382]/40" />
+            <div className="relative flex flex-col items-center text-center gap-6">
+              <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#6119E6] text-white shadow-lg dark:bg-[#E13382]">
+                <Zap size={28} />
               </div>
-              <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+              <h2 className="max-w-3xl text-4xl font-extrabold leading-tight text-white sm:text-5xl">{copy.ctaTitle}</h2>
+              <p className="max-w-2xl text-lg leading-8 text-slate-300">{copy.ctaSubtitle}</p>
+              
+              <div className="mt-4 flex flex-col gap-4 sm:flex-row flex-wrap justify-center">
+                <Link
+                  href="/book"
+                  className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-[#6119E6] px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-90 dark:bg-[#E13382]"
+                >
+                  {copy.heroButtons?.demo}
+                </Link>
                 <Link
                   href="/register"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-secondary-500 px-6 py-3 text-sm font-extrabold text-white transition hover:bg-secondary-600"
+                  className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border-2 border-white/50 bg-transparent px-8 py-3 text-sm font-bold text-white transition hover:bg-white/10"
                 >
-                  {copy.start}
-                  <ArrowIcon size={18} />
+                  {copy.heroButtons?.signup}
                 </Link>
-                <button
-                  onClick={() => setIsLoginOpen(true)}
-                  className="inline-flex min-h-12 items-center justify-center rounded-lg border border-secondary-200/30 px-6 py-3 text-sm font-extrabold text-secondary-100 transition hover:bg-white/10"
+                <Link
+                  href="/register"
+                  className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border-2 border-emerald-500/30 bg-emerald-500/20 px-8 py-3 text-sm font-bold text-emerald-300 shadow-sm transition hover:bg-emerald-500/30"
                 >
-                  {copy.login}
-                </button>
+                  <Zap size={18} />
+                  {copy.heroButtons?.try}
+                </Link>
               </div>
             </div>
           </div>
