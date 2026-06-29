@@ -38,7 +38,9 @@ export function SiteHeader({ locale, setIsLoginOpen }: { locale: LandingLocale; 
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl text-slate-950 dark:border-white/10 dark:bg-[#06030e]/90 dark:text-white">
+      {/* Spacer to prevent layout shift since header is fixed */}
+      <div className="h-24 w-full" />
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl text-slate-950 dark:border-white/10 dark:bg-[#06030e]/90 dark:text-white">
         <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href={isEnglish ? "/" : locale === "ar-jo" ? "/ar-jo" : locale === "ar-eg" ? "/ar-eg" : "/ar-ae"} className="flex items-center">
             <BrandLogo />

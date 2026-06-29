@@ -158,7 +158,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
     <main
       dir={copy.dir}
       lang={copy.lang}
-      className="relative min-h-screen overflow-x-hidden bg-slate-50 font-sans text-slate-950 selection:bg-[#6119E6]/10 dark:bg-[#06030e] dark:text-white dark:selection:bg-[#E13382]/20"
+      className="relative min-h-screen overflow-x-clip bg-slate-50 font-sans text-slate-950 selection:bg-[#6119E6]/10 dark:bg-[#06030e] dark:text-white dark:selection:bg-[#E13382]/20"
     >
       <SiteHeader locale={locale} setIsLoginOpen={setIsLoginOpen} />
 
