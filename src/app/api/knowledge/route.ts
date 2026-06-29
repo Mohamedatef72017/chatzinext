@@ -7,7 +7,7 @@ import { createKnowledgeDocument, knowledgeSourceTypes } from "@/lib/knowledge";
 const sourceTypesArray = [
   "pdf", "docx", "txt", "csv", "excel", "faq", "website", "html", 
   "product_catalog", "services_catalog", "policies", "terms", 
-  "pricing", "manual", "support_article", "json", "custom_text"
+  "pricing", "manual", "support_article", "json", "custom_text", "image"
 ] as const;
 
 const schema = z.object({

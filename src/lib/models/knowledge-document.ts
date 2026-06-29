@@ -17,7 +17,8 @@ const sourceTypes = [
   "manual",
   "support_article",
   "json",
-  "custom_text"
+  "custom_text",
+  "image"
 ] as const;
 
 const knowledgeDocumentSchema = new Schema(

@@ -1,22 +1,27 @@
-const arabicCopy = (marketName: "الإمارات" | "الأردن", marketLabel: "Arabic - UAE" | "Arabic - Jordan") => ({
-  lang: marketName === "الإمارات" ? "ar-AE" : "ar-JO",
+const arabicCopy = (marketName: "الإمارات" | "الأردن" | "مصر", marketLabel: "Arabic - UAE" | "Arabic - Jordan" | "Arabic - Egypt") => ({
+  lang: marketName === "الإمارات" ? "ar-AE" : marketName === "الأردن" ? "ar-JO" : "ar-EG",
   dir: "rtl",
   marketName,
   marketLabel,
   nav: [
-    { label: "آلية العمل", href: "#workflow" },
+    { label: "كيف يعمل؟", href: "#workflow" },
     { label: "المميزات", href: "#features" },
     { label: "القنوات", href: "#channels" },
-    { label: "الأمان", href: "#security" },
-    { label: "الأسعار", href: "#pricing" },
-    { label: "اتصل بنا", href: "#contact" }
+    { label: "الخصوصية والأمان", href: "#security" },
+    { label: "الأسعار", href: "/pricing" },
+    { label: "تواصل معنا", href: "#contact" }
   ],
-  login: "دخول",
-  start: "ابدأ الآن",
+  login: "تسجيل الدخول",
+  start: "جرّب الآن",
   heroLabel: "منصة محادثات ذكية لخدمة العملاء",
-  title: "حوّل محادثاتك إلى موظف استقبال ذكي",
-  subtitle: "يعمل 24/7 من منصة موحدة لإدارة العملاء والمحادثات.",
-  primary: "إنشاء حساب",
+  title: "ارتق بخدمة عملائك إلى آفاق جديدة",
+  heroPoints: [
+    { title: "الرد الفوري على مدار الساعة:", text: "موظف استقبال ذكي جاهز دائماً." },
+    { title: "أتمتة المحادثات بالذكاء الاصطناعي:", text: "فهم دقيق وتصنيف للاحتياجات." },
+    { title: "جمع وتحليل البيانات:", text: "رؤى قيمة لاتخاذ قرارات أفضل." },
+    { title: "إدارة موحدة للقنوات:", text: "مكان واحد لـ WhatsApp, Messenger, Instagram." }
+  ],
+  primary: "أنشئ حساباً مجاناً",
   secondary: "مشاهدة لوحة التحكم",
   proof: "مبني للشركات التي تريد أتمتة ذكية مع تحكم واضح للفريق.",
   stats: [
@@ -25,71 +30,86 @@ const arabicCopy = (marketName: "الإمارات" | "الأردن", marketLabel
     ["AI + Team", "تسليم بشري واضح"],
     [marketName, "تجربة عربية محلية"]
   ],
-  workflowTitle: "كيف بيشتغل؟",
-  workflowSubtitle: "ثلاث خطوات فقط:",
+  workflowTitle: "ابدأ خلال 3 خطوات بسيطة",
+  workflowSubtitle: "اربط قنواتك، درّب Chatzi، وابدأ استقبال العملاء تلقائياً.",
   workflow: [
     {
       title: "اربط قنوات التواصل",
-      text: "استقبل رسائل الموقع، واتساب، ماسنجر، وغيرها.",
+      text: "اربط WhatsApp وInstagram وMessenger وباقي قنواتك بسهولة.",
       metric: "1"
     },
     {
       title: "درّب Chatzi على معلومات شركتك",
-      text: "ارفع ملفاتك أو موقعك ليتعلم الرد.",
+      text: "أضف موقعك، ملفاتك، منتجاتك، وخدماتك ليجيب Chatzi بدقة.",
       metric: "2"
     },
     {
       title: "ابدأ باستقبال العملاء",
-      text: "دع الذكاء الاصطناعي يقوم بالمهمة نيابة عنك.",
+      text: "Chatzi يبدأ بالرد، جمع البيانات، وتحويل الطلبات لفريقك عند الحاجة.",
       metric: "3"
     }
   ],
-  featuresTitle: "المميزات",
+  featuresTitle: "مميزات تساعدك على الرد أسرع وبيع أكثر",
   featuresSubtitle: "",
   features: [
-    ["موظف استقبال ذكي", "يرد على عملائك 24/7 بلغتهم وبأسلوب طبيعي."],
-    ["جميع المحادثات في مكان واحد", "WhatsApp وInstagram وMessenger وباقي القنوات من منصة واحدة."],
-    ["يحوّل العميل لموظفك عند الحاجة", "عندما يحتاج تدخل بشري، يتم تحويل المحادثة مباشرة مع جميع تفاصيلها."],
-    ["يعرف شركتك كما يعرفها موظفوك", "يتم تدريبه على منتجاتك وخدماتك والعروض والأسئلة الخاصة بشركتك فقط."],
-    ["لا تضيع أي طلب", "يجمع بيانات العميل وينشئ تذكرة أو إشعاراً لفريقك تلقائياً."],
+    ["موظف استقبال ذكي", "يرد على عملائك 24/7، بلغتهم، وبأسلوب طبيعي يشبه موظفك."],
+    ["جميع المحادثات في مكان واحد", "اجمع WhatsApp وInstagram وMessenger وباقي القنوات داخل لوحة واحدة سهلة."],
+    ["يعرف شركتك كما يعرفها موظفوك", "يتعلم منتجاتك، خدماتك، أسعارك، عروضك، والأسئلة المتكررة الخاصة بشركتك فقط."],
+    ["يحوّل العميل لموظفك عند الحاجة", "عندما يحتاج العميل لتدخل بشري، يحوّل المحادثة مباشرة لموظفك مع جميع تفاصيلها."],
+    ["لا تضيع أي طلب", "يجمع بيانات العميل ويحوّل الطلب إلى تذكرة أو إشعار واضح لفريقك."],
     ["اعرف كل ما يحدث", "تقارير ذكية، CRM، وإحصائيات تساعدك على تطوير أعمالك."]
   ],
   heroButtons: {
-    demo: "احجز عرضاً شخصياً",
-    signup: "أنشئ حساباً مجانياً",
+    demo: "احجز عرضاً توضيحياً",
+    signup: "أنشئ حساباً مجاناً",
     try: "جرّب Chatzi خلال أقل من دقيقة",
-    trySub: "أدخل موقع شركتك وسننشئ لك تجربة AI مخصصة خلال أقل من دقيقة."
+    trySub: "أدخل موقع شركتك، وسننشئ لك مساعداً ذكياً تجريبياً خلال أقل من دقيقة."
   },
   contact: {
     title: "طرق التواصل",
     subtitle: "نحن هنا لمساعدتك",
-    email: "support@chatzi.ai",
-    phone: "+971 50 123 4567"
+    email: "info@chatzi.io",
+    phone: "+971 555452119",
+    address: "UAE, Ajman, Sheikh Khalifa Street, Amber Gem Tower, 26th Floor, BC-893063"
   },
-  channelsTitle: "قنوات جاهزة للانتشار",
+  channelsTitle: "كل قنوات التواصل في منصة واحدة",
   channelsSubtitle:
-    "ابدأ من القناة الأهم ثم وسع التغطية تدريجياً بدون أن تتغير طريقة العمل خلف الكواليس.",
-  channels: ["Website Chat", "WhatsApp", "Instagram", "Facebook Messenger", "Telegram", "Generic Webhooks"],
-  securityTitle: "تحكم وأمان مناسب لفرق العمل",
-  security:
-    "عزل بيانات كل شركة، صلاحيات واضحة، مفاتيح AI مخفية ومشفرة، وسجل Webhooks يساعدك على مراقبة ما حدث في كل قناة.",
+    "استقبل رسائل العملاء من WhatsApp وInstagram وMessenger والموقع الإلكتروني، ورد عليهم من لوحة واحدة منظمة.",
+  channelsData: [
+    { name: "WhatsApp", description: "استقبل ورد على عملاء واتساب مباشرة." },
+    { name: "Messenger", description: "اربط صفحة فيسبوك لرد أسرع." },
+    { name: "Instagram", description: "تفاعل مع رسائل وتعليقات إنستجرام." },
+    { name: "Website Chat", description: "أضف أداة المحادثة (Widget) لموقعك." },
+    { name: "Telegram", description: "استقبل رسائل تيليجرام من مكان واحد." },
+    { name: "تكاملات مخصصة", description: "اربط أنظمتك الخاصة عبر Webhooks." }
+  ],
+  securityTitle: "اربط قنواتك بثقة… وخلّي بياناتك تحت سيطرتك",
+  security: "اربط قنوات التواصل الخاصة بشركتك بسهولة، بدون مشاركة كلمات المرور، مع خصوصية كاملة لمحادثات العملاء وتحكم واضح بصلاحيات فريقك.",
+  securityPoints: [
+    { title: "ربط سهل للقنوات", text: "اربط قنوات التواصل الخاصة بشركتك بخطوات واضحة وبدون تعقيد تقني." },
+    { title: "محادثاتك خاصة", text: "لا يطّلع فريق Chatzi على محادثات عملائك أو بياناتهم الخاصة." },
+    { title: "تحكم كامل بصلاحيات فريقك", text: "حدد من يستطيع مشاهدة المحادثات، الرد على العملاء، أو إدارة القنوات." },
+    { title: "افصل أي قناة بأي وقت", text: "إذا قررت التوقف أو تغيير الإعدادات، يمكنك إلغاء ربط أي قناة بسهولة." },
+    { title: "بدون مشاركة كلمات المرور", text: "لا تحتاج لإعطاء كلمة مرور WhatsApp أو Instagram أو Facebook لأي شخص." },
+    { title: "الذكاء الاصطناعي يعمل بتعليماتك", text: "Chatzi يرد بناءً على معلومات شركتك وتعليماتك فقط، وليس بشكل عشوائي." }
+  ],
   pricingTitle: "أربع باقات مرنة حسب مسار نمو أعمالك",
   pricing:
     "من التجربة المجانية للانطلاق، ثم النمو، ثم التوسع، ثم الحل المؤسسي المخصص. مسار واضح بدون مفاجآت.",
   faqTitle: "أسئلة سريعة",
   faq: [
     ["هل يدعم العربية والإنجليزية؟", `نعم، الصفحة تدعم الإنجليزية ونسختين عربيتين موجهتين إلى ${marketName}.`],
-    ["هل هو مجرد شات بوت؟", "لا. ChatZi يجمع الرد الآلي، Inbox موحد، قاعدة معرفة، CRM خفيف، وتسليم بشري واضح."],
+    ["هل هو مجرد شات بوت؟", "لا. Chatzi يجمع الرد الآلي، Inbox موحد، قاعدة معرفة، CRM خفيف، وتسليم بشري واضح."],
     ["هل يمكن تدريبه على بياناتي؟", "نعم، يمكن تدريبه من ملفاتك وروابط موقعك ومصادر المعرفة الخاصة بنشاطك."]
   ],
   ctaTitle: "جاهز لتحويل خدمة العملاء لديك؟",
   ctaSubtitle:
     "انضم للعديد من الشركات التي تدير محادثاتها بذكاء.",
-  footer: `ChatZi AI Solutions FZE LLC - تجربة عربية مخصصة لـ ${marketName}`,
+  footer: `Chatzi AI Solutions FZE LLC - تجربة عربية مخصصة لـ ${marketName}`,
   imageAlt: {
-    hero: "لقطة من لوحة ChatZi للمحادثات والقنوات",
-    channels: "قنوات ChatZi المتعددة",
-    dashboard: "لوحة تحكم ChatZi"
+    hero: "لقطة من لوحة Chatzi للمحادثات والقنوات",
+    channels: "قنوات Chatzi المتعددة",
+    dashboard: "لوحة تحكم Chatzi"
   }
 });
 
@@ -104,15 +124,19 @@ export const landingContent = {
       { label: "Features", href: "#features" },
       { label: "Channels", href: "#channels" },
       { label: "Security", href: "#security" },
-      { label: "Pricing", href: "#pricing" },
+      { label: "Pricing", href: "/pricing" },
       { label: "Contact", href: "#contact" }
     ],
     login: "Sign in",
     start: "Start now",
     heroLabel: "AI receptionist and operations hub",
-    title: "Chatzi turns customer conversations into clear team action",
-    subtitle:
-      "Unify website chat, WhatsApp, social inboxes, AI replies, workflow automation, and human handoff in one workspace for teams in the UAE and Jordan.",
+    title: "Elevate your customer service to new horizons",
+    heroPoints: [
+      { title: "Instant reply around the clock:", text: "A smart receptionist always ready." },
+      { title: "Automate conversations with AI:", text: "Accurate understanding and categorization of needs." },
+      { title: "Data collection and analysis:", text: "Valuable insights for better decisions." },
+      { title: "Unified channel management:", text: "One place for WhatsApp, Messenger, Instagram." }
+    ],
     primary: "Create account",
     secondary: "View dashboard",
     proof: "Built for teams that need automation, human handoff, and operational clarity in the same experience.",
@@ -122,34 +146,34 @@ export const landingContent = {
       ["AI + Team", "Clear human handoff"],
       ["UAE + JO", "Regional bilingual rollout"]
     ],
-    workflowTitle: "How does it work?",
+    workflowTitle: "Start in 3 simple steps",
     workflowSubtitle:
-      "Just three simple steps:",
+      "Connect your channels, train Chatzi, and start receiving customers automatically.",
     workflow: [
       {
         title: "Connect your channels",
-        text: "Receive messages from Website, WhatsApp, Messenger, and more.",
+        text: "Connect WhatsApp, Instagram, Messenger, and your other channels easily.",
         metric: "1"
       },
       {
         title: "Train Chatzi on your business",
-        text: "Upload your files or website for it to learn.",
+        text: "Add your website, files, products, and services for Chatzi to answer accurately.",
         metric: "2"
       },
       {
         title: "Start receiving customers",
-        text: "Let AI handle the rest for you automatically.",
+        text: "Chatzi starts replying, collecting data, and routing requests to your team when needed.",
         metric: "3"
       }
     ],
-    featuresTitle: "Features",
+    featuresTitle: "Features that help you reply faster and sell more",
     featuresSubtitle: "",
     features: [
-      ["Smart Receptionist", "Replies to your customers 24/7 in their language naturally."],
-      ["All Conversations in One Place", "WhatsApp, Instagram, Messenger, and more from one platform."],
-      ["Team Routing When Needed", "When a person should step in, the conversation is routed with full details."],
-      ["Knows Your Business", "Trained on your products, services, offers, and specific questions."],
-      ["Never Lose a Request", "Collects customer data and creates tickets or notifications automatically."],
+      ["Smart Receptionist", "Replies to your customers 24/7, in their language, naturally like your own team."],
+      ["All Conversations in One Place", "Bring WhatsApp, Instagram, Messenger, and more into one easy dashboard."],
+      ["Team Routing When Needed", "When a customer needs human intervention, the chat is routed directly to your team with full context."],
+      ["Knows Your Business", "Learns your products, services, prices, offers, and FAQs specific to your business."],
+      ["Never Lose a Request", "Collects customer data and turns the request into a clear ticket or notification."],
       ["Know Everything That Happens", "Smart reports, CRM, and analytics to help you grow your business."]
     ],
     heroButtons: {
@@ -161,37 +185,53 @@ export const landingContent = {
     contact: {
       title: "Contact Us",
       subtitle: "We are here to help",
-      email: "support@chatzi.ai",
-      phone: "+971 50 123 4567"
+      email: "info@chatzi.io",
+      phone: "+971 555452119",
+      address: "UAE, Ajman, Sheikh Khalifa Street, Amber Gem Tower, 26th Floor, BC-893063"
     },
-    channelsTitle: "Deploy where customers already ask",
+    channelsTitle: "All communication channels in one platform",
     channelsSubtitle:
-      "Start with the most important channel, then expand without changing the operating logic behind every conversation.",
-    channels: ["Website Chat", "WhatsApp", "Instagram", "Facebook Messenger", "Telegram", "Generic Webhooks"],
-    securityTitle: "Governed, visible, and team-friendly",
-    security:
-      "Tenant-scoped data, role-aware access, encrypted AI secrets, visible webhook logs, and clean handoff rules keep automation controlled instead of opaque.",
+      "Receive customer messages from WhatsApp, Instagram, Messenger, and your website, and reply from one organized dashboard.",
+    channelsData: [
+      { name: "WhatsApp", description: "Receive and reply to WhatsApp customers directly." },
+      { name: "Messenger", description: "Connect your Facebook page for faster replies." },
+      { name: "Instagram", description: "Engage with Instagram messages and comments." },
+      { name: "Website Chat", description: "Add a live chat widget to your website." },
+      { name: "Telegram", description: "Receive Telegram messages from one place." },
+      { name: "Custom Integrations", description: "Connect your systems via Webhooks." }
+    ],
+    securityTitle: "Connect your channels with confidence... and keep your data under your control",
+    security: "Connect your company's communication channels easily, without sharing passwords, with full privacy for customer conversations and clear control over your team's permissions.",
+    securityPoints: [
+      { title: "Easy channel connection", text: "Connect your company's communication channels with clear steps and no technical complexity." },
+      { title: "Your conversations are private", text: "The Chatzi team does not view your customers' conversations or private data." },
+      { title: "Full control over team permissions", text: "Determine who can view conversations, reply to customers, or manage channels." },
+      { title: "Disconnect any channel anytime", text: "If you decide to stop or change settings, you can easily unlink any channel." },
+      { title: "No password sharing", text: "You don't need to give your WhatsApp, Instagram, or Facebook password to anyone." },
+      { title: "AI works by your instructions", text: "Chatzi replies based solely on your company's information and instructions, not randomly." }
+    ],
     pricingTitle: "Four flexible plans for every growth stage",
     pricing:
       "Start lean, grow into a dedicated AI receptionist, then scale into enterprise coverage with clear monthly message limits and support tiers.",
     faqTitle: "Quick questions",
     faq: [
       ["Does it support Arabic and English?", "Yes. The landing experience now supports English, Arabic for the UAE, and Arabic for Jordan."],
-      ["Is ChatZi only a chatbot?", "No. It combines AI replies, a unified inbox, knowledge training, workflow routing, lightweight CRM, and team escalation."],
+      ["Is Chatzi only a chatbot?", "No. It combines AI replies, a unified inbox, knowledge training, workflow routing, lightweight CRM, and team escalation."],
       ["Can it learn from my business data?", "Yes. Train it with files, website URLs, help pages, internal documents, and connected data sources."]
     ],
     ctaTitle: "Ready to transform your customer service?",
     ctaSubtitle:
       "Join many companies managing their conversations smartly.",
-    footer: "ChatZi AI Solutions FZE LLC - AI receptionist and operations assistant",
+    footer: "Chatzi AI Solutions FZE LLC - AI receptionist and operations assistant",
     imageAlt: {
-      hero: "ChatZi customer conversations dashboard",
-      channels: "ChatZi omnichannel channel map",
-      dashboard: "ChatZi dashboard screenshot"
+      hero: "Chatzi customer conversations dashboard",
+      channels: "Chatzi omnichannel channel map",
+      dashboard: "Chatzi dashboard screenshot"
     }
   },
   "ar-ae": arabicCopy("الإمارات", "Arabic - UAE"),
-  "ar-jo": arabicCopy("الأردن", "Arabic - Jordan")
+  "ar-jo": arabicCopy("الأردن", "Arabic - Jordan"),
+  "ar-eg": arabicCopy("مصر", "Arabic - Egypt")
 } as const;
 
 export type LandingLocale = keyof typeof landingContent;

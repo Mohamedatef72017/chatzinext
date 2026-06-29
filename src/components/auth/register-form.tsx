@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Store, Stethoscope, Building2, TerminalSquare, Lightbulb, CheckCircle2, Loader2, ArrowLeft, Sparkles, BookOpen, MessageCircle } from "lucide-react";
+import { Store, Stethoscope, Building2, TerminalSquare, Lightbulb, CheckCircle2, Loader2, ArrowLeft, Sparkles, BookOpen, MessageCircle, Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/components/i18n-provider";
 import { getDefaultIndustryKnowledgeDocuments, getDefaultIndustryLabel, type DefaultIndustryId } from "@/lib/knowledge-default-templates";
 
@@ -22,6 +22,7 @@ export function RegisterForm() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [botId, setBotId] = useState("");
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [agreedTerms, setAgreedTerms] = useState(false);
@@ -494,17 +495,27 @@ export function RegisterForm() {
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs text-slate-500 font-semibold mb-1.5" htmlFor="password">{t.auth.passwordLabel}</label>
-            <input
-              className="w-full border-b-2 border-slate-200 bg-transparent py-2 text-sm text-slate-900 focus:border-primary-500 focus:outline-none transition-colors dark:text-white dark:border-slate-800"
-              id="password"
-              name="password"
-              type="password"
-              placeholder={t.auth.passwordLabel}
-              minLength={12}
-              pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,128}"
-              title={locale === "ar" ? "12 حرفا على الأقل مع حرف كبير وحرف صغير ورقم" : "At least 12 characters with uppercase, lowercase, and a number"}
-              required
-            />
+            <div className="relative flex items-center">
+              <input
+                className="w-full border-b-2 border-slate-200 bg-transparent py-2 pe-10 text-sm text-slate-900 focus:border-primary-500 focus:outline-none transition-colors dark:text-white dark:border-slate-800"
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder={t.auth.passwordLabel}
+                minLength={12}
+                pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,128}"
+                title={locale === "ar" ? "12 حرفا على الأقل مع حرف كبير وحرف صغير ورقم" : "At least 12 characters with uppercase, lowercase, and a number"}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute end-2 text-slate-400 hover:text-primary-500 transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             <p className="mt-2 text-xs text-slate-400">
               {locale === "ar" ? "12 حرفا على الأقل مع حرف كبير وحرف صغير ورقم." : "At least 12 characters with uppercase, lowercase, and a number."}
             </p>
@@ -559,12 +570,12 @@ export function RegisterForm() {
         
         <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center text-sm text-slate-500 sm:flex-row">
           <span>{locale === "en" ? "Already a member?" : "لديك حساب بالفعل؟"}</span>
-          <Link
+          <a
             href={loginHref}
             className="inline-flex min-h-10 items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-5 py-2 text-sm font-bold text-primary-700 transition hover:border-primary-300 hover:bg-primary-100 dark:border-primary-500/25 dark:bg-primary-500/10 dark:text-primary-200 dark:hover:bg-primary-500/20"
           >
             {locale === "en" ? "Login" : "تسجيل الدخول"}
-          </Link>
+          </a>
         </div>
       </form>
     );

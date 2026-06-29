@@ -10,17 +10,17 @@ import "./globals.css";
 // ─── SEO & Metadata ──────────────────────────────────────────────────────────
 export const metadata: Metadata = {
   title: {
-    default: "ChatZi — منصة المحادثات الذكية",
-    template: "%s | ChatZi",
+    default: "Chatzi — موظف استقبال ذكي 24/7",
+    template: "%s | Chatzi",
   },
   description:
-    "منصة ChatZi للمحادثات الذكية متعددة القنوات — WhatsApp، Telegram، Facebook، وأكثر. مدعوم بالذكاء الاصطناعي.",
+    "منصة Chatzi للمحادثات الذكية متعددة القنوات — WhatsApp، Telegram، Facebook، وأكثر. مدعوم بالذكاء الاصطناعي.",
   robots: { index: false, follow: false }, // Private SaaS — no public indexing
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "ChatZi",
+    title: "Chatzi",
   },
 };
 

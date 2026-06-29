@@ -11,6 +11,7 @@ import {
   FileText,
   FileUp,
   Gift,
+  Globe,
   Image as ImageIcon,
   Loader2,
   Package,
@@ -21,6 +22,9 @@ import {
   RefreshCcw,
   Beaker,
   Lightbulb,
+  Link,
+  X,
+  CheckCircle,
 } from "lucide-react";
 import { useI18n } from "@/components/i18n-provider";
 import { KnowledgeDetailsModal } from "./knowledge-details-modal";
@@ -86,8 +90,10 @@ type KnowledgeManagerProps = {
   documents: DocumentRow[];
 };
 
+type InputTab = "text" | "file" | "url" | "image";
+
 const acceptedFileTypes = ".pdf,.docx,.xlsx,.xls,.csv,.txt,.json,application/pdf,application/json,text/plain";
-const acceptedImageTypes = "image/jpeg,image/png,image/webp";
+const acceptedImageTypes = ".jpg,.jpeg,.png,.gif,.webp,.bmp,image/*";
 const visualAssetKinds: Array<{ id: VisualAssetKind; icon: typeof ImageIcon }> = [
   { id: "menu", icon: FileText },
   { id: "offer", icon: Gift },
@@ -103,6 +109,7 @@ function detectSourceType(file: File | null) {
   if (name.endsWith(".csv")) return "csv";
   if (name.endsWith(".json")) return "json";
   if (name.endsWith(".txt")) return "txt";
+  if (name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/)) return "image";
   return "custom_text";
 }
 
@@ -119,20 +126,22 @@ function getGlobalHealth(documents: DocumentRow[]) {
 }
 
 function healthTone(score: number) {
-  if (score >= 80) return "text-emerald-700 bg-emerald-50 ring-emerald-100";
-  if (score >= 50) return "text-amber-700 bg-amber-50 ring-amber-100";
-  return "text-red-700 bg-red-50 ring-red-100";
+  if (score >= 80) return "text-emerald-600 bg-emerald-50 ring-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/30 dark:ring-emerald-800";
+  if (score >= 50) return "text-amber-600 bg-amber-50 ring-amber-200 dark:text-amber-400 dark:bg-amber-950/30 dark:ring-amber-800";
+  return "text-red-600 bg-red-50 ring-red-200 dark:text-red-400 dark:bg-red-950/30 dark:ring-red-800";
 }
 
 function sourceTypeLabel(type: string, isAr: boolean) {
   const labels: Record<string, string> = {
-    custom_text: isAr ? "نص مباشر" : "Text",
+    custom_text: isAr ? "نص" : "Text",
     pdf: "PDF",
     docx: "Word",
     excel: "Excel",
     csv: "CSV",
     txt: "TXT",
     json: "JSON",
+    website: isAr ? "موقع" : "Website",
+    image: isAr ? "صورة" : "Image",
   };
   return labels[type] || type;
 }
@@ -168,6 +177,13 @@ function visualKindHelper(kind: VisualAssetKind, isAr: boolean) {
   return isAr ? "اكتب تفاصيل المنتج: الاسم، السعر، المواصفات، التوفر، وأي خيارات." : "Describe name, price, specs, availability, and variants.";
 }
 
+function statusColor(status: string) {
+  if (status === "ready") return "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300";
+  if (status === "error") return "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300";
+  if (status === "duplicate") return "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400";
+  return "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300";
+}
+
 export function KnowledgeManager({ bots, categories, documents }: KnowledgeManagerProps) {
   const router = useRouter();
   const { locale } = useI18n();
@@ -175,10 +191,17 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
 
   const [liveDocuments, setLiveDocuments] = useState(documents);
   const [selectedBot, setSelectedBot] = useState(bots[0]?.id || "");
+  const [activeTab, setActiveTab] = useState<InputTab>("text");
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [tags, setTags] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [urlInput, setUrlInput] = useState("");
+  const [urlScraping, setUrlScraping] = useState(false);
+  const [urlScraped, setUrlScraped] = useState(false);
+  const [urlPreview, setUrlPreview] = useState<{ title: string; text: string; wordCount: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -198,7 +221,7 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
     setLiveDocuments(documents);
   }, [documents]);
 
-  const sourceType = detectSourceType(selectedFile);
+  const sourceType = activeTab === "image" ? "image" : detectSourceType(selectedFile);
   const activeTrainingDocuments = useMemo(
     () => liveDocuments.filter((doc) => ["pending", "processing", "needs_retraining"].includes(doc.status) || doc.needsRetraining),
     [liveDocuments]
@@ -354,6 +377,31 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
     }
   }
 
+  async function handleScrapeUrl() {
+    if (!urlInput.trim()) return;
+    setUrlScraping(true);
+    setError("");
+    setUrlScraped(false);
+    setUrlPreview(null);
+    try {
+      const res = await fetch("/api/knowledge/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: urlInput.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || (isAr ? "تعذر جلب بيانات الموقع." : "Failed to fetch website."));
+      setUrlPreview({ title: data.title, text: data.text, wordCount: data.wordCount });
+      setTitle(data.title || urlInput);
+      setText(data.text);
+      setUrlScraped(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : isAr ? "تعذر جلب بيانات الموقع." : "Failed to fetch website.");
+    } finally {
+      setUrlScraping(false);
+    }
+  }
+
   async function handleDelete(docId: string) {
     if (!confirm(isAr ? "هل أنت متأكد من حذف هذا المصدر؟" : "Are you sure you want to delete this source?")) return;
     try {
@@ -377,11 +425,7 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
       setError(isAr ? "تعذر بدء إعادة الصياغة" : "Failed to start rewrite");
     } finally {
       setLoading(false);
-      setProcessingDocs(prev => {
-        const next = new Set(prev);
-        next.delete(docId);
-        return next;
-      });
+      setProcessingDocs(prev => { const next = new Set(prev); next.delete(docId); return next; });
     }
   }
 
@@ -389,10 +433,10 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
     try {
       setLoading(true);
       setProcessingDocs(prev => new Set(prev).add(docId));
-      const res = await fetch(`/api/knowledge/retrain`, { 
-        method: "POST", 
+      const res = await fetch(`/api/knowledge/retrain`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId: docId }) 
+        body: JSON.stringify({ documentId: docId })
       });
       if (!res.ok) throw new Error();
       setSuccess(isAr ? "تم إعادة التدريب بنجاح." : "Retraining completed.");
@@ -401,21 +445,17 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
       setError(isAr ? "تعذر بدء التدريب" : "Failed to start training");
     } finally {
       setLoading(false);
-      setProcessingDocs(prev => {
-        const next = new Set(prev);
-        next.delete(docId);
-        return next;
-      });
+      setProcessingDocs(prev => { const next = new Set(prev); next.delete(docId); return next; });
     }
   }
 
   async function handleRetrainAll() {
     try {
       setLoading(true);
-      const res = await fetch(`/api/knowledge/retrain`, { 
-        method: "POST", 
+      const res = await fetch(`/api/knowledge/retrain`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ botId: selectedBot }) 
+        body: JSON.stringify({ botId: selectedBot })
       });
       if (!res.ok) throw new Error();
       setSuccess(isAr ? "تم إرسال جميع المصادر المتأخرة للتدريب." : "All pending sources sent for retraining.");
@@ -425,6 +465,18 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
     } finally {
       setLoading(false);
     }
+  }
+
+  function resetForm() {
+    setTitle("");
+    setText("");
+    setTags("");
+    setSelectedFile(null);
+    setSelectedImage(null);
+    setImagePreview("");
+    setUrlInput("");
+    setUrlScraped(false);
+    setUrlPreview(null);
   }
 
   async function submitKnowledge(event: React.FormEvent<HTMLFormElement>) {
@@ -437,31 +489,55 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
       return;
     }
 
-    if (!text.trim() && !selectedFile) {
-      setError(isAr ? "اكتب محتوى أو ارفع ملف معرفة." : "Write content or upload a knowledge file.");
+    if (activeTab === "text" && !text.trim()) {
+      setError(isAr ? "اكتب محتوى المعرفة." : "Write knowledge content.");
+      return;
+    }
+    if (activeTab === "file" && !selectedFile) {
+      setError(isAr ? "ارفع ملف معرفة أولًا." : "Upload a knowledge file first.");
+      return;
+    }
+    if (activeTab === "url" && !urlScraped) {
+      setError(isAr ? "اضغط 'جلب البيانات' أولًا للحصول على محتوى الموقع." : "Click 'Fetch Data' first to extract website content.");
+      return;
+    }
+    if (activeTab === "image" && !selectedImage) {
+      setError(isAr ? "ارفع صورة أولًا." : "Upload an image first.");
       return;
     }
 
     setLoading(true);
     const form = new FormData();
     form.set("botId", selectedBot);
-    form.set("title", title.trim() || selectedFile?.name.replace(/\.[^.]+$/, "") || (isAr ? "معرفة جديدة" : "New knowledge"));
-    form.set("sourceType", sourceType);
     form.set("categoryName", "تلقائي");
     form.set("collectionName", "عام");
     form.set("tags", tags);
-    form.set("text", text);
     form.set("isTemporary", "false");
-    if (selectedFile) form.set("file", selectedFile);
+
+    if (activeTab === "text") {
+      form.set("title", title.trim() || (isAr ? "معرفة جديدة" : "New knowledge"));
+      form.set("sourceType", "custom_text");
+      form.set("text", text);
+    } else if (activeTab === "file" && selectedFile) {
+      form.set("title", title.trim() || selectedFile.name.replace(/\.[^.]+$/, ""));
+      form.set("sourceType", detectSourceType(selectedFile));
+      form.set("file", selectedFile);
+    } else if (activeTab === "url") {
+      form.set("title", title.trim() || (urlPreview?.title || urlInput));
+      form.set("sourceType", "website");
+      form.set("sourceUrl", urlInput);
+      form.set("text", text);
+    } else if (activeTab === "image" && selectedImage) {
+      form.set("title", title.trim() || selectedImage.name.replace(/\.[^.]+$/, ""));
+      form.set("sourceType", "image");
+      form.set("file", selectedImage);
+    }
 
     try {
       const response = await fetch("/api/knowledge", { method: "POST", body: form });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || (isAr ? "تعذر حفظ المعرفة." : "Could not save knowledge."));
-      setTitle("");
-      setText("");
-      setTags("");
-      setSelectedFile(null);
+      resetForm();
       setSuccess(isAr ? "تم حفظ المعرفة وبدأ التدريب والتصنيف التلقائي." : "Knowledge saved. Training and auto-classification started.");
       router.refresh();
     } catch (err) {
@@ -471,145 +547,330 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
     }
   }
 
+  const tabs: { id: InputTab; label: string; icon: React.ReactNode }[] = [
+    { id: "text", label: isAr ? "نص مباشر" : "Direct Text", icon: <FileText size={16} /> },
+    { id: "file", label: isAr ? "رفع ملف" : "Upload File", icon: <FileUp size={16} /> },
+    { id: "url", label: isAr ? "رابط موقع" : "Website URL", icon: <Globe size={16} /> },
+    { id: "image", label: isAr ? "صورة / منيو" : "Image / Menu", icon: <ImageIcon size={16} /> },
+  ];
+
   return (
     <div className="space-y-6">
-      {error ? <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-      {success ? <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-700">{success}</p> : null}
+      {error ? (
+        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300">
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          <p>{error}</p>
+        </div>
+      ) : null}
+      {success ? (
+        <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300">
+          <CheckCircle size={16} className="mt-0.5 shrink-0" />
+          <p>{success}</p>
+        </div>
+      ) : null}
 
-      <section className="grid gap-4 lg:grid-cols-4">
-        <article className="panel p-4 lg:col-span-2">
-          <label className="label flex items-center gap-2"><Bot size={16} /> {isAr ? "البوت" : "Bot"}</label>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <article className="panel p-4 sm:col-span-2">
+          <label className="label mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+            <Bot size={14} /> {isAr ? "اختر البوت" : "Select Bot"}
+          </label>
           <select className="field" value={selectedBot} onChange={(event) => setSelectedBot(event.target.value)}>
             {bots.map((bot) => <option key={bot.id} value={bot.id}>{bot.name}</option>)}
           </select>
         </article>
         <article className="panel p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-500">{isAr ? "الصحة العامة" : "Global health"}</p>
-            <button type="button" onClick={() => setIsTestModalOpen(true)} className="btn-secondary py-1 text-xs px-2" disabled={!selectedBot}>
-              <Beaker size={14} /> {isAr ? "اختبار" : "Test"}
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{isAr ? "الصحة العامة" : "Health"}</p>
+            <button
+              type="button"
+              onClick={() => setIsTestModalOpen(true)}
+              className="btn-secondary py-1 text-xs px-2.5"
+              disabled={!selectedBot}
+            >
+              <Beaker size={13} /> {isAr ? "اختبار" : "Test"}
             </button>
           </div>
-          <div className="mt-2 flex items-center gap-3">
-            <span className={`inline-flex rounded-full px-3 py-1 text-2xl font-bold ring-1 ${healthTone(globalHealth)}`}>{globalHealth}%</span>
+          <div className="mt-3 flex items-center gap-3">
+            <span className={`inline-flex rounded-xl px-3 py-1 text-xl font-extrabold ring-1 ${healthTone(globalHealth)}`}>{globalHealth}%</span>
             {globalHealth < 60 && (
-              <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-md">
-                <Lightbulb size={12} /> {isAr ? "ننصح بإضافة ملفات أو إعادة صياغتها" : "Add/rewrite sources to improve"}
+              <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                <Lightbulb size={12} /> {isAr ? "يحتاج تحسين" : "Needs improvement"}
               </span>
             )}
           </div>
         </article>
         <article className="panel p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-500">{isAr ? "المصادر الجاهزة / المشاكل" : "Ready / issues"}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{isAr ? "جاهز / مشاكل" : "Ready / Issues"}</p>
             {issueCount > 0 && (
-              <button type="button" onClick={handleRetrainAll} className="btn-secondary py-1 text-xs px-2" disabled={!selectedBot || loading}>
-                <DatabaseZap size={14} /> {isAr ? "تدريب الكل" : "Retrain All"}
+              <button
+                type="button"
+                onClick={handleRetrainAll}
+                className="btn-secondary py-1 text-xs px-2.5"
+                disabled={!selectedBot || loading}
+              >
+                <DatabaseZap size={13} /> {isAr ? "تدريب" : "Retrain"}
               </button>
             )}
           </div>
-          <p className="mt-2 text-2xl font-bold text-ink">{readyCount} / {issueCount}</p>
+          <p className="mt-3 text-xl font-extrabold text-ink">
+            <span className="text-emerald-600 dark:text-emerald-400">{readyCount}</span>
+            <span className="mx-1.5 text-slate-300 dark:text-slate-700">/</span>
+            <span className={issueCount > 0 ? "text-red-600 dark:text-red-400" : "text-slate-400"}>{issueCount}</span>
+          </p>
         </article>
       </section>
 
       <form onSubmit={submitKnowledge} className="panel overflow-hidden">
         <div className="border-b border-slate-100 p-5 dark:border-slate-800">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-primary-50 p-2 text-primary-700 dark:bg-primary-950/30 dark:text-primary-300">
-                <DatabaseZap size={22} />
+              <div className="rounded-xl bg-blue-50 p-2.5 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                <DatabaseZap size={20} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-ink">{isAr ? "إضافة معرفة دفعة واحدة" : "Add bulk knowledge"}</h2>
-                <p className="mt-1 text-sm text-slate-500">
+                <h2 className="text-base font-bold text-ink">{isAr ? "إضافة معرفة جديدة" : "Add New Knowledge"}</h2>
+                <p className="mt-0.5 text-sm text-slate-500">
                   {isAr
-                    ? "اكتب البيانات في المحرر أو ارفع PDF / Word / Excel / JSON وسيتم استخراج النص وتصنيفه تلقائيًا إلى فئات المعرفة."
-                    : "Write in the editor or upload PDF / Word / Excel / JSON. The system extracts text and auto-classifies it."}
+                    ? "أضف المحتوى بأي طريقة وسيتم تصنيفه وتدريبه تلقائيًا."
+                    : "Add content in any format and it will be auto-classified and trained."}
                 </p>
               </div>
             </div>
-            <a href="/templates/chatzi-knowledge-template-ar.txt" download className="btn-secondary whitespace-nowrap bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200">
-              <FileText size={16} /> {isAr ? "تحميل نموذج بيانات جاهز 📄" : "Download Template 📄"}
+            <a
+              href="/templates/chatzi-knowledge-template-ar.txt"
+              download
+              className="btn-secondary whitespace-nowrap text-xs"
+            >
+              <FileText size={14} /> {isAr ? "نموذج جاهز" : "Template"}
             </a>
           </div>
+
+          <div className="mt-4 flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-900">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => { setActiveTab(tab.id); setError(""); }}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold transition sm:gap-2 sm:px-3 ${
+                  activeTab === tab.id
+                    ? "bg-white text-blue-700 shadow-sm dark:bg-slate-800 dark:text-blue-300"
+                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
+              >
+                {tab.icon}
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="grid gap-5 p-5 xl:grid-cols-[1fr_360px]">
-          <div className="space-y-4">
-            <div>
-              <label className="label">{isAr ? "العنوان" : "Title"}</label>
-              <input
-                className="field"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder={isAr ? "مثال: بيانات مركز الأسنان والخدمات والأسعار" : "Example: Company services and pricing"}
-              />
-            </div>
-            <div>
-              <label className="label flex items-center gap-2"><Sparkles size={16} /> {isAr ? "محرر المعرفة الكبير" : "Large knowledge editor"}</label>
-              <textarea
-                className="field min-h-[340px] text-sm leading-7"
-                value={text}
-                onChange={(event) => setText(event.target.value)}
-                placeholder={isAr ? "اكتب هنا معلومات النشاط، النبذة، الخدمات، الأسعار، الحجز، السياسات، الأسئلة الشائعة..." : "Write company info, services, pricing, booking rules, policies, FAQ..."}
-              />
-            </div>
-            <div>
-              <label className="label">{isAr ? "وسوم اختيارية" : "Optional tags"}</label>
-              <input className="field" value={tags} onChange={(event) => setTags(event.target.value)} placeholder={isAr ? "أسنان, حجز, أسعار" : "dental, booking, prices"} />
-            </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="label">{isAr ? "العنوان" : "Title"}</label>
+            <input
+              className="field"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder={isAr ? "مثال: قائمة المشروبات والمأكولات، سياسة الإرجاع..." : "E.g. Drinks menu, Return policy..."}
+            />
           </div>
 
-          <aside className="space-y-4">
-            <label className="flex min-h-[210px] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-primary-400 hover:bg-primary-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-primary-950/20">
-              <FileUp size={34} className={selectedFile ? "text-primary-700" : "text-slate-400"} />
-              {selectedFile ? (
-                <span>
-                  <span className="block text-sm font-bold text-primary-700">{selectedFile.name}</span>
-                  <span className="mt-1 block text-xs text-slate-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB · {sourceTypeLabel(sourceType, isAr)}</span>
-                </span>
-              ) : (
-                <span>
-                  <span className="block text-sm font-bold text-slate-700 dark:text-slate-200">{isAr ? "ارفع ملف معرفة" : "Upload a knowledge file"}</span>
-                  <span className="mt-1 block text-xs text-slate-500">PDF, Word, Excel, CSV, TXT, JSON</span>
-                </span>
-              )}
-              <input
-                type="file"
-                className="hidden"
-                accept={acceptedFileTypes}
-                onChange={(event) => {
-                  const file = event.target.files?.[0] || null;
-                  setSelectedFile(file);
-                  if (file && !title.trim()) setTitle(file.name.replace(/\.[^.]+$/, ""));
-                }}
+          {activeTab === "text" && (
+            <div>
+              <label className="label flex items-center gap-2">
+                <Sparkles size={14} /> {isAr ? "محتوى المعرفة" : "Knowledge Content"}
+              </label>
+              <textarea
+                className="field min-h-[280px] text-sm leading-7"
+                value={text}
+                onChange={(event) => setText(event.target.value)}
+                placeholder={isAr ? "اكتب هنا معلومات النشاط، الخدمات، الأسعار، الحجز، السياسات، الأسئلة الشائعة..." : "Write company info, services, pricing, booking rules, policies, FAQ..."}
               />
-            </label>
-
-            {selectedFile ? (
-              <button
-                type="button"
-                onClick={() => setSelectedFile(null)}
-                className="btn-secondary w-full justify-center text-red-600 hover:bg-red-50"
-              >
-                <Trash2 size={16} /> {isAr ? "إزالة الملف" : "Remove file"}
-              </button>
-            ) : null}
-
-            <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm leading-6 text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-200">
-              {isAr
-                ? "التصنيف تلقائي: معلومات النشاط، النبذة، المنتجات، الخدمات، الأسعار، العروض، الشحن، الدفع، السياسات، الدعم، المبيعات، التذاكر."
-                : "Auto-classifies into company info, products, services, pricing, offers, shipping, payments, policies, support, sales, and tickets."}
             </div>
+          )}
 
-            <button type="submit" className="btn-primary w-full justify-center" disabled={loading || !selectedBot}>
-              {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-              {isAr ? "حفظ وتدريب المعرفة" : "Save and train"}
-            </button>
-          </aside>
+          {activeTab === "file" && (
+            <div>
+              <label className="label">{isAr ? "رفع ملف" : "Upload File"}</label>
+              <label className="flex min-h-[180px] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-blue-400 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-600 dark:hover:bg-blue-950/20">
+                <FileUp size={32} className={selectedFile ? "text-blue-600" : "text-slate-400"} />
+                {selectedFile ? (
+                  <span>
+                    <span className="block text-sm font-bold text-blue-700 dark:text-blue-300">{selectedFile.name}</span>
+                    <span className="mt-1 block text-xs text-slate-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB · {sourceTypeLabel(detectSourceType(selectedFile), isAr)}</span>
+                  </span>
+                ) : (
+                  <span>
+                    <span className="block text-sm font-semibold text-slate-700 dark:text-slate-200">{isAr ? "اضغط لاختيار ملف" : "Click to choose file"}</span>
+                    <span className="mt-1 block text-xs text-slate-400">PDF · Word · Excel · CSV · TXT · JSON</span>
+                  </span>
+                )}
+                <input
+                  type="file"
+                  className="hidden"
+                  accept={acceptedFileTypes}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] || null;
+                    setSelectedFile(file);
+                    if (file && !title.trim()) setTitle(file.name.replace(/\.[^.]+$/, ""));
+                  }}
+                />
+              </label>
+              {selectedFile && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedFile(null)}
+                  className="mt-2 btn-secondary w-full justify-center text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                >
+                  <X size={14} /> {isAr ? "إزالة الملف" : "Remove file"}
+                </button>
+              )}
+            </div>
+          )}
+
+          {activeTab === "url" && (
+            <div className="space-y-4">
+              <div>
+                <label className="label flex items-center gap-2">
+                  <Link size={14} /> {isAr ? "رابط الموقع" : "Website URL"}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    className="field flex-1"
+                    value={urlInput}
+                    onChange={(event) => { setUrlInput(event.target.value); setUrlScraped(false); setUrlPreview(null); }}
+                    placeholder="https://example.com/menu"
+                    dir="ltr"
+                    type="url"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleScrapeUrl}
+                    disabled={urlScraping || !urlInput.trim()}
+                    className="btn-primary shrink-0 px-4"
+                  >
+                    {urlScraping ? <Loader2 size={16} className="animate-spin" /> : <Globe size={16} />}
+                    <span className="hidden sm:inline">{isAr ? "جلب البيانات" : "Fetch"}</span>
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  {isAr
+                    ? "سيقوم الذكاء الاصطناعي بزيارة الموقع وتحليل واستخراج المعلومات المهمة تلقائيًا."
+                    : "AI will visit the page, analyze it, and automatically extract the key business information."}
+                </p>
+              </div>
+
+              {urlScraping && (
+                <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/60 dark:bg-blue-950/20">
+                  <Loader2 size={18} className="animate-spin text-blue-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">{isAr ? "جاري تحليل الموقع..." : "Analyzing website..."}</p>
+                    <p className="text-xs text-blue-600 opacity-80">{isAr ? "الذكاء الاصطناعي يستخرج المعلومات" : "AI is extracting information"}</p>
+                  </div>
+                </div>
+              )}
+
+              {urlScraped && urlPreview && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                        {isAr ? "تم استخراج البيانات بنجاح" : "Data extracted successfully"}
+                      </p>
+                      <p className="mt-0.5 text-xs text-emerald-600 dark:text-emerald-400">
+                        {urlPreview.wordCount.toLocaleString()} {isAr ? "كلمة" : "words"} · {isAr ? "جاهز للحفظ" : "Ready to save"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {urlScraped && text && (
+                <div>
+                  <label className="label flex items-center justify-between">
+                    <span className="flex items-center gap-2"><Sparkles size={14} /> {isAr ? "المحتوى المستخرج (قابل للتعديل)" : "Extracted Content (editable)"}</span>
+                  </label>
+                  <textarea
+                    className="field min-h-[220px] text-sm leading-7"
+                    value={text}
+                    onChange={(event) => setText(event.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "image" && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm leading-6 text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
+                {isAr
+                  ? "ارفع صورة المنيو أو الكتالوج أو أي صورة تحتوي بيانات. سيقوم الذكاء الاصطناعي بتحليل الصورة واستخراج المعلومات منها وحفظها في قاعدة المعرفة. عند سؤال العميل عن هذا المحتوى، سيتلقى الصورة مباشرة."
+                  : "Upload a menu, catalog, or any image with data. AI will analyze and extract information from the image and store it. When a customer asks about this content, they'll receive the image directly."}
+              </div>
+              <label className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-blue-400 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-600 dark:hover:bg-blue-950/20">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="preview" className="max-h-48 max-w-full rounded-lg object-contain shadow-sm" />
+                ) : (
+                  <>
+                    <ImageIcon size={36} className="text-slate-400" />
+                    <span>
+                      <span className="block text-sm font-semibold text-slate-700 dark:text-slate-200">{isAr ? "اضغط لرفع صورة" : "Click to upload image"}</span>
+                      <span className="mt-1 block text-xs text-slate-400">JPG · PNG · WEBP · GIF</span>
+                    </span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  className="hidden"
+                  accept={acceptedImageTypes}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] || null;
+                    setSelectedImage(file);
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (e) => setImagePreview(e.target?.result as string);
+                      reader.readAsDataURL(file);
+                      if (!title.trim()) setTitle(file.name.replace(/\.[^.]+$/, ""));
+                    } else {
+                      setImagePreview("");
+                    }
+                  }}
+                />
+              </label>
+              {selectedImage && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedImage(null); setImagePreview(""); }}
+                  className="btn-secondary w-full justify-center text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                >
+                  <X size={14} /> {isAr ? "إزالة الصورة" : "Remove image"}
+                </button>
+              )}
+            </div>
+          )}
+
+          <div>
+            <label className="label">{isAr ? "وسوم اختيارية" : "Optional tags"}</label>
+            <input
+              className="field"
+              value={tags}
+              onChange={(event) => setTags(event.target.value)}
+              placeholder={isAr ? "مثال: منيو، أسعار، حجز" : "E.g. menu, prices, booking"}
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="btn-primary w-full justify-center py-2.5 text-sm"
+            disabled={loading || !selectedBot}
+          >
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {isAr ? "حفظ وتدريب المعرفة" : "Save and train"}
+          </button>
         </div>
       </form>
-
       <section className="panel overflow-hidden">
         <div className="border-b border-slate-100 p-5 dark:border-slate-800">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -784,77 +1045,117 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
 
       <section className="grid gap-5 xl:grid-cols-[360px_1fr]">
         <article className="panel p-5">
-          <h2 className="mb-4 flex items-center gap-2 font-bold text-ink"><CheckCircle2 size={18} /> {isAr ? "صحة الفئات" : "Category health"}</h2>
-          <div className="space-y-3">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold text-ink">
+            <CheckCircle2 size={16} className="text-emerald-500" />
+            {isAr ? "صحة الفئات" : "Category Health"}
+          </h2>
+          <div className="space-y-2">
             {categoryHealth.length ? categoryHealth.map((item) => (
-              <div key={item.category.id} className="rounded-lg border border-slate-100 p-3 dark:border-slate-800">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-bold text-ink">{item.category.name}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ring-1 ${healthTone(item.score)}`}>{item.score}%</span>
+              <div key={item.category.id} className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/50">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-semibold text-ink">{item.category.name}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ring-1 ${healthTone(item.score)}`}>{item.score}%</span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">{item.docs.length} {isAr ? "مصدر" : "sources"}</p>
+                <p className="mt-1 text-xs text-slate-400">{item.docs.length} {isAr ? "مصدر" : "sources"}</p>
               </div>
             )) : (
-              <p className="text-sm text-slate-500">{isAr ? "لا توجد فئات بها مصادر بعد." : "No category sources yet."}</p>
+              <p className="text-sm text-slate-400">{isAr ? "لا توجد فئات بعد." : "No categories yet."}</p>
             )}
           </div>
         </article>
 
         <article className="panel overflow-hidden">
           <div className="border-b border-slate-100 p-4 dark:border-slate-800">
-            <h2 className="flex items-center gap-2 font-bold text-ink"><FileText size={18} /> {isAr ? "آخر مصادر المعرفة" : "Latest knowledge sources"}</h2>
+            <h2 className="flex items-center gap-2 text-sm font-bold text-ink">
+              <FileText size={16} className="text-slate-400" />
+              {isAr ? "مصادر المعرفة" : "Knowledge Sources"}
+              <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                {documents.length}
+              </span>
+            </h2>
           </div>
           {liveDocuments.length ? (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-sm">
-                <thead className="bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead className="border-b border-slate-100 bg-slate-50/80 text-xs font-bold uppercase tracking-wide text-slate-400 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-500">
                   <tr>
-                    <th className="p-3 text-right">{isAr ? "المصدر" : "Source"}</th>
-                    <th className="p-3 text-right">{isAr ? "النوع" : "Type"}</th>
-                    <th className="p-3 text-right">{isAr ? "الحالة" : "Status"}</th>
-                    <th className="p-3 text-right">Chunks</th>
-                    <th className="p-3 text-right">Embeddings</th>
-                    <th className="p-3 text-right">{isAr ? "آخر تحديث" : "Updated"}</th>
-                    <th className="p-3 text-right">{isAr ? "الإجراءات" : "Actions"}</th>
+                    <th className="px-4 py-3 text-start">{isAr ? "المصدر" : "Source"}</th>
+                    <th className="px-4 py-3 text-start">{isAr ? "النوع" : "Type"}</th>
+                    <th className="px-4 py-3 text-start">{isAr ? "الحالة" : "Status"}</th>
+                    <th className="px-4 py-3 text-start">Chunks</th>
+                    <th className="px-4 py-3 text-start">{isAr ? "آخر تحديث" : "Updated"}</th>
+                    <th className="px-4 py-3 text-end">{isAr ? "إجراءات" : "Actions"}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {liveDocuments.slice(0, 30).map((doc) => (
-                    <tr key={doc.id} className="border-t border-slate-100 dark:border-slate-800">
-                      <td className="max-w-sm p-3 font-semibold text-ink">
-                        <span className="line-clamp-1">{doc.title}</span>
-                        {doc.statusReason ? <span className="mt-1 flex items-center gap-1 text-xs text-red-600"><AlertCircle size={12} /> {doc.statusReason}</span> : null}
+                    <tr key={doc.id} className="group hover:bg-slate-50/80 dark:hover:bg-slate-900/50">
+                      <td className="max-w-xs px-4 py-3">
+                        <span className="line-clamp-1 font-semibold text-ink">{doc.title}</span>
+                        {doc.statusReason ? (
+                          <span className="mt-0.5 flex items-center gap-1 text-xs text-red-500">
+                            <AlertCircle size={11} /> {doc.statusReason}
+                          </span>
+                        ) : null}
                       </td>
-                      <td className="p-3 text-slate-600 dark:text-slate-300">
-                        <span className="inline-flex items-center gap-1"><FileSpreadsheet size={13} /> {sourceTypeLabel(doc.sourceType, isAr)}</span>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                          <FileSpreadsheet size={12} /> {sourceTypeLabel(doc.sourceType, isAr)}
+                        </span>
                       </td>
-                      <td className="p-3">
+                      <td className="px-4 py-3">
                         {processingDocs.has(doc.id) ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
-                            <Loader2 size={12} className="animate-spin" /> {isAr ? "جاري التدريب..." : "Processing..."}
+                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 dark:bg-blue-950/30 dark:text-blue-300">
+                            <Loader2 size={11} className="animate-spin" /> {isAr ? "جاري..." : "Processing..."}
                           </span>
                         ) : (
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${doc.status === "ready" ? "bg-emerald-50 text-emerald-700" : doc.status === "error" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusColor(doc.status)}`}>
                             {statusLabel(doc.status, isAr)}
                           </span>
                         )}
                       </td>
-                      <td className="p-3 text-slate-600">{doc.chunkCount}</td>
-                      <td className="p-3 text-slate-600">{doc.embeddingCount}</td>
-                      <td className="p-3 text-xs text-slate-500">{doc.updatedAt ? new Date(doc.updatedAt).toLocaleString(isAr ? "ar-EG" : "en-US") : "-"}</td>
-                      <td className="p-3 text-right space-x-2 rtl:space-x-reverse">
-                        <button type="button" onClick={() => { setDetailsDocumentId(doc.id); setDetailsDocumentTitle(doc.title); }} className="p-1 text-slate-400 hover:text-blue-600" title={isAr ? "التفاصيل" : "Details"}>
-                          <Eye size={16} />
-                        </button>
-                        <button type="button" onClick={() => handleRewrite(doc.id)} disabled={processingDocs.has(doc.id)} className="p-1 text-slate-400 hover:text-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" title={isAr ? "إعادة الصياغة بالذكاء الاصطناعي" : "AI Rewrite"}>
-                          <RefreshCcw size={16} />
-                        </button>
-                        <button type="button" onClick={() => handleRetrain(doc.id)} disabled={processingDocs.has(doc.id)} className="p-1 text-slate-400 hover:text-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed" title={isAr ? "إجبار إعادة التدريب" : "Force Retrain"}>
-                          <DatabaseZap size={16} />
-                        </button>
-                        <button type="button" onClick={() => handleDelete(doc.id)} disabled={processingDocs.has(doc.id)} className="p-1 text-slate-400 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={isAr ? "حذف" : "Delete"}>
-                          <Trash2 size={16} />
-                        </button>
+                      <td className="px-4 py-3 text-xs text-slate-500">{doc.chunkCount}</td>
+                      <td className="px-4 py-3 text-xs text-slate-400">
+                        {doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString(isAr ? "ar-EG" : "en-US") : "-"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => { setDetailsDocumentId(doc.id); setDetailsDocumentTitle(doc.title); }}
+                            className="rounded-md p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/30 dark:hover:text-blue-400"
+                            title={isAr ? "التفاصيل" : "Details"}
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRewrite(doc.id)}
+                            disabled={processingDocs.has(doc.id)}
+                            className="rounded-md p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600 disabled:opacity-40 dark:hover:bg-amber-950/30 dark:hover:text-amber-400"
+                            title={isAr ? "إعادة الصياغة بالذكاء الاصطناعي" : "AI Rewrite"}
+                          >
+                            <RefreshCcw size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRetrain(doc.id)}
+                            disabled={processingDocs.has(doc.id)}
+                            className="rounded-md p-1.5 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-40 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
+                            title={isAr ? "إعادة التدريب" : "Retrain"}
+                          >
+                            <DatabaseZap size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(doc.id)}
+                            disabled={processingDocs.has(doc.id)}
+                            className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                            title={isAr ? "حذف" : "Delete"}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -862,7 +1163,11 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
               </table>
             </div>
           ) : (
-            <p className="p-6 text-sm text-slate-500">{isAr ? "لا توجد مصادر معرفة بعد." : "No knowledge sources yet."}</p>
+            <div className="flex flex-col items-center justify-center p-12 text-center">
+              <DatabaseZap size={32} className="mb-3 text-slate-300 dark:text-slate-700" />
+              <p className="text-sm font-semibold text-slate-500">{isAr ? "لا توجد مصادر معرفة بعد" : "No knowledge sources yet"}</p>
+              <p className="mt-1 text-xs text-slate-400">{isAr ? "أضف أول مصدر معرفة من الأعلى" : "Add your first knowledge source above"}</p>
+            </div>
           )}
         </article>
       </section>

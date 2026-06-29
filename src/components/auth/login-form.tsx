@@ -80,7 +80,11 @@ export function LoginForm() {
       onSubmit={onSubmit}
       className="theme-rescue relative z-10 flex min-h-[460px] w-full max-w-[560px] flex-col justify-center rounded-2xl border border-slate-200 bg-white px-8 py-8 shadow-[0_24px_80px_rgba(2,6,23,0.18)] dark:border-white/10 dark:bg-[#0b0418] sm:px-10 sm:py-10"
     >
-      <div className="mb-8 flex items-center justify-center">
+      <div className="mb-8 flex flex-col items-center justify-center gap-3">
+        <div className="flex items-center gap-3">
+          <img src="/profile_black_trans.png" alt="ChatZi Logo" className="h-12 w-auto dark:hidden" />
+          <img src="/profile_white_trans.png" alt="ChatZi Logo" className="hidden h-12 w-auto dark:block" />
+        </div>
         <span className="inline-flex rounded-full bg-[#6119E6]/10 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.25em] text-[#6119E6] dark:bg-[#E13382]/15 dark:text-[#E13382]">
           ChatZi
         </span>

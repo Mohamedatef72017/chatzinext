@@ -44,7 +44,8 @@ export const knowledgeSourceTypes = [
   "manual",
   "support_article",
   "json",
-  "custom_text"
+  "custom_text",
+  "image"
 ] as const;
 
 export type KnowledgeSourceType = (typeof knowledgeSourceTypes)[number];
@@ -729,6 +730,10 @@ async function extractKnowledgeText(input: CreateKnowledgeInput) {
     return { text: stripHtml(html), pageCount: 1 };
   }
 
+  if (input.sourceType === "image" && input.file) {
+    return await extractImageKnowledge(input.file, input.title);
+  }
+
   if (!input.file) {
     return { text: stripHtml(input.text || ""), pageCount: 1 };
   }
@@ -770,6 +775,63 @@ async function extractKnowledgeText(input: CreateKnowledgeInput) {
   }
 
   return { text: input.file.buffer.toString("utf8"), pageCount: 1 };
+}
+
+async function extractImageKnowledge(file: { name: string; type: string; size: number; buffer: Buffer }, title: string) {
+  const base64Image = file.buffer.toString("base64");
+  const mimeType = file.type || "image/jpeg";
+
+  let aiModel = await AiModel.findOne({ provider: "openai", isActive: true });
+  const apiKey = aiModel ? decryptSecret(aiModel.apiKeyEncrypted) : "";
+
+  if (!apiKey) {
+    throw new Error("يجب إضافة مفتاح OpenAI لاستخراج المعرفة من الصور. يرجى إضافة نموذج OpenAI في إعدادات الذكاء الاصطناعي.");
+  }
+
+  const client = new OpenAI({ apiKey });
+
+  const response = await client.chat.completions.create({
+    model: "gpt-4o",
+    max_tokens: 4000,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: [
+              `Analyze this image titled "${title}" and extract ALL business-relevant information from it.`,
+              "This image is being added to a business knowledge base for an AI customer support system.",
+              "Extract and structure ALL visible text, data, prices, items, descriptions, categories, and any other information.",
+              "If it's a menu: extract all items with their prices, descriptions, and categories.",
+              "If it's a catalog: extract all products with their details and prices.",
+              "If it's a policy document: extract all rules and policies exactly.",
+              "If it's a price list: extract all prices and services.",
+              "Be exhaustive - include every piece of information visible in the image.",
+              "Structure the output clearly with proper headings and organization.",
+              "Output in the same language as the image content (Arabic, English, or both if mixed).",
+              "Important: Also add at the end: IMAGE_REFERENCE: This knowledge was extracted from an image file named '" + title + "'. When a customer asks about this topic, you can mention that a visual menu/catalog/reference image is available.",
+              "Return only the structured knowledge text."
+            ].join("\n")
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:${mimeType};base64,${base64Image}`,
+              detail: "high"
+            }
+          }
+        ]
+      }
+    ]
+  });
+
+  const extractedText = response.choices[0]?.message?.content || "";
+  if (!extractedText || extractedText.length < 20) {
+    throw new Error("لم يتمكن الذكاء الاصطناعي من استخراج محتوى من الصورة. تأكد أن الصورة واضحة وتحتوي على نص.");
+  }
+
+  return { text: extractedText, pageCount: 1 };
 }
 
 function flattenJsonToKnowledgeText(value: string) {
