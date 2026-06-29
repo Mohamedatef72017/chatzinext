@@ -68,10 +68,10 @@ export function RegisterForm() {
     setError("");
     const form = new FormData(event.currentTarget);
     const payload = {
-      name: form.get("name"),
-      email: form.get("email"),
-      password: form.get("password"),
-      tenantName: form.get("tenantName")
+      name: String(form.get("name") || "").trim(),
+      email: String(form.get("email") || "").trim().toLowerCase(),
+      password: String(form.get("password") || ""),
+      tenantName: String(form.get("tenantName") || "").trim()
     };
 
     try {
@@ -89,19 +89,22 @@ export function RegisterForm() {
         return;
       }
 
-      await signIn("credentials", {
+      const signInResult = await signIn("credentials", {
         email: payload.email,
         password: payload.password,
         redirect: false
       });
 
-      if (data.botId) {
-        setBotId(data.botId);
-        setStep(2);
-      } else {
-        router.push("/dashboard");
+      if (signInResult?.error) {
+        setError(locale === "ar" ? "تم إنشاء الحساب، لكن لم نتمكن من تسجيل الدخول تلقائياً. يرجى تسجيل الدخول الآن." : "Account created, but automatic sign-in failed. Please log in now.");
+        router.push("/login");
         router.refresh();
+        return;
       }
+
+      if (data.botId) setBotId(data.botId);
+      router.push("/dashboard");
+      router.refresh();
     } catch (err) {
       setError(t.auth.unexpectedError);
     } finally {
@@ -546,6 +549,7 @@ export function RegisterForm() {
         </div>
         
         <button 
+          type="submit"
           className="w-full h-12 rounded-lg bg-primary-600 text-white font-bold tracking-wide hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center" 
           disabled={!agreedTerms || !agreedPrivacy || loading}
         >
@@ -555,16 +559,12 @@ export function RegisterForm() {
         
         <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center text-sm text-slate-500 sm:flex-row">
           <span>{locale === "en" ? "Already a member?" : "لديك حساب بالفعل؟"}</span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              router.push(loginHref);
-            }}
+          <Link
+            href={loginHref}
             className="inline-flex min-h-10 items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-5 py-2 text-sm font-bold text-primary-700 transition hover:border-primary-300 hover:bg-primary-100 dark:border-primary-500/25 dark:bg-primary-500/10 dark:text-primary-200 dark:hover:bg-primary-500/20"
           >
             {locale === "en" ? "Login" : "تسجيل الدخول"}
-          </button>
+          </Link>
         </div>
       </form>
     );

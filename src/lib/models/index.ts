@@ -13,6 +13,7 @@ export * from "./knowledge-category";
 export * from "./knowledge-chunk";
 export * from "./knowledge-collection";
 export * from "./knowledge-document";
+export * from "./knowledge-asset";
 export * from "./message-pack";
 export * from "./message";
 export * from "./payment-event";
