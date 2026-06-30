@@ -366,8 +366,25 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
               <FormattedText>{copy.channelsSubtitle}</FormattedText>
             </p>
           </div>
-
-          <CircularChannels channelsData={copy.channelsData} />
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className={`order-2 ${isEnglish ? 'lg:order-1' : 'lg:order-2'}`}>
+              <CircularChannels channelsData={copy.channelsData} />
+            </div>
+            
+            <div className={`order-1 ${isEnglish ? 'lg:order-2' : 'lg:order-1'}`}>
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-[#6119E6]/20 border border-slate-200 dark:border-white/10 dark:shadow-[#E13382]/20">
+                <video 
+                  src="/promo.mp4" 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline 
+                  className="w-full h-auto aspect-video object-cover"
+                />
+                <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-black/10 pointer-events-none" />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
