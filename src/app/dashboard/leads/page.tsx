@@ -21,11 +21,11 @@ function stageLabel(stage: string) {
 }
 
 function stageClass(stage: string) {
-  if (stage === "won") return "bg-emerald-50 text-emerald-700 ring-emerald-100";
-  if (stage === "qualified" || stage === "proposal") return "bg-indigo-50 text-indigo-700 ring-indigo-100";
-  if (stage === "negotiation") return "bg-amber-50 text-amber-700 ring-amber-100";
-  if (stage === "lost") return "bg-slate-100 text-slate-600 ring-slate-200";
-  return "bg-blue-50 text-blue-700 ring-blue-100";
+  if (stage === "won") return "bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-200 dark:ring-emerald-400/20";
+  if (stage === "qualified" || stage === "proposal") return "bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-200 dark:ring-indigo-400/20";
+  if (stage === "negotiation") return "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-400/20";
+  if (stage === "lost") return "bg-slate-100 text-slate-600 ring-slate-200 dark:bg-white/10 dark:text-slate-300 dark:ring-white/10";
+  return "bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-500/15 dark:text-blue-200 dark:ring-blue-400/20";
 }
 
 function pageHref(page: number, q?: string) {
@@ -73,19 +73,19 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
       />
 
       <section className="grid gap-4 md:grid-cols-3">
-        <article className="panel bg-gradient-to-br from-blue-50 to-white p-5">
-          <UserRound className="text-blue-600" size={24} />
-          <p className="mt-4 text-sm text-slate-500">جدد</p>
+        <article className="panel bg-gradient-to-br from-blue-50 to-white p-5 dark:border-blue-400/15 dark:from-blue-500/12 dark:to-[#17182f]">
+          <UserRound className="text-blue-600 dark:text-blue-200" size={24} />
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-300">جدد</p>
           <p className="mt-1 text-3xl font-black text-ink">{newCount}</p>
         </article>
-        <article className="panel bg-gradient-to-br from-indigo-50 to-white p-5">
-          <Sparkles className="text-indigo-600" size={24} />
-          <p className="mt-4 text-sm text-slate-500">مؤهلون / قيد البيع</p>
+        <article className="panel bg-gradient-to-br from-indigo-50 to-white p-5 dark:border-indigo-400/15 dark:from-indigo-500/12 dark:to-[#17182f]">
+          <Sparkles className="text-indigo-600 dark:text-indigo-200" size={24} />
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-300">مؤهلون / قيد البيع</p>
           <p className="mt-1 text-3xl font-black text-ink">{qualifiedCount}</p>
         </article>
-        <article className="panel bg-gradient-to-br from-emerald-50 to-white p-5">
-          <BadgeDollarSign className="text-emerald-600" size={24} />
-          <p className="mt-4 text-sm text-slate-500">مكتسبون</p>
+        <article className="panel bg-gradient-to-br from-emerald-50 to-white p-5 dark:border-emerald-400/15 dark:from-emerald-500/12 dark:to-[#17182f]">
+          <BadgeDollarSign className="text-emerald-600 dark:text-emerald-200" size={24} />
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-300">مكتسبون</p>
           <p className="mt-1 text-3xl font-black text-ink">{wonCount}</p>
         </article>
       </section>
@@ -96,7 +96,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           <input
             name="q"
             defaultValue={q}
-            className="w-full rounded-2xl border border-slate-200 bg-white py-3 pr-10 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+            className="w-full rounded-2xl border border-slate-200 bg-white py-3 pr-10 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-slate-500 dark:focus:border-indigo-400/60 dark:focus:ring-indigo-500/15"
             placeholder="ابحث بالاسم، الهاتف، البريد، أو الاهتمام"
           />
         </label>
@@ -105,24 +105,24 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
 
       <section className="grid gap-4 xl:grid-cols-2">
         {leads.map((lead: any) => (
-          <article key={lead._id.toString()} className="panel p-5 transition hover:-translate-y-0.5 hover:shadow-lg">
+          <article key={lead._id.toString()} className="panel p-5 transition hover:-translate-y-0.5 hover:shadow-lg dark:border-violet-400/15 dark:bg-[#14152b] dark:shadow-none dark:hover:border-violet-400/30">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h2 className="truncate text-lg font-bold text-ink">{lead.name || lead.phone || lead.email || "عميل محتمل"}</h2>
-                <p className="mt-1 text-sm text-slate-500">{lead.interest || "تم إنشاؤه من تذكرة"}</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{lead.interest || "تم إنشاؤه من تذكرة"}</p>
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${stageClass(lead.stage)}`}>{stageLabel(lead.stage)}</span>
             </div>
 
             <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-              <p className="flex items-center gap-2 text-slate-600"><Phone size={15} /> {lead.phone || "لا يوجد هاتف"}</p>
-              <p className="flex items-center gap-2 text-slate-600"><Mail size={15} /> {lead.email || "لا يوجد بريد"}</p>
+              <p className="flex items-center gap-2 text-slate-600 dark:text-slate-300"><Phone size={15} /> {lead.phone || "لا يوجد هاتف"}</p>
+              <p className="flex items-center gap-2 text-slate-600 dark:text-slate-300"><Mail size={15} /> {lead.email || "لا يوجد بريد"}</p>
             </div>
 
-            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
+            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">
               <span>{lead.sourceChannel || "unknown"} · Score {lead.score || 0}</span>
               {lead.conversationId ? (
-                <Link className="inline-flex items-center gap-1 font-bold text-indigo-600" href={`/dashboard/conversations/${lead.conversationId.toString()}`}>
+                <Link className="inline-flex items-center gap-1 font-bold text-indigo-600 dark:text-indigo-300" href={`/dashboard/conversations/${lead.conversationId.toString()}`}>
                   فتح المحادثة <ArrowLeft size={14} />
                 </Link>
               ) : null}

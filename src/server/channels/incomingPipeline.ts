@@ -7,6 +7,7 @@ import { coreRoutingQueue, defaultJobOptions, makeQueueJobId } from "@/lib/queue
 import { publishRealtimeEvent } from "@/lib/realtime";
 import { isExplicitHumanHandoffRequest } from "@/lib/ai/handoff";
 import { buildMessageDedupeKey } from "@/lib/messages/dedupe";
+import { normalizeAndStoreIncomingAttachments } from "./attachment-normalizer";
 
 initializeAdapters();
 
@@ -179,6 +180,13 @@ export async function handleIncomingChannelMessage({ provider, channelId, reques
     const dedupeKey = buildMessageDedupeKey({ tenantId: tenantId.toString(), provider, externalUserId: nMsg.externalUserId, externalMessageId: nMsg.externalMessageId, text: nMsg.text || "", timestamp: nMsg.timestamp, direction: "incoming" });
     const duplicateMessage = await Message.findOne({ tenantId, provider, $or: [ ...(nMsg.externalMessageId ? [{ externalMessageId: nMsg.externalMessageId }] : []), { "metadata.dedupeKey": dedupeKey } ] }).select("_id").lean();
     if (duplicateMessage) continue;
+    const normalizedAttachments = await normalizeAndStoreIncomingAttachments({
+      tenantId: tenantId.toString(),
+      conversationId: conversation._id.toString(),
+      provider,
+      channel,
+      attachments: nMsg.attachments || []
+    });
 
     // Save Message
     const message = await Message.create({
@@ -193,7 +201,7 @@ export async function handleIncomingChannelMessage({ provider, channelId, reques
       sender: "user",
       senderType: "customer",
       content: nMsg.text || "",
-      attachments: nMsg.attachments || [],
+      attachments: normalizedAttachments,
       deliveryStatus: "delivered",
       metadata: { dedupeKey }
     });
@@ -210,7 +218,7 @@ export async function handleIncomingChannelMessage({ provider, channelId, reques
         provider,
         deliveryStatus: "delivered",
         createdAt,
-        attachments: nMsg.attachments || []
+        attachments: normalizedAttachments
       },
       conversation: {
         id: conversation._id.toString(),

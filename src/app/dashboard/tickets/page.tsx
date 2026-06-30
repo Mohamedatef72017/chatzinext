@@ -33,18 +33,18 @@ const categoryLabels: Record<string, string> = {
 };
 
 function statusClass(status: string) {
-  if (status === "open") return "bg-blue-50 text-blue-700 ring-blue-100";
-  if (status === "in_progress") return "bg-indigo-50 text-indigo-700 ring-indigo-100";
-  if (status === "pending") return "bg-amber-50 text-amber-700 ring-amber-100";
-  if (status === "resolved") return "bg-emerald-50 text-emerald-700 ring-emerald-100";
-  return "bg-slate-100 text-slate-700 ring-slate-200";
+  if (status === "open") return "bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-500/15 dark:text-blue-200 dark:ring-blue-400/20";
+  if (status === "in_progress") return "bg-indigo-50 text-indigo-700 ring-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-200 dark:ring-indigo-400/20";
+  if (status === "pending") return "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-400/20";
+  if (status === "resolved") return "bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-200 dark:ring-emerald-400/20";
+  return "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-white/10 dark:text-slate-200 dark:ring-white/10";
 }
 
 function priorityClass(priority: string) {
-  if (priority === "urgent") return "bg-red-50 text-red-700 ring-red-100";
-  if (priority === "high") return "bg-orange-50 text-orange-700 ring-orange-100";
-  if (priority === "medium") return "bg-violet-50 text-violet-700 ring-violet-100";
-  return "bg-slate-100 text-slate-600 ring-slate-200";
+  if (priority === "urgent") return "bg-red-50 text-red-700 ring-red-100 dark:bg-red-500/15 dark:text-red-200 dark:ring-red-400/20";
+  if (priority === "high") return "bg-orange-50 text-orange-700 ring-orange-100 dark:bg-orange-500/15 dark:text-orange-200 dark:ring-orange-400/20";
+  if (priority === "medium") return "bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-500/15 dark:text-violet-200 dark:ring-violet-400/20";
+  return "bg-slate-100 text-slate-600 ring-slate-200 dark:bg-white/10 dark:text-slate-300 dark:ring-white/10";
 }
 
 function pageHref(page: number, searchParams: Record<string, string | undefined>) {
@@ -79,35 +79,35 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
       />
 
       <section className="grid gap-4 md:grid-cols-4">
-        <article className="panel bg-gradient-to-br from-blue-50 to-white p-5">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-100 text-blue-700"><TicketCheck size={20} /></div>
-          <p className="text-sm text-slate-500">Open tickets</p>
+        <article className="panel bg-gradient-to-br from-blue-50 to-white p-5 dark:border-blue-400/15 dark:from-blue-500/12 dark:to-[#17182f]">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200"><TicketCheck size={20} /></div>
+          <p className="text-sm text-slate-500 dark:text-slate-300">Open tickets</p>
           <p className="mt-1 text-3xl font-bold text-ink">{data.stats.openCount}</p>
         </article>
-        <article className="panel bg-gradient-to-br from-rose-50 to-white p-5">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-100 text-rose-700"><PlusCircle size={20} /></div>
-          <p className="text-sm text-slate-500">New today</p>
+        <article className="panel bg-gradient-to-br from-rose-50 to-white p-5 dark:border-rose-400/15 dark:from-rose-500/12 dark:to-[#17182f]">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200"><PlusCircle size={20} /></div>
+          <p className="text-sm text-slate-500 dark:text-slate-300">New today</p>
           <p className="mt-1 text-3xl font-bold text-ink">{data.stats.newCount}</p>
         </article>
-        <article className="panel bg-gradient-to-br from-amber-50 to-white p-5">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700"><Clock3 size={20} /></div>
-          <p className="text-sm text-slate-500">Pending</p>
+        <article className="panel bg-gradient-to-br from-amber-50 to-white p-5 dark:border-amber-400/15 dark:from-amber-500/12 dark:to-[#17182f]">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200"><Clock3 size={20} /></div>
+          <p className="text-sm text-slate-500 dark:text-slate-300">Pending</p>
           <p className="mt-1 text-3xl font-bold text-ink">{data.stats.pendingCount}</p>
         </article>
-        <article className="panel bg-gradient-to-br from-emerald-50 to-white p-5">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><CheckCircle2 size={20} /></div>
-          <p className="text-sm text-slate-500">Resolved</p>
+        <article className="panel bg-gradient-to-br from-emerald-50 to-white p-5 dark:border-emerald-400/15 dark:from-emerald-500/12 dark:to-[#17182f]">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200"><CheckCircle2 size={20} /></div>
+          <p className="text-sm text-slate-500 dark:text-slate-300">Resolved</p>
           <p className="mt-1 text-3xl font-bold text-ink">{data.stats.resolvedCount}</p>
         </article>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.tickets.length ? data.tickets.map((ticket) => (
-          <article key={ticket.id} className="group rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl">
+          <article key={ticket.id} className="group rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-[#14152b] dark:shadow-none dark:hover:border-indigo-400/30">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Ticket #{ticket.number || "-"}</p>
-                <Link href={`/dashboard/tickets/${ticket.id}`} className="mt-1 block text-lg font-black text-slate-950 group-hover:text-blue-700">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Ticket #{ticket.number || "-"}</p>
+                <Link href={`/dashboard/tickets/${ticket.id}`} className="mt-1 block text-lg font-black text-slate-950 group-hover:text-blue-700 dark:text-white dark:group-hover:text-indigo-200">
                   {ticket.subject || "Untitled ticket"}
                 </Link>
               </div>
@@ -118,20 +118,20 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
 
             <div className="mb-4 flex flex-wrap gap-2">
               <span className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${priorityClass(ticket.priority)}`}>{priorityLabels[ticket.priority] || ticket.priority}</span>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{categoryLabels[ticket.category] || ticket.category}</span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-white/10 dark:text-slate-300">{categoryLabels[ticket.category] || ticket.category}</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">
                 <Layers3 size={13} />
                 {ticket.issueTopicCount || 1} topics
               </span>
-              <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">{ticket.channel || "channel"}</span>
+              <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-200">{ticket.channel || "channel"}</span>
             </div>
 
-            <div className="space-y-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-              <p><span className="font-bold text-slate-900">Customer:</span> {ticket.requesterExternalId || "-"}</p>
-              <p><span className="font-bold text-slate-900">Bot:</span> {ticket.botName || "-"}</p>
-              {ticket.latestIssueTopic ? <p><span className="font-bold text-slate-900">Latest topic:</span> {ticket.latestIssueTopic}</p> : null}
+            <div className="space-y-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-white/[0.04] dark:text-slate-300">
+              <p><span className="font-bold text-slate-900 dark:text-white">Customer:</span> {ticket.requesterExternalId || "-"}</p>
+              <p><span className="font-bold text-slate-900 dark:text-white">Bot:</span> {ticket.botName || "-"}</p>
+              {ticket.latestIssueTopic ? <p><span className="font-bold text-slate-900 dark:text-white">Latest topic:</span> {ticket.latestIssueTopic}</p> : null}
               <p className="flex gap-2"><AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-500" /> <span>{ticket.triggerReason || "CRM follow-up required"}</span></p>
-              <p className="text-xs text-slate-400">Updated: {ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleString() : "-"}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Updated: {ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleString() : "-"}</p>
             </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-2">

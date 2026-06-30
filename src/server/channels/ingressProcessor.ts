@@ -6,6 +6,7 @@ import { publishRealtimeEvent } from "@/lib/realtime";
 import { getAdapter } from "./registry";
 import { initializeAdapters } from "./providers";
 import type { ChannelProvider } from "./types";
+import { normalizeAndStoreIncomingAttachments } from "./attachment-normalizer";
 import { isExplicitHumanHandoffRequest } from "@/lib/ai/handoff";
 import { buildMessageDedupeKey } from "@/lib/messages/dedupe";
 
@@ -91,11 +92,19 @@ export async function processIngressJob(payload: IngressJobPayload) {
     await conversation.save();
 
     const dedupeKey = buildMessageDedupeKey({ tenantId: payload.tenantId, provider: payload.provider, externalUserId: normalized.externalUserId, externalMessageId: normalized.externalMessageId, text: normalized.text || "", timestamp: normalized.timestamp, direction: "incoming" });
+    let normalizedAttachments: Awaited<ReturnType<typeof normalizeAndStoreIncomingAttachments>> = [];
 
     let message;
     try {
       const existingDuplicate = await Message.findOne({ tenantId: payload.tenantId, provider: payload.provider, $or: [ ...(normalized.externalMessageId ? [{ externalMessageId: normalized.externalMessageId }] : []), { "metadata.dedupeKey": dedupeKey } ] }).select("_id").lean();
       if (existingDuplicate) { logger.info("ingress.message_duplicate", { tenantId: payload.tenantId, provider: payload.provider, externalMessageId: normalized.externalMessageId, dedupeKey, traceId: payload.traceId }); continue; }
+      normalizedAttachments = await normalizeAndStoreIncomingAttachments({
+        tenantId: payload.tenantId,
+        conversationId: conversation._id.toString(),
+        provider: payload.provider,
+        channel,
+        attachments: normalized.attachments || []
+      });
       message = await Message.create({
         tenantId: payload.tenantId,
         botId: conversation.botId || channel.botId,
@@ -108,7 +117,7 @@ export async function processIngressJob(payload: IngressJobPayload) {
         sender: "user",
         senderType: "customer",
         content: normalized.text || "",
-        attachments: normalized.attachments || [],
+        attachments: normalizedAttachments,
         deliveryStatus: "delivered",
         metadata: { traceId: payload.traceId, raw: normalized.raw, dedupeKey }
       });
@@ -137,7 +146,7 @@ export async function processIngressJob(payload: IngressJobPayload) {
         provider: payload.provider,
         deliveryStatus: "delivered",
         createdAt,
-        attachments: normalized.attachments || []
+        attachments: normalizedAttachments
       },
       conversation: {
         id: conversation._id.toString(),
@@ -165,7 +174,7 @@ export async function processIngressJob(payload: IngressJobPayload) {
     // This runs asynchronously and never blocks the AI reply path.
     // The media-understanding-worker will analyze attachments and store results
     // in message.metadata.mediaUnderstanding. The AI worker then reads those results.
-    const attachments = normalized.attachments || [];
+    const attachments = normalizedAttachments;
     if (hasMediaAttachments(attachments)) {
       mediaUnderstandingQueue.add(
         "understand-media",
@@ -184,7 +193,7 @@ export async function processIngressJob(payload: IngressJobPayload) {
           // should complete before AI processing begins (AI queue concurrency is limited)
           delay: 0
         }
-      ).catch((err) => {
+      ).catch((err: any) => {
         logger.warn("ingress.media_understanding_queue_failed", {
           tenantId: payload.tenantId,
           messageId: message._id.toString(),

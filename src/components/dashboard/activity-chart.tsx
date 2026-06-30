@@ -1,6 +1,6 @@
 "use client";
 
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 
 export function ActivityChart({ data, isAr }: { data: any[]; isAr: boolean }) {
   if (!data || data.length === 0) return <div className="p-8 text-center text-slate-500">لا تتوفر بيانات كافية</div>;
@@ -8,40 +8,35 @@ export function ActivityChart({ data, isAr }: { data: any[]; isAr: boolean }) {
   return (
     <div className="h-[300px] w-full mt-4" dir="ltr">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <defs>
-            <linearGradient id="colorMessages" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+        <LineChart data={data} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
           <XAxis 
             dataKey="date" 
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#64748b', fontSize: 12 }}
+            tick={{ fill: '#0B0C1E', fontSize: 12, fontWeight: 700 }}
             dy={10}
           />
           <YAxis 
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#64748b', fontSize: 12 }}
+            tick={{ fill: '#0B0C1E', fontSize: 12, fontWeight: 700 }}
           />
           <Tooltip 
-            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-            labelStyle={{ color: '#0f172a', fontWeight: 'bold', marginBottom: '4px' }}
+            contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px', backgroundColor: '#ffffff' }}
+            labelStyle={{ color: '#0B0C1E', fontWeight: 'bold', marginBottom: '8px' }}
+            itemStyle={{ color: '#0B0C1E', fontWeight: 700 }}
           />
-          <Area 
-            type="monotone" 
+          <Line 
+            type="linear" 
             dataKey="messages" 
             name={isAr ? "الرسائل" : "Messages"}
-            stroke="#6366f1" 
+            stroke="#0B0C1E" 
             strokeWidth={3}
-            fillOpacity={1} 
-            fill="url(#colorMessages)" 
+            dot={{ stroke: '#0B0C1E', strokeWidth: 3, fill: '#fff', r: 5 }}
+            activeDot={{ stroke: '#0B0C1E', strokeWidth: 3, fill: '#fff', r: 7 }}
           />
-        </AreaChart>
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );

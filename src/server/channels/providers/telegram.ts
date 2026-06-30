@@ -2,21 +2,28 @@ import { ChannelDocument } from "@/lib/models";
 import { decryptSecret } from "@/lib/crypto";
 import { ProviderAdapter, NormalizedAttachment, NormalizedIncomingMessage, SendMessageParams } from "../types";
 
+function firstImageAttachment(attachments?: SendMessageParams["attachments"]) {
+  return (attachments || []).find((attachment: any) => {
+    const type = String(attachment?.type || "");
+    const mimeType = String(attachment?.mimeType || "");
+    return attachment?.url && (type === "image" || mimeType.startsWith("image/"));
+  }) as any;
+}
 
 function normalizeTelegramAttachments(msg: any): NormalizedAttachment[] {
   const attachments: NormalizedAttachment[] = [];
   const bestPhoto = Array.isArray(msg.photo) ? msg.photo[msg.photo.length - 1] : null;
   if (bestPhoto?.file_id) {
-    attachments.push({ type: "image", url: `telegram://file/${bestPhoto.file_id}`, name: "photo.jpg", size: bestPhoto.file_size });
+    attachments.push({ type: "image", url: `telegram://file/${bestPhoto.file_id}`, name: "photo.jpg", size: bestPhoto.file_size, providerMediaId: bestPhoto.file_id, providerMetadata: { fileId: bestPhoto.file_id, provider: "telegram" } });
   }
   if (msg.voice?.file_id) {
-    attachments.push({ type: "audio", url: `telegram://file/${msg.voice.file_id}`, name: "voice.ogg", size: msg.voice.file_size, mimeType: msg.voice.mime_type });
+    attachments.push({ type: "audio", url: `telegram://file/${msg.voice.file_id}`, name: "voice.ogg", size: msg.voice.file_size, mimeType: msg.voice.mime_type, providerMediaId: msg.voice.file_id, providerMetadata: { fileId: msg.voice.file_id, provider: "telegram" } });
   }
   if (msg.audio?.file_id) {
-    attachments.push({ type: "audio", url: `telegram://file/${msg.audio.file_id}`, name: msg.audio.file_name || "audio", size: msg.audio.file_size, mimeType: msg.audio.mime_type });
+    attachments.push({ type: "audio", url: `telegram://file/${msg.audio.file_id}`, name: msg.audio.file_name || "audio", size: msg.audio.file_size, mimeType: msg.audio.mime_type, providerMediaId: msg.audio.file_id, providerMetadata: { fileId: msg.audio.file_id, provider: "telegram" } });
   }
   if (msg.document?.file_id) {
-    attachments.push({ type: "document", url: `telegram://file/${msg.document.file_id}`, name: msg.document.file_name || "document", size: msg.document.file_size, mimeType: msg.document.mime_type });
+    attachments.push({ type: "document", url: `telegram://file/${msg.document.file_id}`, name: msg.document.file_name || "document", size: msg.document.file_size, mimeType: msg.document.mime_type, providerMediaId: msg.document.file_id, providerMetadata: { fileId: msg.document.file_id, provider: "telegram" } });
   }
   return attachments;
 }
@@ -69,13 +76,21 @@ export const telegramAdapter: ProviderAdapter = {
     }
 
     try {
-      const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      const imageAttachment = firstImageAttachment(params.attachments);
+      const endpoint = imageAttachment ? "sendPhoto" : "sendMessage";
+      const response = await fetch(`https://api.telegram.org/bot${token}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: params.externalUserId,
-          text: params.text
-        })
+        body: JSON.stringify(imageAttachment
+          ? {
+              chat_id: params.externalUserId,
+              photo: imageAttachment.url,
+              ...(params.text ? { caption: params.text.slice(0, 1024) } : {})
+            }
+          : {
+              chat_id: params.externalUserId,
+              text: params.text
+            })
       });
       const data = await response.json();
       if (data.ok) {

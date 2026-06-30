@@ -7,6 +7,7 @@ import { startWorkerHeartbeat } from "../src/lib/worker-heartbeat";
 import { logger } from "../src/lib/logger";
 import { queueOutboundMessage } from "../src/server/channels/outboundQueue";
 import { publishRealtimeEvent } from "../src/lib/realtime";
+import { getObjectAccessUrl } from "../src/lib/storage/r2";
 
 const workerName = "worker-egress";
 const connection = createRedisConnection(workerName);
@@ -64,6 +65,7 @@ export const egressWorker = new Worker(
 
     await Message.updateOne({ _id: message._id, tenantId }, { $set: { deliveryStatus: "sending", "metadata.trace.egressStartedAt": new Date().toISOString() } });
 
+    const attachments = await hydrateAttachmentUrls(message.attachments || []);
     const result = await queueOutboundMessage({
       tenantId,
       messageId: message._id,
@@ -71,7 +73,7 @@ export const egressWorker = new Worker(
       channelId: channel._id,
       provider: channelProvider,
       text: message.content,
-      attachments: message.attachments || [],
+      attachments,
       externalUserId: conversation.externalUserId,
       externalThreadId: conversation.externalThreadId
     });
@@ -86,6 +88,15 @@ egressWorker.on("failed", (job, error) => {
   void recordFailedJob("egress-queue", job, error);
 });
 
+
+async function hydrateAttachmentUrls(attachments: any[]) {
+  if (!Array.isArray(attachments) || !attachments.length) return [];
+  return Promise.all(attachments.map(async (attachment) => {
+    if (!attachment?.key) return attachment;
+    const url = await getObjectAccessUrl(attachment.key, attachment.url || "");
+    return { ...attachment, url: url || attachment.url };
+  }));
+}
 
 async function resolveOutboundChannel(input: {
   tenantId: string;

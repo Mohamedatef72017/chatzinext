@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, Fragment } from "react";
-import { ArrowLeft, ArrowRight, ChevronDown, Languages, Play, PlugZap, Globe, Sun, Moon, Menu, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, ChevronDown, Languages, Play, PlugZap, Globe, Sun, Moon, Menu, X, ShieldCheck } from "lucide-react";
 import { landingContent, type LandingLocale } from "@/lib/landing-content";
 import { sectorsData } from "@/lib/sectors-content";
 import { useAuthStatus } from "@/components/landing/use-auth-status";
@@ -35,15 +35,20 @@ export function SiteHeader({ locale, setIsLoginOpen }: { locale: LandingLocale; 
     { locale: "ar-ae", href: "/ar-ae", label: "الإمارات", short: "AE", flag: "🇦🇪" },
     { locale: "ar-eg", href: "/ar-eg", label: "مصر", short: "EG", flag: "🇪🇬" }
   ];
+  const activeLanguageShort = isArabic ? (arabicLinks.find((item) => item.locale === locale)?.short || "AR") : "EN";
+  const mobileLoginLabel = isEnglish ? "Sign in" : "دخول";
+  const mobileDashboardLabel = isEnglish ? "Panel" : "لوحة";
+  const mobileNavIcons = [Play, BadgeCheck, PlugZap, ShieldCheck, Languages];
 
   return (
     <>
       {/* Spacer to prevent layout shift since header is fixed */}
-      <div className="h-24 w-full" />
+      <div className="h-20 w-full lg:h-24" />
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl text-slate-950 dark:border-white/10 dark:bg-[#06030e]/90 dark:text-white">
-        <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-2 px-3 sm:px-6 lg:h-24 lg:px-8">
           <Link href={isEnglish ? "/" : locale === "ar-jo" ? "/ar-jo" : locale === "ar-eg" ? "/ar-eg" : "/ar-ae"} className="flex items-center">
-            <BrandLogo />
+            <span className="sm:hidden"><BrandLogo compact /></span>
+            <span className="hidden sm:block"><BrandLogo /></span>
           </Link>
 
           <nav className="hidden items-center gap-1.5 lg:flex">
@@ -111,17 +116,18 @@ export function SiteHeader({ locale, setIsLoginOpen }: { locale: LandingLocale; 
             </div>
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
             <div className="relative" onMouseLeave={() => setShowArabicOptions(false)}>
               <button
                 type="button"
                 onClick={() => setIsLanguageOpen((open) => !open)}
                 aria-expanded={isLanguageOpen}
                 aria-label={isEnglish ? "Choose language" : "اختيار اللغة"}
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-sm font-extrabold text-slate-700 transition hover:border-[#6119E6]/30 hover:bg-white hover:text-[#6119E6] dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-[#E13382]/40 dark:hover:bg-white/10 dark:hover:text-[#E13382]"
+                className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm font-extrabold text-slate-700 transition hover:border-[#6119E6]/30 hover:bg-white hover:text-[#6119E6] dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-[#E13382]/40 dark:hover:bg-white/10 dark:hover:text-[#E13382] sm:gap-2 sm:px-2.5"
               >
-                <Globe size={15} className="text-slate-500 dark:text-slate-300" />
-                <span className="text-base leading-none">{isArabic ? "العربية" : "English"}</span>
+                <Globe size={15} className="hidden text-slate-500 dark:text-slate-300 sm:block" />
+                <span className="hidden text-base leading-none sm:inline">{isArabic ? "العربية" : "English"}</span>
+                <span className="text-sm leading-none sm:hidden">{activeLanguageShort}</span>
                 <ChevronDown size={14} className={`transition-transform duration-200 ${isLanguageOpen ? "rotate-180" : ""}`} />
               </button>
 
@@ -187,10 +193,11 @@ export function SiteHeader({ locale, setIsLoginOpen }: { locale: LandingLocale; 
             {isAuthenticated ? (
               <Link
                 href="/dashboard"
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-3 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382] sm:px-4"
               >
-                <span>{dashboardLabel}</span>
-                <ArrowIcon size={16} />
+                <span className="hidden sm:inline">{dashboardLabel}</span>
+                <span className="sm:hidden">{mobileDashboardLabel}</span>
+                <ArrowIcon size={16} className="hidden sm:block" />
               </Link>
             ) : (
               <>
@@ -204,10 +211,10 @@ export function SiteHeader({ locale, setIsLoginOpen }: { locale: LandingLocale; 
                 {/* Mobile Login Button */}
                 <button
                   onClick={() => setIsLoginOpen(true)}
-                  className="inline-flex sm:hidden min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382]"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#6119E6] px-3 py-2 text-sm font-extrabold text-white shadow-lg shadow-[#6119E6]/25 transition hover:opacity-90 dark:bg-[#E13382] sm:hidden"
                 >
-                  <span>{copy.login}</span>
-                  <ArrowIcon size={16} />
+                  <span>{mobileLoginLabel}</span>
+                  <ArrowIcon size={16} className="hidden sm:block" />
                 </button>
 
                 {/* Desktop Register Button */}
@@ -226,6 +233,7 @@ export function SiteHeader({ locale, setIsLoginOpen }: { locale: LandingLocale; 
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 lg:hidden"
+              aria-label={isEnglish ? "Open menu" : "فتح القائمة"}
             >
               <Menu size={20} />
             </button>
@@ -236,8 +244,8 @@ export function SiteHeader({ locale, setIsLoginOpen }: { locale: LandingLocale; 
       {/* Mobile Sidebar Menu */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[100] bg-slate-950/20 backdrop-blur-sm lg:hidden" onClick={() => setIsMobileMenuOpen(false)}>
-          <div 
-            className={`fixed top-0 bottom-0 ${isEnglish ? 'right-0' : 'left-0'} w-64 bg-white shadow-2xl dark:bg-[#06030e] p-6 flex flex-col`}
+          <div
+            className={`fixed top-3 bottom-3 ${isEnglish ? 'right-3' : 'left-3'} flex w-[min(22rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-white/10 dark:bg-[#06030e]`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-8">
@@ -246,41 +254,48 @@ export function SiteHeader({ locale, setIsLoginOpen }: { locale: LandingLocale; 
                 <X size={20} />
               </button>
             </div>
-            <nav className="flex flex-col gap-4">
-              {copy.nav.map((item) => {
+            <nav className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pe-1">
+              {copy.nav.map((item, index) => {
                 const isHash = item.href.startsWith("#");
                 const targetHref = isHash ? `${sectorBasePath || "/"}${item.href}` : `${sectorBasePath}${item.href}`;
                 const isActive = !isHash && pathname === targetHref;
+                const Icon = mobileNavIcons[index] || Globe;
 
                 return (
                   <Link
                     key={item.href}
                     href={targetHref}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`text-lg font-bold transition ${
-                      isActive 
-                        ? "text-[#6119E6] dark:text-[#E13382]" 
-                        : "text-slate-800 hover:text-[#6119E6] dark:text-slate-200 dark:hover:text-[#E13382]"
+                    className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-base font-bold transition ${
+                      isActive
+                        ? "bg-[#6119E6]/10 text-[#6119E6] dark:bg-[#E13382]/15 dark:text-[#E13382]"
+                        : "text-slate-800 hover:bg-slate-50 hover:text-[#6119E6] dark:text-slate-200 dark:hover:bg-white/5 dark:hover:text-[#E13382]"
                     }`}
                   >
-                    {item.label}
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-[#6119E6] dark:bg-white/5 dark:text-[#E13382]">
+                      <Icon size={18} />
+                    </span>
+                    <span className="truncate">{item.label}</span>
                   </Link>
                 );
               })}
-              
-              <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10">
+
+              <div className="mt-3 border-t border-slate-200 pt-4 dark:border-white/10">
                 <p className="mb-3 text-sm font-semibold text-slate-500 dark:text-slate-400">
                   {isEnglish ? "Sectors" : "القطاعات"}
                 </p>
-                <div className="flex flex-col gap-3">
+                <div className="grid gap-2">
                   {sectors?.map((sector) => (
                     <Link
                       key={sector.id}
                       href={`${sectorBasePath}/sectors/${sector.id}`}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="text-base font-medium text-slate-700 transition hover:text-[#6119E6] dark:text-slate-300 dark:hover:text-[#E13382]"
+                      className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-base font-medium text-slate-700 transition hover:bg-slate-50 hover:text-[#6119E6] dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-[#E13382]"
                     >
-                      {sector.title}
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-lg dark:bg-white/5">
+                        {sector.icon}
+                      </span>
+                      <span className="truncate">{sector.title}</span>
                     </Link>
                   ))}
                 </div>

@@ -4,10 +4,14 @@ export type ChannelProvider = "website" | "telegram" | "whatsapp" | "facebook" |
 
 export interface NormalizedAttachment {
   type: "image" | "video" | "audio" | "document" | "other";
-  url: string;
+  url?: string;
+  dataUrl?: string;
+  key?: string;
   name?: string;
   size?: number;
   mimeType?: string;
+  providerMediaId?: string;
+  providerMetadata?: Record<string, unknown>;
 }
 
 export interface NormalizedIncomingMessage {

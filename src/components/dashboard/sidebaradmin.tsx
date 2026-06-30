@@ -11,7 +11,8 @@ import {
   Activity,
   Gauge,
   LayoutDashboard,
-  Terminal
+  Terminal,
+  Mic2
 } from "lucide-react";
 import { useState } from "react";
 import { useI18n } from "@/components/i18n-provider";
@@ -27,6 +28,7 @@ export function SidebarAdmin() {
     { href: "/admin", label: locale === "ar" ? "الرئيسية" : "Overview", icon: LayoutDashboard },
     { href: "/admin/users", label: t.nav.adminUsers, icon: Users },
     { href: "/admin/ai-models", label: t.nav.adminAi, icon: LockKeyhole },
+    { href: "/admin/speech", label: locale === "ar" ? "إعدادات الصوت" : "Speech", icon: Mic2 },
     { href: "/admin/billing", label: t.nav.adminBilling, icon: CreditCard },
     { href: "/admin/subscriptions", label: locale === "ar" ? "إدارة الاشتراكات" : "Subscriptions", icon: Activity },
     { href: "/developer", label: locale === "ar" ? "لوحة المطور" : "Developer", icon: Terminal }

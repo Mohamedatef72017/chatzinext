@@ -1,6 +1,7 @@
 import { FilterQuery, Types } from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Contact, Conversation, Message } from "@/lib/models";
+import { getObjectAccessUrl } from "@/lib/storage/r2";
 
 type ConversationFilters = {
   limit?: number;
@@ -236,7 +237,7 @@ export async function listMessagesForConversation(tenantId: string, conversation
 
   const orderedMessages = isIncremental ? messages : messages.reverse();
 
-  return orderedMessages.map((message: any) => ({
+  return Promise.all(orderedMessages.map(async (message: any) => ({
     id: message._id.toString(),
     content: message.content,
     direction: message.direction,
@@ -244,13 +245,13 @@ export async function listMessagesForConversation(tenantId: string, conversation
     deliveryStatus: message.deliveryStatus || "sent",
     provider: message.provider || "website",
     createdAt: message.createdAt?.toISOString?.() || new Date().toISOString(),
-    attachments: (message.attachments || []).map((attachment: any, index: number) => ({
+    attachments: await Promise.all((message.attachments || []).map(async (attachment: any, index: number) => ({
       id: `${message._id.toString()}-${index}`,
       type: attachment.type || "file",
-      url: attachment.url || "",
+      url: attachment.key ? await getObjectAccessUrl(attachment.key, attachment.url || "") : attachment.url || "",
       name: attachment.name || "Attachment",
       size: attachment.size || 0,
       mimeType: attachment.mimeType || "",
-    })),
-  }));
+    }))),
+  })));
 }

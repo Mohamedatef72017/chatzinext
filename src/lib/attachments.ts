@@ -1,6 +1,9 @@
 import crypto from "crypto";
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import {
+  getObjectAccessUrl,
+  putTenantObject,
+  sanitizeObjectSegment
+} from "@/lib/storage/r2";
 
 export type MessageAttachment = {
   id: string;
@@ -64,82 +67,39 @@ export function validateAttachmentFile(file: File) {
   }
 }
 
-function getR2Client() {
-  const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID;
-  const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
-
-  if (!accountId || !accessKeyId || !secretAccessKey) {
-    throw new Error("إعدادات Cloudflare R2 غير مكتملة.");
-  }
-
-  return new S3Client({
-    region: "auto",
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId,
-      secretAccessKey,
-    },
-  });
-}
-
-function getBucketName() {
-  const bucket = process.env.CLOUDFLARE_R2_BUCKET;
-  if (!bucket) throw new Error("CLOUDFLARE_R2_BUCKET غير مضبوط.");
-  return bucket;
-}
-
 function sanitizeFilename(name: string) {
-  return name
-    .normalize("NFKD")
-    .replace(/[^\w.\-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 120) || "attachment";
+  return sanitizeObjectSegment(name, "attachment");
 }
 
 export async function uploadConversationAttachment(input: {
   tenantId: string;
   conversationId: string;
+  messageId?: string;
   file: File;
 }) {
   validateAttachmentFile(input.file);
 
   const id = crypto.randomUUID();
   const safeName = sanitizeFilename(input.file.name);
-  const key = [
-    "tenants",
-    input.tenantId,
-    "conversations",
-    input.conversationId,
-    `${Date.now()}-${id}-${safeName}`,
-  ].join("/");
-
   const bytes = Buffer.from(await input.file.arrayBuffer());
-  const client = getR2Client();
-
-  await client.send(
-    new PutObjectCommand({
-      Bucket: getBucketName(),
-      Key: key,
-      Body: bytes,
-      ContentType: input.file.type,
-      ContentLength: input.file.size,
-      Metadata: {
-        tenantId: input.tenantId,
-        conversationId: input.conversationId,
-        originalName: input.file.name,
-      },
-    })
-  );
-
-  const publicBaseUrl = process.env.CLOUDFLARE_R2_PUBLIC_BASE_URL?.replace(/\/$/, "");
+  const stored = await putTenantObject({
+    tenantId: input.tenantId,
+    scope: ["conversations", input.conversationId, input.messageId || "attachments"].join("/"),
+    fileName: safeName,
+    body: bytes,
+    contentType: input.file.type,
+    metadata: {
+      conversationId: input.conversationId,
+      messageId: input.messageId,
+      attachmentId: id
+    }
+  });
 
   return {
     id,
     type: classifyAttachment(input.file.type),
-    key,
-    url: publicBaseUrl ? `${publicBaseUrl}/${key}` : undefined,
+    key: stored.objectKey,
+    url: stored.url,
     name: input.file.name,
     mimeType: input.file.type,
     size: input.file.size,
@@ -148,16 +108,7 @@ export async function uploadConversationAttachment(input: {
 
 export async function getAttachmentAccessUrl(attachment: MessageAttachment) {
   if (attachment.url) return attachment.url;
-
-  const expiresIn = Number(process.env.R2_SIGNED_URL_EXPIRES_SECONDS || 3600);
-  return getSignedUrl(
-    getR2Client(),
-    new GetObjectCommand({
-      Bucket: getBucketName(),
-      Key: attachment.key,
-    }),
-    { expiresIn: Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 3600 }
-  );
+  return getObjectAccessUrl(attachment.key);
 }
 
 export function describeAttachmentsForAi(attachments: MessageAttachment[] | undefined) {
@@ -175,4 +126,3 @@ export function describeAttachmentsForAi(attachments: MessageAttachment[] | unde
     })
     .join(", ");
 }
-

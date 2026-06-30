@@ -1,4 +1,5 @@
 import { Bot, Channel, Conversation, Message, Tenant, WebhookLog, AiSetting, AiModel, AiPersona, Ticket, Lead, User, TenantSubscription } from "@/lib/models";
+import { KnowledgeDocument } from "@/lib/models/knowledge-document";
 import { connectToDatabase } from "@/lib/mongodb";
 
 export async function getTenantSummary(tenantId: string) {
@@ -9,7 +10,8 @@ export async function getTenantSummary(tenantId: string) {
   const [
     bots, conversations, messages, activeChannels, tenant, activeConversations, 
     aiResolved, humanResolved, todayMessages, tickets,
-    resolvedTickets, totalTickets, totalLeads, totalUsers, subscription
+    resolvedTickets, totalTickets, totalLeads, totalUsers, subscription,
+    adminUsers, agentUsers, knowledgeDocs
   ] = await Promise.all([
     Bot.countDocuments({ tenantId }),
     Conversation.countDocuments({ tenantId }),
@@ -25,7 +27,10 @@ export async function getTenantSummary(tenantId: string) {
     Ticket.countDocuments({ tenantId }),
     Lead.countDocuments({ tenantId }),
     User.countDocuments({ tenantId }),
-    TenantSubscription.findOne({ tenantId }).lean()
+    TenantSubscription.findOne({ tenantId }).lean(),
+    User.countDocuments({ tenantId, role: { $in: ["owner", "admin", "manager"] } }),
+    User.countDocuments({ tenantId, role: { $in: ["agent", "viewer"] } }),
+    KnowledgeDocument.countDocuments({ tenantId })
   ]);
   const totalResolved = aiResolved + humanResolved;
   return {
@@ -44,7 +49,10 @@ export async function getTenantSummary(tenantId: string) {
     todayMessages,
     aiResolutionRate: totalResolved ? Math.round((aiResolved / totalResolved) * 100) : 0,
     humanResolutionRate: totalResolved ? Math.round((humanResolved / totalResolved) * 100) : 0,
-    tenantName: tenant?.name || "ChatZi"
+    tenantName: tenant?.name || "ChatZi",
+    adminUsers,
+    agentUsers,
+    knowledgeDocs
   };
 }
 

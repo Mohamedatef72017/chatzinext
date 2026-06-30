@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Conversation, Message } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
+import { getObjectAccessUrl } from "@/lib/storage/r2";
 
 const querySchema = z.object({
   botId: z.string().min(1),
@@ -33,13 +34,27 @@ async function findOutgoingMessages(input: {
     .lean();
 }
 
-function serializeMessages(messages: any[]) {
-  return messages.map((message) => ({
+async function serializeAttachment(attachment: any) {
+  const key = String(attachment?.key || "");
+  const url = key ? await getObjectAccessUrl(key, attachment?.url || "") : attachment?.url || "";
+  return {
+    id: attachment?.id || attachment?._id?.toString?.() || "",
+    type: attachment?.type || "file",
+    url,
+    name: attachment?.name || "",
+    mimeType: attachment?.mimeType || "",
+    size: attachment?.size || 0,
+  };
+}
+
+async function serializeMessages(messages: any[]) {
+  return Promise.all(messages.map(async (message) => ({
     id: message._id.toString(),
     content: message.content,
     createdAt: message.createdAt?.toISOString?.() || new Date().toISOString(),
     deliveryStatus: message.deliveryStatus || "queued",
-  }));
+    attachments: await Promise.all((message.attachments || []).map(serializeAttachment)),
+  })));
 }
 
 export async function GET(request: NextRequest) {
@@ -76,7 +91,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      messages: serializeMessages(messages),
+      messages: await serializeMessages(messages),
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to load messages" }, { status: 400 });

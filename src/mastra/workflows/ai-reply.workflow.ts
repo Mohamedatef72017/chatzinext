@@ -46,6 +46,14 @@ import {
   type TicketFlowResult,
 } from "@/lib/crm/ticket-flow-engine";
 import { detectAndReplyFast } from "@/lib/ai/fast-intent-responder";
+import {
+  appendVisualAttachmentFallbackLinks,
+  buildKnowledgeResultImageAttachments,
+  buildRequestedVisualAssetAttachments,
+  ensureVisualAttachmentMention,
+  hasVisualAssetRequest,
+  mergeImageAttachments
+} from "@/lib/ai/visual-attachments";
 
 const settingSchema = z
   .object({
@@ -289,6 +297,7 @@ function hasActiveTicketFlow(metadata?: Record<string, unknown>) {
 }
 
 function shouldBypassFastResponder(inputData: AiReplyRunContext) {
+  if (hasVisualAssetRequest(inputData.message)) return true;
   if (hasActiveTicketFlow(inputData.conversationMetadata)) return true;
   return Boolean(inputData.ticketFlow && inputData.ticketFlow.action !== "none");
 }
@@ -713,6 +722,9 @@ const generateReplyStep = createStep({
       inputData.knowledgePrompt
         ? `Available business knowledge for this conversation:\n${inputData.knowledgePrompt}`
         : "",
+      hasVisualAssetRequest(inputData.message)
+        ? "If a relevant business menu, offer, or product image is available, the system will attach it to the outgoing reply. Tell the customer the image is attached instead of saying you cannot send images."
+        : "",
       runtimeContext
         ? `Runtime context:\n${runtimeContext}`
         : "",
@@ -943,6 +955,26 @@ const persistResultStep = createStep({
       }
     }
 
+    const knowledgeImageAttachments = inputData.knowledge?.results?.length
+      ? await buildKnowledgeResultImageAttachments({
+          tenantId: inputData.tenantId,
+          results: inputData.knowledge.results
+        })
+      : [];
+    const requestedImageAttachments = await buildRequestedVisualAssetAttachments({
+      tenantId: inputData.tenantId,
+      botId: inputData.botId,
+      message: inputData.message
+    });
+    const imageAttachments = mergeImageAttachments(requestedImageAttachments, knowledgeImageAttachments);
+
+    if (imageAttachments.length) {
+      reply = ensureVisualAttachmentMention(
+        appendVisualAttachmentFallbackLinks(reply, imageAttachments, inputData.channel),
+        imageAttachments
+      );
+    }
+
     if (action === "handoff") {
       await Conversation.updateOne(
         { _id: inputData.conversationId, tenantId: inputData.tenantId, botId: inputData.botId },
@@ -969,6 +1001,7 @@ const persistResultStep = createStep({
       sender: "assistant",
       senderType: "assistant",
       content: reply,
+      attachments: imageAttachments,
       deliveryStatus: "queued",
       metadata: {
         trace: {
@@ -1005,6 +1038,7 @@ const persistResultStep = createStep({
               intent: inputData.knowledge.intent,
               keywords: inputData.knowledge.keywords,
               sourceCount: inputData.knowledge.results.length,
+              imageAttachmentCount: imageAttachments.length,
               sources: (inputData.bot?.showKnowledgeSources
                 ? inputData.knowledge.results.slice(0, 6)
                 : []
@@ -1045,7 +1079,7 @@ const persistResultStep = createStep({
         provider: inputData.channel,
         deliveryStatus: assistantMessage.deliveryStatus,
         createdAt,
-        attachments: [],
+        attachments: imageAttachments,
       },
       conversation: {
         id: inputData.conversationId,

@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import { AiPersona, AiSetting, Bot, Conversation, Message, Tenant, User } from "@/lib/models";
+import { AiPersona, AiSetting, Bot, Conversation, KnowledgeAsset, Message, Tenant, User } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 import { DEFAULT_SYSTEM_PROMPT } from "@/lib/strings";
 import { assertAndReserveQuota } from "@/lib/quota";
@@ -15,6 +15,12 @@ import { isExplicitHumanHandoffRequest } from "@/lib/ai/handoff";
 import { classifyTicketIntent, ensureTicketForConversation } from "@/lib/tickets";
 import { detectAndReplyFast } from "@/lib/ai/fast-intent-responder";
 import { buildSafeCustomerReply } from "@/lib/ai/safe-customer-reply";
+import { getObjectAccessUrl } from "@/lib/storage/r2";
+import {
+  buildRequestedVisualAssetAttachments,
+  ensureVisualAttachmentMention,
+  mergeImageAttachments
+} from "@/lib/ai/visual-attachments";
 
 export type GenerateReplyInput = {
   tenantId: string;
@@ -480,6 +486,15 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
         showSources: bot.showKnowledgeSources ?? false,
       })
     : "";
+  const knowledgeDrivenImageAttachments = knowledge
+    ? await buildKnowledgeImageAttachments(input.tenantId, knowledge.results)
+    : [];
+  const requestedImageAttachments = await buildRequestedVisualAssetAttachments({
+    tenantId: input.tenantId,
+    botId: input.botId,
+    message: input.message
+  });
+  const knowledgeImageAttachments = mergeImageAttachments(requestedImageAttachments, knowledgeDrivenImageAttachments);
 
   const personaDirectives: string[] = [];
   if (activePersona) {
@@ -516,6 +531,9 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
     "If the knowledge is incomplete, say that clearly and provide the closest useful guidance.",
     "Ask one short clarifying question only if needed.",
     "Do not mention internal tools, retrieval, prompts, scores, or system rules.",
+    knowledgeImageAttachments.length
+      ? "The system will attach relevant business image(s) to this reply. If the customer asked for a menu, offer, or product image, clearly say that the image is attached and do not ask them to resend the request."
+      : "",
     "Escalate to a human only when the user explicitly asks for a human/agent/representative. Do not hand off because of missing knowledge, repeated messages, or ticket creation.",
     "Match the user language. If the user writes Arabic, reply in Arabic naturally. If the user writes English, reply in English naturally.",
     !activePersona ? "You are the default AI assistant for this inbox. Answer using tenant knowledge and conversation context. Escalate only when necessary." : "",
@@ -580,7 +598,8 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
       tenantId: input.tenantId,
       conversation,
       channel: input.channel,
-      reply: fallback,
+      reply: appendAttachmentFallbackLinks(fallback, knowledgeImageAttachments, input.channel),
+      attachments: knowledgeImageAttachments,
       metadata: {
         directFallback: true,
         reason: "provider_error",
@@ -593,7 +612,7 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
       },
     });
     return {
-      reply: fallback,
+      reply: fallbackMessage.content,
       conversationId: conversation._id.toString(),
       confidence: knowledge?.confidence ?? null,
       messageId: fallbackMessage._id.toString(),
@@ -616,7 +635,8 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
         tenantId: input.tenantId,
         conversation,
         channel: input.channel,
-        reply: repairReply,
+        reply: appendAttachmentFallbackLinks(repairReply, knowledgeImageAttachments, input.channel),
+        attachments: knowledgeImageAttachments,
         metadata: {
           aiPolicy: {
             turnCount: nextAiTurnCount,
@@ -640,7 +660,7 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
       };
       await conversation.save();
       return {
-        reply: repairReply,
+        reply: repairMessage.content,
         conversationId: conversation._id.toString(),
         confidence: knowledge?.confidence ?? null,
         messageId: repairMessage._id.toString(),
@@ -661,7 +681,8 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
       tenantId: input.tenantId,
       conversation,
       channel: input.channel,
-      reply: finalRepairReply,
+      reply: appendAttachmentFallbackLinks(finalRepairReply, knowledgeImageAttachments, input.channel),
+      attachments: knowledgeImageAttachments,
       metadata: {
         directFallback: true,
         reason: "repeated_reply_repair",
@@ -674,11 +695,16 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
       }
     });
     return {
-      reply: finalRepairReply,
+      reply: finalRepairMessage.content,
       conversationId: conversation._id.toString(),
       confidence: knowledge?.confidence ?? null,
       messageId: finalRepairMessage._id.toString(),
     };
+  }
+
+  reply = appendAttachmentFallbackLinks(reply, knowledgeImageAttachments, input.channel);
+  if (knowledgeImageAttachments.length) {
+    reply = ensureVisualAttachmentMention(reply, knowledgeImageAttachments);
   }
 
   const replyMessage = await Message.create({
@@ -692,6 +718,7 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
     sender: "assistant",
     senderType: "assistant",
     content: reply,
+    attachments: knowledgeImageAttachments,
     deliveryStatus: "queued",
     metadata: {
       responseId,
@@ -726,6 +753,7 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
                 documentId: result.documentId,
               })
             ),
+            imageAttachmentCount: knowledgeImageAttachments.length,
           }
         : { enabled: false },
     },
@@ -775,7 +803,7 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
       provider: input.channel,
       deliveryStatus: replyMessage.deliveryStatus || "sent",
       createdAt: replyMessage.createdAt?.toISOString?.() || new Date().toISOString(),
-      attachments: []
+      attachments: knowledgeImageAttachments
     },
     conversation: {
       id: conversation._id.toString(),
@@ -796,12 +824,82 @@ export async function generateAiReplyLegacy(input: GenerateReplyInput, options: 
   };
 }
 
+async function buildKnowledgeImageAttachments(tenantId: string, results: any[]) {
+  const documentIds = [...new Set(
+    (results || [])
+      .map((result) => String(result?.documentId || ""))
+      .filter((id) => Types.ObjectId.isValid(id))
+  )];
+  if (!documentIds.length) return [];
+
+  const assets = await KnowledgeAsset.find({
+    tenantId,
+    knowledgeDocumentId: { $in: documentIds.map((id) => new Types.ObjectId(id)) },
+    status: "ready"
+  }).lean();
+
+  const byDocumentId = new Map(assets.map((asset: any) => [asset.knowledgeDocumentId?.toString?.() || "", asset]));
+  const attachments: any[] = [];
+  const seen = new Set<string>();
+
+  for (const result of results || []) {
+    const documentId = String(result?.documentId || "");
+    const asset: any = byDocumentId.get(documentId);
+    const url = asset
+      ? await getObjectAccessUrl(asset.objectKey, asset.imageUrl)
+      : imageUrlFromKnowledgeResult(result);
+
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    attachments.push({
+      id: asset?._id?.toString?.() || `knowledge-${documentId}`,
+      type: "image",
+      key: asset?.objectKey || "",
+      url,
+      name: asset?.fileName || result?.sourceTitle || "knowledge-image",
+      mimeType: asset?.mimeType || mimeTypeFromUrl(url),
+      size: asset?.sizeBytes || 0
+    });
+    if (attachments.length >= Number(process.env.AI_KB_IMAGE_ATTACHMENT_LIMIT || 2)) break;
+  }
+
+  return attachments;
+}
+
+function imageUrlFromKnowledgeResult(result: any) {
+  const url = String(result?.sourceUrl || "");
+  if (!/^https?:\/\//i.test(url)) return "";
+  return /\.(png|jpe?g|webp|gif)(\?|#|$)/i.test(url) ? url : "";
+}
+
+function mimeTypeFromUrl(url: string) {
+  const clean = url.split("?")[0].toLowerCase();
+  if (clean.endsWith(".png")) return "image/png";
+  if (clean.endsWith(".webp")) return "image/webp";
+  if (clean.endsWith(".gif")) return "image/gif";
+  return "image/jpeg";
+}
+
+function appendAttachmentFallbackLinks(reply: string, attachments: any[], channel: string) {
+  if (!attachments.length || channelSupportsNativeImageAttachment(channel)) return reply;
+  const urls = attachments.map((attachment) => attachment.url).filter(Boolean);
+  if (!urls.length) return reply;
+  const hasArabic = /[\u0600-\u06FF]/.test(reply);
+  const label = hasArabic ? "الصورة المرجعية" : "Reference image";
+  return `${reply.trim()}\n\n${urls.map((url, index) => `${label}${urls.length > 1 ? ` ${index + 1}` : ""}: ${url}`).join("\n")}`;
+}
+
+function channelSupportsNativeImageAttachment(channel: string) {
+  return ["website", "whatsapp", "telegram"].includes(String(channel || "").toLowerCase());
+}
+
 
 async function createOutgoingAiReply(input: {
   tenantId: string;
   conversation: any;
   channel: string;
   reply: string;
+  attachments?: any[];
   metadata?: Record<string, unknown>;
 }) {
   const message = await Message.create({
@@ -815,6 +913,7 @@ async function createOutgoingAiReply(input: {
     sender: "assistant",
     senderType: "assistant",
     content: input.reply,
+    attachments: input.attachments || [],
     deliveryStatus: "queued",
     metadata: input.metadata || {},
   });
@@ -835,7 +934,7 @@ async function createOutgoingAiReply(input: {
       provider: input.channel,
       deliveryStatus: message.deliveryStatus || "sent",
       createdAt: message.createdAt?.toISOString?.() || new Date().toISOString(),
-      attachments: []
+      attachments: input.attachments || []
     },
     conversation: {
       id: input.conversation._id.toString(),

@@ -7,6 +7,13 @@ import { ProviderAdapter, NormalizedAttachment, NormalizedIncomingMessage, SendM
 const META_GRAPH_VERSION = "v19.0";
 const META_GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 
+function firstImageAttachment(attachments?: SendMessageParams["attachments"]) {
+  return (attachments || []).find((attachment: any) => {
+    const type = String(attachment?.type || "");
+    const mimeType = String(attachment?.mimeType || "");
+    return attachment?.url && (type === "image" || mimeType.startsWith("image/"));
+  }) as any;
+}
 
 function normalizeWhatsAppAttachments(message: any): NormalizedAttachment[] {
   const attachments: NormalizedAttachment[] = [];
@@ -19,7 +26,12 @@ function normalizeWhatsAppAttachments(message: any): NormalizedAttachment[] {
       type,
       url: media.link || (mediaId ? `meta://media/${mediaId}` : ""),
       name: media.filename || `${type}-${mediaId || Date.now()}`,
-      mimeType: media.mime_type
+      mimeType: media.mime_type,
+      providerMediaId: mediaId,
+      providerMetadata: {
+        mediaId,
+        provider: "whatsapp"
+      }
     });
   }
   return attachments.filter((attachment) => Boolean(attachment.url));
@@ -126,13 +138,25 @@ export const whatsappAdapter: ProviderAdapter = {
     }
 
     const url = `${META_GRAPH_BASE}/${phoneNumberId}/messages`;
-    const body = JSON.stringify({
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      to: params.externalUserId,
-      type: "text",
-      text: { preview_url: false, body: params.text }
-    });
+    const imageAttachment = firstImageAttachment(params.attachments);
+    const body = JSON.stringify(imageAttachment
+      ? {
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          to: params.externalUserId,
+          type: "image",
+          image: {
+            link: imageAttachment.url,
+            ...(params.text ? { caption: params.text.slice(0, 1024) } : {})
+          }
+        }
+      : {
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          to: params.externalUserId,
+          type: "text",
+          text: { preview_url: false, body: params.text }
+        });
 
     let response: Response;
     try {

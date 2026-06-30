@@ -3,10 +3,12 @@ import { z } from "zod";
 import { requirePermission } from "@/server/auth/guards";
 import { permissions } from "@/server/permissions/permissions";
 import { createKnowledgeDocument } from "@/lib/knowledge";
-import { KnowledgeDocument, KnowledgeAsset } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
-import { isFeatureEnabled, checkFeatureLimit } from "@/lib/billing/entitlement-engine";
-import { FEATURE_KEYS } from "@/lib/billing/feature-registry";
+import {
+  assertKnowledgeEnabled,
+  assertKnowledgeItemLimit,
+  assertKnowledgeStorageLimit
+} from "@/lib/knowledge-limits";
 
 const sourceTypesArray = [
   "pdf", "docx", "txt", "csv", "excel", "faq", "website", "html",
@@ -46,42 +48,9 @@ export async function POST(request: Request) {
         ? fileValue.size
         : Buffer.byteLength(textValue, "utf8");
 
-    // ── Plan limit checks ──────────────────────────────────────────────────────
-    const knowledgeEnabled = await isFeatureEnabled(tenantId, FEATURE_KEYS.KNOWLEDGE_ENABLED);
-    if (!knowledgeEnabled) {
-      return NextResponse.json(
-        { error: "قاعدة المعرفة غير مفعّلة في باقتك الحالية. يرجى الترقية للوصول إلى هذه الميزة." },
-        { status: 403 }
-      );
-    }
-
-    // Count both KnowledgeDocument and KnowledgeAsset against the unified quota
-    const [docCount, assetCount, docStorageAgg, assetStorageAgg] = await Promise.all([
-      KnowledgeDocument.countDocuments({ tenantId }),
-      KnowledgeAsset.countDocuments({ tenantId }),
-      KnowledgeDocument.aggregate([{ $match: { tenantId } }, { $group: { _id: null, totalBytes: { $sum: "$sizeBytes" } } }]),
-      KnowledgeAsset.aggregate([{ $match: { tenantId } }, { $group: { _id: null, totalBytes: { $sum: "$sizeBytes" } } }])
-    ]);
-
-    const currentFileCount = docCount + assetCount;
-    const fileCheck = await checkFeatureLimit(tenantId, FEATURE_KEYS.MAX_KNOWLEDGE_FILES, currentFileCount);
-    if (!fileCheck.allowed) {
-      return NextResponse.json(
-        { error: `لقد وصلت إلى الحد الأقصى لملفات المعرفة في باقتك (${fileCheck.limit} ملف). احذف بعض الملفات أو قم بالترقية.` },
-        { status: 403 }
-      );
-    }
-
-    // Check projected storage including the incoming file/text size
-    const currentStorageBytes = (docStorageAgg[0]?.totalBytes || 0) + (assetStorageAgg[0]?.totalBytes || 0);
-    const projectedStorageMB = Math.ceil((currentStorageBytes + incomingBytes) / (1024 * 1024));
-    const storageCheck = await checkFeatureLimit(tenantId, FEATURE_KEYS.KNOWLEDGE_STORAGE_MB, projectedStorageMB);
-    if (!storageCheck.allowed) {
-      return NextResponse.json(
-        { error: `هذا الملف سيتجاوز الحد الأقصى لمساحة التخزين في باقتك (${storageCheck.limit} MB). احذف بعض الملفات أو قم بالترقية.` },
-        { status: 403 }
-      );
-    }
+    await assertKnowledgeEnabled(tenantId);
+    await assertKnowledgeItemLimit(tenantId, 1);
+    await assertKnowledgeStorageLimit(tenantId, incomingBytes);
     // ──────────────────────────────────────────────────────────────────────────
 
     const body = schema.parse({
@@ -128,7 +97,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("KNOWLEDGE API ERROR:", error);
     const message = error instanceof Error ? error.message : "تعذر حفظ مصدر المعرفة.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    return NextResponse.json({ error: message }, { status: (error as any)?.statusCode || 400 });
   }
 }
 

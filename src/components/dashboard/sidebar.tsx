@@ -24,10 +24,12 @@ import {
   Bell,
   ClipboardCheck,
   UsersRound,
+  LogOut,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/i18n-provider";
 import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { SignOutButton } from "@/components/dashboard/sign-out";
 import { useSidebarCounts } from "@/components/dashboard/sidebar-counts";
 import { permissions as permissionKeys, type Permission } from "@/server/permissions/permissions";
@@ -129,7 +131,7 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
   return (
     <>
       <aside
-        className={`hidden shrink-0 lg:flex lg:flex-col relative z-0 bg-transparent text-white transition-all duration-300 ${
+        className={`hidden shrink-0 lg:flex lg:flex-col relative z-0 bg-gradient-to-b from-[#060714] to-[#0A0B20] text-white transition-all duration-300 ${
           collapsed ? "w-20" : "w-64"
         }`}
       >
@@ -182,12 +184,12 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-200 ${
-                    active ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-slate-400 hover:bg-white/[0.04] hover:text-white"
+                  className={`flex items-center gap-4 rounded-xl px-4 py-3.5 text-[15px] font-bold transition-all duration-200 ${
+                    active ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-white/90 hover:bg-white/10 hover:text-white"
                   }`}
                   title={item.label}
                 >
-                  <Icon size={18} className="shrink-0" />
+                  <Icon size={20} className="shrink-0" />
                   {!collapsed ? (
                     <>
                       <span className="truncate">{item.label}</span>
@@ -225,33 +227,57 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
           >
             {collapsed ? (locale === "en" ? "AR" : "EN") : localeSwitchLabel}
           </button>
+
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500/10 px-3 py-3 text-xs font-bold text-rose-400 transition hover:bg-rose-500/20 hover:text-rose-300"
+            title={locale === "en" ? "Sign Out" : "تسجيل الخروج"}
+          >
+            <LogOut size={16} className={collapsed ? "" : "shrink-0"} />
+            {!collapsed && <span>{locale === "en" ? "Sign Out" : "تسجيل الخروج"}</span>}
+          </button>
         </div>
       </aside>
 
       <button
-        className="touch-target safe-top fixed top-3 z-50 rounded-2xl border border-slate-200 bg-white/95 px-3 text-ink shadow-soft backdrop-blur lg:hidden rtl:left-3 ltr:right-3"
+        className="touch-target safe-top fixed top-3 z-50 flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white/95 px-3 text-slate-700 shadow-md backdrop-blur-md transition active:scale-95 dark:border-slate-700/80 dark:bg-slate-900/95 dark:text-slate-200 lg:hidden rtl:left-3 ltr:right-3"
         onClick={() => setMobileOpen(true)}
         aria-label={t.nav.openMenu}
       >
-        <Menu size={20} />
+        <div className="relative">
+          <Menu size={20} />
+          {(counts.conversations.unread > 0 || counts.tickets.new > 0) && (
+            <span className="absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full bg-rose-500 shadow-sm" />
+          )}
+        </div>
       </button>
 
       {mobileOpen ? (
         <>
           <button className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} aria-label={t.nav.closeMenu} />
-          <aside className="safe-top safe-bottom fixed inset-0 z-50 flex flex-col bg-[#0B0C1E] text-white lg:hidden">
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <aside className="safe-top safe-bottom fixed inset-y-2 z-50 flex w-[min(24rem,calc(100vw-1rem))] flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-b from-[#060714] to-[#0A0B20] text-white shadow-2xl shadow-slate-950/40 lg:hidden rtl:right-2 ltr:left-2">
+            {/* Mobile Drawer Header */}
+            <div className="relative flex items-center justify-between border-b border-white/10 px-5 py-4">
+              {/* Subtle top gradient */}
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
               <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-1.5 shadow-md shadow-indigo-600/20">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-1.5 shadow-lg shadow-indigo-600/20 ring-1 ring-indigo-500/20">
                   <img src="/profile_white_trans.png" alt="ChatZi" className="h-full w-full object-contain" />
                 </span>
                 <div>
-                  <p className="text-lg font-extrabold">ChatZi</p>
-                  <p className="text-xs text-indigo-300">{locale === "ar" ? "لوحة الهاتف" : "Mobile Workspace"}</p>
+                  <p className="text-lg font-extrabold tracking-tight">ChatZi</p>
+                  <p className="flex items-center gap-1.5 text-xs text-indigo-300">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    {locale === "ar" ? "لوحة الهاتف" : "Mobile Workspace"}
+                  </p>
                 </div>
               </div>
-              <button className="touch-target rounded-2xl border border-white/10 bg-white/5 text-slate-200" onClick={() => setMobileOpen(false)} aria-label={t.nav.closeMenu}>
-                <X size={18} className="mx-auto" />
+              <button
+                className="touch-target flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 active:scale-95"
+                onClick={() => setMobileOpen(false)}
+                aria-label={t.nav.closeMenu}
+              >
+                <X size={18} />
               </button>
             </div>
 
@@ -260,7 +286,7 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
                 <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
                   {locale === "ar" ? "التنقل" : "Navigation"}
                 </p>
-                <div className="space-y-2">
+                <div className="grid gap-2">
                   {drawerLinks.map((item) => {
                     const Icon = item.icon;
                     const active = isLinkActive(currentPath, item.href);
@@ -284,12 +310,16 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
                         key={item.href}
                         href={item.href}
                         onClick={() => setMobileOpen(false)}
-                        className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                          active ? "bg-indigo-600 text-white" : "bg-white/[0.04] text-slate-200 hover:bg-white/[0.08]"
+                        className={`group flex items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-bold transition ${
+                          active ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "bg-white/[0.025] text-white/90 hover:bg-white/[0.08] hover:text-white"
                         }`}
                       >
-                        <Icon size={18} />
-                        <span>{item.label}</span>
+                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition ${
+                          active ? "bg-white/15 text-white" : "bg-white/[0.06] text-indigo-200 group-hover:bg-white/10 group-hover:text-white"
+                        }`}>
+                          <Icon size={19} />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
                         {badge}
                       </Link>
                     );
@@ -309,9 +339,9 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
                         key={action.href + action.label}
                         href={action.href}
                         onClick={() => setMobileOpen(false)}
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-start transition hover:bg-white/[0.08]"
+                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-start transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
                       >
-                        <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-300">
+                        <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600/20 text-indigo-300 ring-4 ring-indigo-600/10">
                           <Icon size={18} />
                         </span>
                         <span className="block text-sm font-semibold text-white">{action.label}</span>
@@ -356,7 +386,7 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
       ) : null}
 
       <nav className="safe-bottom fixed inset-x-3 z-40 lg:hidden bottom-mobile-nav">
-        <div className="mx-auto flex max-w-md items-center justify-between rounded-[1.75rem] border border-slate-200 bg-white/95 px-2 py-2 shadow-soft backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
+        <div className="mx-auto grid max-w-md grid-cols-5 items-center rounded-[1.75rem] border border-slate-200/80 bg-white/97 px-1.5 py-2 shadow-lg shadow-slate-200/50 backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-950/97 dark:shadow-slate-950/50">
           {bottomNavLinks.map((item) => {
             const Icon = item.icon;
             const active = isLinkActive(currentPath, item.href);
@@ -364,12 +394,17 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition ${
-                  active ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300" : "text-slate-500 dark:text-slate-400"
+                className={`relative flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1.5 py-2.5 text-[10px] font-bold tracking-wide transition active:scale-95 ${
+                  active
+                    ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300"
+                    : "text-slate-500 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
                 }`}
               >
-                <Icon size={18} />
-                <span className="truncate">{item.label}</span>
+                {active && (
+                  <span className="absolute top-0 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-indigo-600 dark:bg-indigo-400" />
+                )}
+                <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
+                <span className="hidden max-w-full truncate sm:block">{item.label}</span>
               </Link>
             );
           })}
@@ -404,10 +439,10 @@ export function Sidebar({ permissions: effectivePermissions = [] }: { permission
           <button
             type="button"
             onClick={() => setFabOpen((value) => !value)}
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 transition active:scale-95"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-xl shadow-indigo-600/40 ring-4 ring-indigo-600/20 transition hover:bg-indigo-500 active:scale-95 dark:bg-indigo-600 dark:ring-indigo-500/20"
             aria-label={locale === "ar" ? "إجراءات سريعة" : "Quick actions"}
           >
-            <Plus size={22} className={fabOpen ? "rotate-45 transition-transform" : "transition-transform"} />
+            <Plus size={22} className={`transition-all duration-200 ${fabOpen ? "rotate-45" : "rotate-0"}`} />
           </button>
         </div>
       </div>

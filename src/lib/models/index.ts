@@ -41,3 +41,4 @@ export * from "./entitlement";
 export * from "./system-log";
 export * from "./knowledge-entity";
 export * from "./speech-setting";
+export * from "./media-understanding-cache";

@@ -18,6 +18,8 @@ import { routeAiRequest } from "@/lib/ai-router";
 import { detectBusinessIntent } from "@/lib/ai/business-intent";
 import { KnowledgeEntity } from "@/lib/models/knowledge-entity";
 import { extractAndStoreKnowledgeEntities, normalizeArabicText } from "@/lib/knowledge-entities";
+import { assertKnowledgeItemLimit, assertKnowledgeStorageLimit } from "@/lib/knowledge-limits";
+import { putTenantObject } from "@/lib/storage/r2";
 import {
   deleteChunksByDocument,
   isQdrantEnabled,
@@ -68,6 +70,7 @@ type CreateKnowledgeInput = {
     size: number;
     buffer: Buffer;
   };
+  skipLimitChecks?: boolean;
 };
 
 type KnowledgeSearchResult = {
@@ -178,6 +181,27 @@ export async function createKnowledgeDocument(input: CreateKnowledgeInput) {
   const cleaned = cleanText(extracted.text);
   if (cleaned.length < 10) throw new Error("المحتوى قصير جدًا أو لا يحتوي على نص قابل للقراءة.");
 
+  const measuredSizeBytes = input.file?.size || Buffer.byteLength(cleaned);
+  if (!input.skipLimitChecks) {
+    await assertKnowledgeItemLimit(input.tenantId, 1);
+    await assertKnowledgeStorageLimit(input.tenantId, measuredSizeBytes);
+  }
+
+  const storedFile = input.file
+    ? await putTenantObject({
+        tenantId: input.tenantId,
+        scope: "knowledge/documents",
+        fileName: input.file.name,
+        body: input.file.buffer,
+        contentType: input.file.type || "application/octet-stream",
+        metadata: {
+          botId: input.botId,
+          sourceType: input.sourceType,
+          title: input.title
+        }
+      })
+    : null;
+
   const autoCategoryName = classifyKnowledgeCategory(`${input.title}\n${cleaned}\n${input.sourceUrl || ""}`, input.categoryName);
   const category = await upsertCategory(input.tenantId, autoCategoryName);
   const collection = await upsertCollection(input.tenantId, category._id, input.collectionName);
@@ -197,10 +221,14 @@ export async function createKnowledgeDocument(input: CreateKnowledgeInput) {
     collectionId: collection._id,
     title: input.title.trim(),
     sourceType: input.sourceType,
-    sourceUrl: input.sourceUrl?.trim() || "",
+    sourceUrl: input.sourceUrl?.trim() || storedFile?.url || "",
+    storageProvider: storedFile?.storageProvider || "",
+    bucket: storedFile?.bucket || "",
+    objectKey: storedFile?.objectKey || "",
+    publicUrl: storedFile?.publicUrl || "",
     fileName: input.file?.name || "",
     mimeType: input.file?.type || "",
-    sizeBytes: input.file?.size || Buffer.byteLength(cleaned),
+    sizeBytes: measuredSizeBytes,
     tags: normalizeTags(input.tags),
     isTemporary: input.isTemporary ?? false,
     expiresAt: input.expiresAt,
@@ -212,6 +240,15 @@ export async function createKnowledgeDocument(input: CreateKnowledgeInput) {
     pageCount: extracted.pageCount,
     metadata: {
       sourceUrl: input.sourceUrl || "",
+      storage: storedFile
+        ? {
+            provider: storedFile.storageProvider,
+            bucket: storedFile.bucket,
+            objectKey: storedFile.objectKey,
+            publicUrl: storedFile.publicUrl || "",
+            fileSizeBytes: storedFile.fileSizeBytes
+          }
+        : undefined,
       originalLength: extracted.text.length,
       cleanedLength: cleaned.length
     },

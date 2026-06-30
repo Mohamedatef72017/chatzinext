@@ -572,7 +572,7 @@ export async function GET() {
   var typingIndicator = null;
   var personasData = [];
 
-  function add(sender, text, audioUrl, imageUrl) {
+  function add(sender, text, audioUrl, imageUrl, attachments) {
     var wrapper = document.createElement("div");
     wrapper.className = "cz-msg-wrapper " + (sender === "user" ? "user" : "assistant");
     
@@ -609,6 +609,34 @@ export async function GET() {
       aud.className = "cz-audio-player";
       bubble.appendChild(aud);
     }
+
+    var renderedAttachments = Array.isArray(attachments) ? attachments : [];
+    renderedAttachments.forEach(function(att) {
+      if (!att || !att.url) return;
+      var kind = String(att.type || att.mimeType || "");
+      if (kind === "image" || kind.indexOf("image/") === 0) {
+        var attachmentImg = document.createElement("img");
+        attachmentImg.src = att.url;
+        attachmentImg.alt = att.name || "image attachment";
+        attachmentImg.className = "cz-image-preview";
+        bubble.appendChild(attachmentImg);
+      } else if (kind === "audio" || kind.indexOf("audio/") === 0) {
+        var attachmentAudio = document.createElement("audio");
+        attachmentAudio.src = att.url;
+        attachmentAudio.controls = true;
+        attachmentAudio.className = "cz-audio-player";
+        bubble.appendChild(attachmentAudio);
+      } else {
+        var link = document.createElement("a");
+        link.href = att.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = att.name || "Attachment";
+        link.style.display = "block";
+        link.style.marginTop = "8px";
+        bubble.appendChild(link);
+      }
+    });
     
     wrapper.appendChild(avatar);
     wrapper.appendChild(bubble);
@@ -1007,12 +1035,12 @@ export async function GET() {
             var item = data.messages[i];
             if (!item.id || seen[item.id]) continue;
             seen[item.id] = true;
-            if (item.content) return item.content;
+            if (item.content || (item.attachments && item.attachments.length)) return item;
           }
         }
       } catch (e) {}
     }
-    return "";
+    return null;
   }
 
   // Form submit
@@ -1045,7 +1073,7 @@ export async function GET() {
           botId: botId,
           conversationId: state.conversationId,
           visitorId: visitorId,
-          message: text || "[attachment]",
+          message: text,
           attachments: attachments
         })
       });
@@ -1053,12 +1081,12 @@ export async function GET() {
       if (!res.ok || data.error) throw new Error(data.error || "Request failed");
       if (data.reply) {
         hideTyping();
-        add("assistant", data.reply);
+        add("assistant", data.reply, null, null, data.attachments || []);
         return;
       }
       var asyncReply = await pollForAssistantReply(sinceIso);
       hideTyping();
-      if (asyncReply) add("assistant", asyncReply);
+      if (asyncReply) add("assistant", asyncReply.content || "", null, null, asyncReply.attachments || []);
     } catch (e) {
       hideTyping();
       add("assistant", e.message);

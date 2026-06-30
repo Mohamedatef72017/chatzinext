@@ -1,6 +1,4 @@
-import crypto from "crypto";
-import path from "path";
-import { mkdir, writeFile, unlink } from "fs/promises";
+import { unlink } from "fs/promises";
 import { existsSync } from "fs";
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -10,6 +8,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { decryptSecret } from "@/lib/crypto";
 import { createKnowledgeDocument, deleteKnowledgeDocument, type KnowledgeSourceType } from "@/lib/knowledge";
 import { routeAiRequest } from "@/lib/ai-router";
+import { assertKnowledgeItemLimit, assertKnowledgeStorageLimit } from "@/lib/knowledge-limits";
+import { deleteTenantObject, getObjectAccessUrl, putTenantObject } from "@/lib/storage/r2";
 
 export type KnowledgeAssetKind = "menu" | "offer" | "product";
 
@@ -33,13 +33,13 @@ export async function listKnowledgeAssets(tenantId: string, botId?: string) {
 
   const assets = await KnowledgeAsset.find(query).sort({ createdAt: -1 }).limit(80).lean();
 
-  return assets.map((asset) => ({
+  return Promise.all(assets.map(async (asset) => ({
     id: asset._id.toString(),
     botId: asset.botId?.toString?.() || "",
     knowledgeDocumentId: asset.knowledgeDocumentId?.toString?.() || "",
     kind: asset.kind,
     title: asset.title,
-    imageUrl: asset.imageUrl,
+    imageUrl: await getObjectAccessUrl(asset.objectKey, asset.imageUrl),
     fileName: asset.fileName,
     description: asset.description || "",
     aiSummary: asset.aiSummary || "",
@@ -48,7 +48,7 @@ export async function listKnowledgeAssets(tenantId: string, botId?: string) {
     status: asset.status,
     statusReason: asset.statusReason || "",
     createdAt: asset.createdAt ? new Date(asset.createdAt).toISOString() : ""
-  }));
+  })));
 }
 
 export async function createKnowledgeAsset(input: CreateKnowledgeAssetInput) {
@@ -67,6 +67,9 @@ export async function createKnowledgeAsset(input: CreateKnowledgeAssetInput) {
     throw new Error("الحد الأقصى 5 صور لكل فئة.");
   }
 
+  await assertKnowledgeItemLimit(input.tenantId, 1);
+  await assertKnowledgeStorageLimit(input.tenantId, input.file.size);
+
   const stored = await saveKnowledgeImage(input.tenantId, input.file);
   const title = input.title.trim() || defaultTitle(input.kind);
   const description = String(input.description || "").trim();
@@ -76,11 +79,15 @@ export async function createKnowledgeAsset(input: CreateKnowledgeAssetInput) {
     botId: input.botId,
     kind: input.kind,
     title,
-    imageUrl: stored.url,
-    imagePath: stored.path,
+    imageUrl: stored.url || stored.publicUrl || "",
+    imagePath: stored.objectKey,
+    storageProvider: stored.storageProvider,
+    bucket: stored.bucket,
+    objectKey: stored.objectKey,
+    publicUrl: stored.publicUrl || "",
     fileName: input.file.name,
     mimeType: input.file.type,
-    sizeBytes: input.file.size,
+    sizeBytes: stored.fileSizeBytes,
     description,
     status: "processing"
   });
@@ -101,7 +108,7 @@ export async function createKnowledgeAsset(input: CreateKnowledgeAssetInput) {
       description ? `User description:\n${description}` : "",
       `AI summary:\n${summary.aiSummary}`,
       summary.extractedText ? `Extracted text:\n${summary.extractedText}` : "",
-      `Image URL: ${stored.url}`
+      `Image URL: ${stored.url || stored.publicUrl || ""}`
     ].filter(Boolean).join("\n\n");
 
     const documentId = await createKnowledgeDocument({
@@ -113,7 +120,8 @@ export async function createKnowledgeAsset(input: CreateKnowledgeAssetInput) {
       collectionName: "صور المعرفة",
       tags: ["visual", input.kind, ...summary.tags],
       text: knowledgeText,
-      sourceUrl: stored.url
+      sourceUrl: stored.publicUrl || stored.url || "",
+      skipLimitChecks: true
     });
 
     asset.knowledgeDocumentId = new Types.ObjectId(documentId);
@@ -124,6 +132,13 @@ export async function createKnowledgeAsset(input: CreateKnowledgeAssetInput) {
     asset.statusReason = "";
     asset.metadata = {
       knowledgeDocumentId: documentId,
+      storage: {
+        provider: stored.storageProvider,
+        bucket: stored.bucket,
+        objectKey: stored.objectKey,
+        publicUrl: stored.publicUrl || "",
+        fileSizeBytes: stored.fileSizeBytes
+      },
       summarizedAt: new Date().toISOString()
     };
     await asset.save();
@@ -132,7 +147,7 @@ export async function createKnowledgeAsset(input: CreateKnowledgeAssetInput) {
       id: asset._id.toString(),
       knowledgeDocumentId: documentId,
       status: asset.status,
-      imageUrl: stored.url
+      imageUrl: stored.url || stored.publicUrl || ""
     };
   } catch (error) {
     asset.status = "error";
@@ -148,6 +163,10 @@ export async function deleteKnowledgeAsset(assetId: string, tenantId: string) {
 
   const asset = await KnowledgeAsset.findOne({ _id: assetId, tenantId });
   if (!asset) throw new Error("الصورة غير موجودة.");
+
+  if (asset.objectKey) {
+    await deleteTenantObject(asset.objectKey).catch(() => null);
+  }
 
   if (asset.imagePath && existsSync(asset.imagePath)) {
     await unlink(asset.imagePath).catch(() => null);
@@ -178,22 +197,17 @@ function validateKnowledgeAssetInput(input: CreateKnowledgeAssetInput) {
 }
 
 async function saveKnowledgeImage(tenantId: string, file: File) {
-  const extension = extensionForMime(file.type);
-  const id = crypto.randomUUID();
-  const safeName = sanitizeFilename(file.name.replace(/\.[^.]+$/, ""));
-  const relativeDir = path.join("uploads", "knowledge-assets", tenantId);
-  const publicDir = path.join(process.cwd(), "public", relativeDir);
-  await mkdir(publicDir, { recursive: true });
-
-  const filename = `${Date.now()}-${id}-${safeName}.${extension}`;
-  const fullPath = path.join(publicDir, filename);
   const bytes = Buffer.from(await file.arrayBuffer());
-  await writeFile(fullPath, bytes);
-
-  return {
-    path: fullPath,
-    url: `/${relativeDir.split(path.sep).join("/")}/${filename}`
-  };
+  return putTenantObject({
+    tenantId,
+    scope: "knowledge/assets",
+    fileName: file.name || `knowledge-image.${extensionForMime(file.type)}`,
+    body: bytes,
+    contentType: file.type,
+    metadata: {
+      source: "knowledge_asset"
+    }
+  });
 }
 
 async function buildAssetKnowledgeText(input: {
@@ -371,13 +385,4 @@ function extensionForMime(mimeType: string) {
   if (mimeType === "image/png") return "png";
   if (mimeType === "image/webp") return "webp";
   return "jpg";
-}
-
-function sanitizeFilename(name: string) {
-  return name
-    .normalize("NFKD")
-    .replace(/[^\w.\-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 80) || "image";
 }

@@ -16,9 +16,10 @@ import crypto from "crypto";
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { connectToDatabase } from "@/lib/mongodb";
-import { AiProvider, Message, SpeechSetting } from "@/lib/models";
+import { AiProvider, MediaUnderstandingCache, Message, SpeechSetting } from "@/lib/models";
 import { decryptSecret } from "@/lib/crypto";
 import { logger } from "@/lib/logger";
+import { getObjectAccessUrl } from "@/lib/storage/r2";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,6 +45,12 @@ export interface MessageMediaUnderstanding {
   processedAt: string;
 }
 
+type MediaUnderstandingContext = {
+  tenantId?: string;
+  messageId?: string;
+  url?: string;
+};
+
 // ─── Configuration ────────────────────────────────────────────────────────────
 
 const MAX_IMAGE_BYTES = Number(process.env.MEDIA_UNDERSTANDING_MAX_IMAGE_MB || 10) * 1024 * 1024;
@@ -57,7 +64,8 @@ const ALLOWED_IMAGE_TYPES = new Set([
 const ALLOWED_AUDIO_TYPES = new Set([
   "audio/ogg", "audio/mpeg", "audio/mp3", "audio/mp4",
   "audio/m4a", "audio/wav", "audio/webm", "audio/flac",
-  "audio/x-m4a", "audio/ogg; codecs=opus"
+  "audio/x-m4a", "audio/mpga", "audio/x-wav", "audio/wave",
+  "audio/aac", "audio/ogg; codecs=opus"
 ]);
 
 // ─── SSRF Protection ──────────────────────────────────────────────────────────
@@ -164,7 +172,129 @@ async function fetchMediaBytes(url: string, maxBytes: number): Promise<{ buffer:
 }
 
 function contentHash(buffer: Buffer): string {
-  return crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
+  return crypto.createHash("sha256").update(buffer).digest("hex");
+}
+
+async function getCachedUnderstanding(
+  context: MediaUnderstandingContext | undefined,
+  type: "image" | "audio",
+  hash: string
+) {
+  if (!context?.tenantId) return null;
+  await connectToDatabase();
+  return MediaUnderstandingCache.findOne({
+    tenantId: context.tenantId,
+    type,
+    contentHash: hash
+  }).lean();
+}
+
+async function saveCachedUnderstanding(input: {
+  context?: MediaUnderstandingContext;
+  type: "image" | "audio";
+  hash: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  understanding: string;
+  provider: string;
+  model?: string;
+}) {
+  if (!input.context?.tenantId || !input.understanding) return;
+  await MediaUnderstandingCache.updateOne(
+    {
+      tenantId: input.context.tenantId,
+      type: input.type,
+      contentHash: input.hash
+    },
+    {
+      $setOnInsert: {
+        tenantId: input.context.tenantId,
+        type: input.type,
+        contentHash: input.hash,
+        url: input.url,
+        mimeType: input.mimeType,
+        sizeBytes: input.sizeBytes,
+        understanding: input.understanding,
+        provider: input.provider,
+        model: input.model || "",
+        analyzedAt: new Date(),
+        metadata: {
+          firstMessageId: input.context.messageId || ""
+        }
+      }
+    },
+    { upsert: true }
+  ).catch((error) => {
+    logger.warn("media-understanding.cache_save_failed", {
+      tenantId: input.context?.tenantId,
+      type: input.type,
+      contentHash: input.hash,
+      error: error instanceof Error ? error.message : String(error)
+    });
+  });
+}
+
+function visionModelForProvider(providerId: string, configuredModel?: string) {
+  const configured = String(configuredModel || "").trim();
+  const lower = configured.toLowerCase();
+  const looksVisionCapable = (() => {
+    if (!configured) return false;
+    if (providerId === "gemini") return lower.includes("gemini") && !lower.includes("embedding");
+    if (providerId === "openai") return /(gpt-4o|gpt-4\.1|o3|o4|vision)/i.test(configured);
+    if (providerId === "openrouter") return /(gpt-4o|gpt-4\.1|gemini|claude-3|llama-4|vision)/i.test(configured);
+    if (providerId === "xai") return /(grok.*vision|grok-2)/i.test(configured);
+    if (providerId === "groq") return /(llama-4|vision)/i.test(configured);
+    return false;
+  })();
+
+  if (looksVisionCapable) return configured;
+
+  const defaults: Record<string, string> = {
+    gemini: "gemini-1.5-flash",
+    openai: "gpt-4o-mini",
+    openrouter: "openai/gpt-4o-mini",
+    xai: "grok-2-vision-1212",
+    groq: "meta-llama/llama-4-scout-17b-16e-instruct"
+  };
+
+  return defaults[providerId] || configured || "gpt-4o-mini";
+}
+
+async function resolveAudioTranscriptionConfig() {
+  const settings = await SpeechSetting.findOne({}).lean();
+  const settingsApiKey = settings?.enabled ? decryptSecret(settings.apiKeyEncrypted || "") || "" : "";
+
+  if (settings?.enabled && settingsApiKey) {
+    return {
+      apiKey: settingsApiKey,
+      model: settings.transcriptionModel || "whisper-1",
+      maxAudioSizeMB: settings.maxAudioSizeMB || 25,
+      allowedMimeTypes: settings.allowedMimeTypes?.length ? settings.allowedMimeTypes : [...ALLOWED_AUDIO_TYPES],
+      language: settings.language === "auto" ? undefined : settings.language,
+      source: "speech-settings"
+    };
+  }
+
+  const openAiProvider = await AiProvider.findOne({ providerId: "openai", isActive: true }).lean();
+  const providerApiKey = openAiProvider ? decryptSecret(openAiProvider.apiKeyEncrypted || "") || "" : "";
+  if (providerApiKey) {
+    logger.info("media-understanding.audio_using_openai_provider_fallback");
+    return {
+      apiKey: providerApiKey,
+      model: process.env.MEDIA_TRANSCRIPTION_MODEL || "whisper-1",
+      maxAudioSizeMB: 25,
+      allowedMimeTypes: [...ALLOWED_AUDIO_TYPES],
+      language: undefined,
+      source: "ai-provider-openai"
+    };
+  }
+
+  if (settings?.enabled && !settingsApiKey) {
+    throw new Error("Audio transcription is enabled but the OpenAI API key is not configured.");
+  }
+
+  throw new Error("Audio transcription is not configured. Enable speech settings or activate an OpenAI provider.");
 }
 
 // ─── Image Analysis ───────────────────────────────────────────────────────────
@@ -185,7 +315,8 @@ const IMAGE_ANALYSIS_PROMPT = [
  */
 export async function analyzeImageFromUrl(
   url: string,
-  mimeTypeHint?: string
+  mimeTypeHint?: string,
+  context?: MediaUnderstandingContext
 ): Promise<Pick<MediaUnderstandingResult, "understanding" | "provider" | "contentHash">> {
   const { buffer, mimeType: fetchedMime } = await fetchMediaBytes(url, MAX_IMAGE_BYTES);
   const resolvedMime = mimeTypeHint || fetchedMime;
@@ -195,6 +326,20 @@ export async function analyzeImageFromUrl(
   }
 
   const hash = contentHash(buffer);
+  const cached = await getCachedUnderstanding(context, "image", hash);
+  if (cached?.understanding) {
+    logger.info("media-understanding.image_cache_hit", {
+      tenantId: context?.tenantId,
+      messageId: context?.messageId,
+      contentHash: hash
+    });
+    return {
+      understanding: cached.understanding,
+      provider: cached.provider || "cache",
+      contentHash: hash
+    };
+  }
+
   const base64 = buffer.toString("base64");
 
   await connectToDatabase();
@@ -208,13 +353,25 @@ export async function analyzeImageFromUrl(
     try {
       if (providerId === "gemini") {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: provider.defaultModel || "gemini-1.5-flash" });
+        const modelName = visionModelForProvider(providerId, provider.defaultModel || "");
+        const model = genAI.getGenerativeModel({ model: modelName });
         const result = await model.generateContent([
           IMAGE_ANALYSIS_PROMPT,
           { inlineData: { mimeType: resolvedMime, data: base64 } }
         ]);
         const text = result.response.text().trim();
         if (text.length > 10) {
+          await saveCachedUnderstanding({
+            context,
+            type: "image",
+            hash,
+            url,
+            mimeType: resolvedMime,
+            sizeBytes: buffer.length,
+            understanding: text,
+            provider: "gemini",
+            model: modelName
+          });
           return { understanding: text, provider: "gemini", contentHash: hash };
         }
       }
@@ -227,8 +384,9 @@ export async function analyzeImageFromUrl(
           provider.baseUrl || undefined;
 
         const client = new OpenAI({ apiKey: apiKey || "ollama", baseURL });
+        const modelName = visionModelForProvider(providerId, provider.defaultModel || "");
         const response = await client.chat.completions.create({
-          model: provider.defaultModel || (providerId === "openai" ? "gpt-4o-mini" : "openai/gpt-4o-mini"),
+          model: modelName,
           max_tokens: 800,
           messages: [
             {
@@ -243,6 +401,17 @@ export async function analyzeImageFromUrl(
 
         const text = (response.choices[0]?.message?.content || "").trim();
         if (text.length > 10) {
+          await saveCachedUnderstanding({
+            context,
+            type: "image",
+            hash,
+            url,
+            mimeType: resolvedMime,
+            sizeBytes: buffer.length,
+            understanding: text,
+            provider: providerId,
+            model: modelName
+          });
           return { understanding: text, provider: providerId, contentHash: hash };
         }
       }
@@ -265,44 +434,46 @@ export async function analyzeImageFromUrl(
  */
 export async function transcribeAudioFromUrl(
   url: string,
-  mimeTypeHint?: string
+  mimeTypeHint?: string,
+  context?: MediaUnderstandingContext
 ): Promise<Pick<MediaUnderstandingResult, "understanding" | "provider" | "model" | "contentHash">> {
   await connectToDatabase();
 
-  const settings = await SpeechSetting.findOne({}).lean();
-  if (!settings?.enabled) {
-    throw new Error("Audio transcription is not enabled. Enable it in the admin settings.");
-  }
-
-  const apiKey = decryptSecret(settings.apiKeyEncrypted || "") || "";
-  if (!apiKey) {
-    throw new Error("OpenAI API key for audio transcription is not configured.");
-  }
-
-  const maxBytes = (settings.maxAudioSizeMB || 25) * 1024 * 1024;
+  const transcriptionConfig = await resolveAudioTranscriptionConfig();
+  const maxBytes = transcriptionConfig.maxAudioSizeMB * 1024 * 1024;
   const { buffer, mimeType: fetchedMime } = await fetchMediaBytes(url, Math.min(maxBytes, MAX_AUDIO_BYTES));
   const resolvedMime = mimeTypeHint || fetchedMime;
 
   const normalizedMime = resolvedMime.split(";")[0].trim();
-  // Admin-configured allowedMimeTypes is authoritative when set.
-  // If the admin has not configured any types (empty list or absent), fall back to the global defaults.
-  const adminConfiguredTypes = settings.allowedMimeTypes?.length
-    ? settings.allowedMimeTypes
-    : [...ALLOWED_AUDIO_TYPES];
-  const allowedTypes = new Set(adminConfiguredTypes.map((m) => m.split(";")[0].trim()));
+  const allowedTypes = new Set(transcriptionConfig.allowedMimeTypes.map((m) => m.split(";")[0].trim()));
   if (!allowedTypes.has(normalizedMime)) {
     throw new Error(`Audio type '${normalizedMime}' is not allowed. Allowed: ${[...allowedTypes].join(", ")}`);
   }
 
   const hash = contentHash(buffer);
-  const model = settings.transcriptionModel || "whisper-1";
-  const language = settings.language === "auto" ? undefined : settings.language;
+  const model = transcriptionConfig.model;
+  const cached = await getCachedUnderstanding(context, "audio", hash);
+  if (cached?.understanding) {
+    logger.info("media-understanding.audio_cache_hit", {
+      tenantId: context?.tenantId,
+      messageId: context?.messageId,
+      contentHash: hash
+    });
+    return {
+      understanding: cached.understanding,
+      provider: cached.provider || "cache",
+      model: cached.model || model,
+      contentHash: hash
+    };
+  }
+
+  const language = transcriptionConfig.language;
 
   // Determine file extension for OpenAI (required by its API)
   const ext = mimeToAudioExt(normalizedMime);
-  const file = new File([buffer], `audio.${ext}`, { type: normalizedMime });
+  const file = new File([new Uint8Array(buffer)], `audio.${ext}`, { type: normalizedMime });
 
-  const client = new OpenAI({ apiKey });
+  const client = new OpenAI({ apiKey: transcriptionConfig.apiKey });
   const transcript = await client.audio.transcriptions.create({
     file,
     model,
@@ -314,9 +485,21 @@ export async function transcribeAudioFromUrl(
     throw new Error("Whisper returned an empty transcription.");
   }
 
+  await saveCachedUnderstanding({
+    context,
+    type: "audio",
+    hash,
+    url,
+    mimeType: normalizedMime,
+    sizeBytes: buffer.length,
+    understanding: text,
+    provider: transcriptionConfig.source,
+    model
+  });
+
   return {
     understanding: text,
-    provider: "openai",
+    provider: transcriptionConfig.source,
     model,
     contentHash: hash
   };
@@ -370,7 +553,9 @@ export async function understandMessageMedia(
   const audios: MediaUnderstandingResult[] = [];
 
   for (const attachment of attachments) {
-    const url = attachment?.url;
+    const url = attachment?.key
+      ? await getObjectAccessUrl(attachment.key, attachment?.url || "")
+      : attachment?.url;
     const rawType = String(attachment?.mimeType || attachment?.type || "");
     const attachmentType = String(attachment?.type || "");
 
@@ -399,7 +584,7 @@ export async function understandMessageMedia(
 
     if (isImage) {
       try {
-        const result = await analyzeImageFromUrl(url, mimeType || undefined);
+        const result = await analyzeImageFromUrl(url, mimeType || undefined, { tenantId, messageId, url });
         images.push({
           type: "image",
           url,
@@ -423,7 +608,7 @@ export async function understandMessageMedia(
       }
     } else if (isAudio) {
       try {
-        const result = await transcribeAudioFromUrl(url, mimeType || undefined);
+        const result = await transcribeAudioFromUrl(url, mimeType || undefined, { tenantId, messageId, url });
         audios.push({
           type: "audio",
           url,
