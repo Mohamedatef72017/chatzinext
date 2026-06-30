@@ -303,7 +303,20 @@ export async function getDashboardActivity(tenantId: string) {
     })
   );
 
-  return { chartData, recentConversations: recentList };
+  // Channel distribution
+  const mongoose = require("mongoose");
+  const channelStats = await Message.aggregate([
+    { $match: { tenantId: new mongoose.Types.ObjectId(tenantId) } },
+    { $group: { _id: "$provider", count: { $sum: 1 } } },
+    { $project: { _id: 0, name: "$_id", value: "$count" } }
+  ]);
+  
+  const channelDistribution = channelStats.map(stat => ({
+    name: stat.name || "unknown",
+    value: stat.value
+  }));
+
+  return { chartData, recentConversations: recentList, channelDistribution };
 }
 
 export async function getAvailableAiModels() {

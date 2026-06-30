@@ -1353,8 +1353,8 @@ export function AIInboxClient({
     null;
 
   return (
-    <div className="-mt-5 -mx-4 -mb-mobile-nav relative grid grid-rows-1 h-[calc(100dvh-64px)] min-h-[400px] grid-cols-1 overflow-hidden border-t border-slate-200 bg-slate-100 text-slate-950 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 lg:-mt-6 lg:-mx-8 lg:-mb-6 lg:min-h-[400px] lg:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)_4.5rem]">
-      <aside className="hidden min-w-0 min-h-0 border-r border-slate-200 dark:border-slate-800 lg:block">
+    <div className="ltr:-ml-2 ltr:mr-0 rtl:-mr-2 rtl:ml-0 lg:ltr:-ml-6 lg:ltr:-mr-4 lg:rtl:-mr-6 lg:rtl:-ml-4 xl:-mx-8 relative grid grid-rows-1 h-[calc(100dvh-64px)] min-h-[400px] grid-cols-1 overflow-hidden border-t border-slate-200 bg-slate-100 text-slate-950 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 lg:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)_4.5rem]">
+      <aside className="hidden min-w-0 min-h-0 ltr:border-r rtl:border-l border-slate-200 dark:border-slate-800 lg:block">
         {listPane}
       </aside>
 
@@ -1579,7 +1579,7 @@ export function AIInboxClient({
         ) : null}
       </main>
 
-      <aside className="hidden min-h-0 border-l border-slate-200 bg-white/95 px-2 py-3 dark:border-slate-800 dark:bg-slate-950/95 lg:flex lg:flex-col lg:items-center lg:gap-2">
+      <aside className="hidden min-h-0 ltr:border-l rtl:border-r border-slate-200 bg-white/95 px-2 py-3 dark:border-slate-800 dark:bg-slate-950/95 lg:flex lg:flex-col lg:items-center lg:gap-2">
         {toolItems.map((item) => {
           const Icon = item.icon;
           const active = activeTool === item.id;
@@ -1766,6 +1766,16 @@ function TimelineEntry({ item }: { item: TimelineItem }) {
             <div className="mt-2 space-y-1.5">
               {item.attachments.map((attachment) => {
                 const isAudio = attachment.type === "audio" || attachment.mimeType?.startsWith("audio/");
+                const isImage = attachment.type === "image" || attachment.mimeType?.startsWith("image/") || (attachment.name && /\.(jpe?g|png|gif|webp|svg|bmp)$/i.test(attachment.name));
+                
+                if (isImage && attachment.url) {
+                  return (
+                    <a key={attachment.id || attachment.url || attachment.name} href={attachment.url} target="_blank" rel="noreferrer" className="block mt-1">
+                      <img src={attachment.url} alt={attachment.name || "Image"} className="max-h-64 max-w-full rounded-xl object-contain" />
+                    </a>
+                  );
+                }
+
                 return (
                   <div
                     key={attachment.id || attachment.url || attachment.name}

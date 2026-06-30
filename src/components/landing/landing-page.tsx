@@ -162,7 +162,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
     >
       <SiteHeader locale={locale} setIsLoginOpen={setIsLoginOpen} />
 
-      <section className="relative pt-5 pb-16 sm:pb-24 lg:pb-32 sm:pt-8 lg:pt-10 min-h-[calc(100vh-6rem)] flex items-center border-none">
+      <section className="relative min-h-[calc(100vh-80px)] lg:min-h-[calc(100vh-96px)] flex items-center justify-center border-none py-12 lg:py-0">
         {/* Radiating perspective lines */}
         <div className="absolute inset-0 opacity-[0.06] dark:opacity-[0.12] pointer-events-none">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -196,7 +196,7 @@ export function LandingPage({ locale, botId }: { locale: LandingLocale; botId?: 
           variants={stagger}
           initial="hidden"
           animate="visible"
-          className="relative z-10 mx-auto grid max-w-[100rem] gap-8 px-4 lg:grid-cols-2 lg:items-center lg:px-6 xl:px-12 pb-10"
+          className="relative z-10 mx-auto grid w-full max-w-[100rem] gap-8 px-4 lg:grid-cols-2 lg:items-center lg:px-6 xl:px-12"
         >
           <motion.div variants={fadeUp} className="flex flex-col items-center text-center lg:items-start lg:text-start">
             <span className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm border border-slate-200/60 dark:bg-white/10 dark:text-slate-200 dark:border-white/5">

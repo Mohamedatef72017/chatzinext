@@ -1056,7 +1056,7 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
                         {doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString(isAr ? "ar-EG" : "en-US") : "-"}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
                             onClick={() => { setDetailsDocumentId(doc.id); setDetailsDocumentTitle(doc.title); }}

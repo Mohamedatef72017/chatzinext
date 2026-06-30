@@ -44,7 +44,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   </div>
                 </div>
               </header>
-              <main className="pb-mobile-nav flex-1 overflow-y-auto lg:px-4 relative z-10">
+              <main className="pb-mobile-nav flex-1 overflow-y-auto overflow-x-hidden lg:px-4 relative z-10">
               {children}
               <footer className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-slate-200 py-5 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400 sm:flex-row transition-colors duration-200">
                 <span>© {new Date().getFullYear()} ChatZi CRM. All rights reserved.</span>

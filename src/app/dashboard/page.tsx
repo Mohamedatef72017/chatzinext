@@ -32,6 +32,7 @@ import {
 import { getLocale } from "@/lib/i18n";
 import { ActivityChart } from "@/components/dashboard/activity-chart";
 import { RecentConversationsWidget } from "@/components/dashboard/recent-conversations-widget";
+import { ChannelPieChart } from "@/components/dashboard/channel-pie-chart";
 
 function ChannelIcon({ type }: { type: string }) {
   const base = "h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-white";
@@ -218,35 +219,42 @@ export default async function DashboardPage() {
           <ActivityChart data={activity.chartData} isAr={isAr} />
         </div>
 
-        {/* Channels */}
-        <div className="rounded-2xl border border-slate-100 dark:border-white/5 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/10 dark:to-[#1a1b36] transition-colors duration-200 p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-[#0B0C1E] dark:text-white">{isAr ? "القنوات المتصلة" : "Connected Channels"}</h2>
-            <Link href="/dashboard/channels" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{isAr ? "إدارة" : "Manage"}</Link>
-          </div>
+        {/* Channels & Distribution */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="rounded-2xl border border-slate-100 dark:border-white/5 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/10 dark:to-[#1a1b36] transition-colors duration-200 p-6 flex flex-col justify-center">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-[#0B0C1E] dark:text-white">{isAr ? "القنوات المتصلة" : "Connected Channels"}</h2>
+              <Link href="/dashboard/channels" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{isAr ? "إدارة" : "Manage"}</Link>
+            </div>
 
-          <div className="flex flex-wrap items-center justify-around gap-4 sm:justify-start sm:gap-6">
-            <div className="flex flex-col items-center gap-2">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 ring-4 ring-white dark:ring-[#1a1b36] shadow-sm">
-                <MessageCircle size={22} />
-              </span>
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{isAr ? "واتساب" : "WhatsApp"}</span>
-              <span className="text-[9px] rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 font-bold">{isAr ? "فعال" : "Active"}</span>
+            <div className="flex flex-wrap items-center justify-around gap-4 sm:justify-start sm:gap-6">
+              <div className="flex flex-col items-center gap-2">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 ring-4 ring-white dark:ring-[#1a1b36] shadow-sm">
+                  <MessageCircle size={22} />
+                </span>
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{isAr ? "واتساب" : "WhatsApp"}</span>
+                <span className="text-[9px] rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 font-bold">{isAr ? "فعال" : "Active"}</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 ring-4 ring-white dark:ring-[#1a1b36] shadow-sm">
+                  <Send size={22} />
+                </span>
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{isAr ? "تيليجرام" : "Telegram"}</span>
+                <span className="text-[9px] rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 px-2 py-0.5 font-bold">{isAr ? "قريباً" : "Soon"}</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 ring-4 ring-white dark:ring-[#1a1b36] shadow-sm">
+                  <Globe size={22} />
+                </span>
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{isAr ? "فيسبوك" : "Facebook"}</span>
+                <span className="text-[9px] rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 px-2 py-0.5 font-bold">{isAr ? "قريباً" : "Soon"}</span>
+              </div>
             </div>
-            <div className="flex flex-col items-center gap-2">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 ring-4 ring-white dark:ring-[#1a1b36] shadow-sm">
-                <Send size={22} />
-              </span>
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{isAr ? "تيليجرام" : "Telegram"}</span>
-              <span className="text-[9px] rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 px-2 py-0.5 font-bold">{isAr ? "قريباً" : "Soon"}</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 ring-4 ring-white dark:ring-[#1a1b36] shadow-sm">
-                <Globe size={22} />
-              </span>
-              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{isAr ? "فيسبوك" : "Facebook"}</span>
-              <span className="text-[9px] rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 px-2 py-0.5 font-bold">{isAr ? "قريباً" : "Soon"}</span>
-            </div>
+          </div>
+          
+          <div className="rounded-2xl border border-slate-100 dark:border-white/5 bg-white dark:bg-[#1a1b36] transition-colors duration-200 p-6 flex flex-col justify-center">
+            <h2 className="text-sm font-bold text-[#0B0C1E] dark:text-white mb-2">{isAr ? "مصادر الرسائل" : "Message Sources"}</h2>
+            <ChannelPieChart data={activity.channelDistribution} isAr={isAr} />
           </div>
         </div>
 
