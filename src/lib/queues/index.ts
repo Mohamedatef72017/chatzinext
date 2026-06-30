@@ -9,6 +9,8 @@ export const coreRoutingQueue = isBuild ? null as any : new Queue('core-routing-
 export const aiProcessingQueue = isBuild ? null as any : new Queue('ai-processing-queue', { connection: connection as any });
 export const egressQueue = isBuild ? null as any : new Queue('egress-queue', { connection: connection as any });
 export const knowledgeTrainingQueue = isBuild ? null as any : new Queue('knowledge-training-queue', { connection: connection as any });
+/** Media understanding queue — processes image and audio attachments from incoming messages */
+export const mediaUnderstandingQueue = isBuild ? null as any : new Queue('media-understanding-queue', { connection: connection as any });
 
 export const defaultJobOptions: JobsOptions = {
   attempts: 3,

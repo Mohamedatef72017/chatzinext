@@ -90,7 +90,7 @@ type KnowledgeManagerProps = {
   documents: DocumentRow[];
 };
 
-type InputTab = "text" | "file" | "url" | "image";
+type InputTab = "text" | "file" | "url";
 
 const acceptedFileTypes = ".pdf,.docx,.xlsx,.xls,.csv,.txt,.json,application/pdf,application/json,text/plain";
 const acceptedImageTypes = ".jpg,.jpeg,.png,.gif,.webp,.bmp,image/*";
@@ -196,8 +196,6 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
   const [text, setText] = useState("");
   const [tags, setTags] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
   const [urlInput, setUrlInput] = useState("");
   const [urlScraping, setUrlScraping] = useState(false);
   const [urlScraped, setUrlScraped] = useState(false);
@@ -221,7 +219,7 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
     setLiveDocuments(documents);
   }, [documents]);
 
-  const sourceType = activeTab === "image" ? "image" : detectSourceType(selectedFile);
+  const sourceType = detectSourceType(selectedFile);
   const activeTrainingDocuments = useMemo(
     () => liveDocuments.filter((doc) => ["pending", "processing", "needs_retraining"].includes(doc.status) || doc.needsRetraining),
     [liveDocuments]
@@ -472,8 +470,6 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
     setText("");
     setTags("");
     setSelectedFile(null);
-    setSelectedImage(null);
-    setImagePreview("");
     setUrlInput("");
     setUrlScraped(false);
     setUrlPreview(null);
@@ -501,11 +497,6 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
       setError(isAr ? "اضغط 'جلب البيانات' أولًا للحصول على محتوى الموقع." : "Click 'Fetch Data' first to extract website content.");
       return;
     }
-    if (activeTab === "image" && !selectedImage) {
-      setError(isAr ? "ارفع صورة أولًا." : "Upload an image first.");
-      return;
-    }
-
     setLoading(true);
     const form = new FormData();
     form.set("botId", selectedBot);
@@ -527,10 +518,6 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
       form.set("sourceType", "website");
       form.set("sourceUrl", urlInput);
       form.set("text", text);
-    } else if (activeTab === "image" && selectedImage) {
-      form.set("title", title.trim() || selectedImage.name.replace(/\.[^.]+$/, ""));
-      form.set("sourceType", "image");
-      form.set("file", selectedImage);
     }
 
     try {
@@ -551,7 +538,6 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
     { id: "text", label: isAr ? "نص مباشر" : "Direct Text", icon: <FileText size={16} /> },
     { id: "file", label: isAr ? "رفع ملف" : "Upload File", icon: <FileUp size={16} /> },
     { id: "url", label: isAr ? "رابط موقع" : "Website URL", icon: <Globe size={16} /> },
-    { id: "image", label: isAr ? "صورة / منيو" : "Image / Menu", icon: <ImageIcon size={16} /> },
   ];
 
   return (
@@ -798,55 +784,6 @@ export function KnowledgeManager({ bots, categories, documents }: KnowledgeManag
                     onChange={(event) => setText(event.target.value)}
                   />
                 </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "image" && (
-            <div className="space-y-4">
-              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm leading-6 text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
-                {isAr
-                  ? "ارفع صورة المنيو أو الكتالوج أو أي صورة تحتوي بيانات. سيقوم الذكاء الاصطناعي بتحليل الصورة واستخراج المعلومات منها وحفظها في قاعدة المعرفة. عند سؤال العميل عن هذا المحتوى، سيتلقى الصورة مباشرة."
-                  : "Upload a menu, catalog, or any image with data. AI will analyze and extract information from the image and store it. When a customer asks about this content, they'll receive the image directly."}
-              </div>
-              <label className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-blue-400 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-600 dark:hover:bg-blue-950/20">
-                {imagePreview ? (
-                  <img src={imagePreview} alt="preview" className="max-h-48 max-w-full rounded-lg object-contain shadow-sm" />
-                ) : (
-                  <>
-                    <ImageIcon size={36} className="text-slate-400" />
-                    <span>
-                      <span className="block text-sm font-semibold text-slate-700 dark:text-slate-200">{isAr ? "اضغط لرفع صورة" : "Click to upload image"}</span>
-                      <span className="mt-1 block text-xs text-slate-400">JPG · PNG · WEBP · GIF</span>
-                    </span>
-                  </>
-                )}
-                <input
-                  type="file"
-                  className="hidden"
-                  accept={acceptedImageTypes}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0] || null;
-                    setSelectedImage(file);
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (e) => setImagePreview(e.target?.result as string);
-                      reader.readAsDataURL(file);
-                      if (!title.trim()) setTitle(file.name.replace(/\.[^.]+$/, ""));
-                    } else {
-                      setImagePreview("");
-                    }
-                  }}
-                />
-              </label>
-              {selectedImage && (
-                <button
-                  type="button"
-                  onClick={() => { setSelectedImage(null); setImagePreview(""); }}
-                  className="btn-secondary w-full justify-center text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-                >
-                  <X size={14} /> {isAr ? "إزالة الصورة" : "Remove image"}
-                </button>
               )}
             </div>
           )}

@@ -152,7 +152,27 @@ module.exports = {
       max_memory_restart: '1200M',
       out_file: './logs/worker-knowledge.out.log',
       error_file: './logs/worker-knowledge.err.log',
-      env: workerEnv
+      env: {
+        ...workerEnv,
+        KNOWLEDGE_WORKER_CONCURRENCY: envOr('KNOWLEDGE_WORKER_CONCURRENCY', '3')
+      }
+    },
+    {
+      name: 'worker-media-understanding',
+      script: 'node_modules/ts-node/dist/bin.js',
+      args: '--transpile-only -r tsconfig-paths/register --compiler-options {"module":"commonjs","moduleResolution":"node"} workers/media-understanding-worker.ts',
+      instances: 1,
+      exec_mode: 'fork',
+      max_memory_restart: '512M',
+      out_file: './logs/worker-media-understanding.out.log',
+      error_file: './logs/worker-media-understanding.err.log',
+      env: {
+        ...workerEnv,
+        MEDIA_UNDERSTANDING_WORKER_CONCURRENCY: envOr('MEDIA_UNDERSTANDING_WORKER_CONCURRENCY', '5'),
+        MEDIA_UNDERSTANDING_MAX_IMAGE_MB: envOr('MEDIA_UNDERSTANDING_MAX_IMAGE_MB', '10'),
+        MEDIA_UNDERSTANDING_MAX_AUDIO_MB: envOr('MEDIA_UNDERSTANDING_MAX_AUDIO_MB', '25'),
+        MEDIA_UNDERSTANDING_FETCH_TIMEOUT_MS: envOr('MEDIA_UNDERSTANDING_FETCH_TIMEOUT_MS', '15000')
+      }
     }
   ]
 };
