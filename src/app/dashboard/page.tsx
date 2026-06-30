@@ -255,97 +255,113 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
           {/* Subscription & Account */}
-          <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1b36] p-5 shadow-sm transition-colors duration-200">
-            <div className="mb-3 flex items-center gap-2">
-              <CreditCard size={16} className="text-indigo-500 dark:text-indigo-400" />
-              <h3 className="text-sm font-bold text-[#0B0C1E] dark:text-white">{isAr ? "الاشتراك والحساب" : "Subscription & Account"}</h3>
+          <div className="overflow-hidden rounded-[1.4rem] border border-slate-200 bg-white shadow-sm transition-colors duration-200 dark:border-white/10 dark:bg-[#1a1b36]">
+            <div className="flex items-center gap-2 border-b border-indigo-100 bg-indigo-50/80 px-5 py-4 dark:border-indigo-500/20 dark:bg-indigo-500/10">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+                <CreditCard size={14} />
+              </span>
+              <h3 className="text-sm font-black text-[#0B0C1E] dark:text-indigo-100">{isAr ? "الاشتراك والحساب" : "Subscription & Account"}</h3>
             </div>
-            <StatRow
-              label={isAr ? "حالة الاشتراك" : "Status"}
-              value={<span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${subStatusColor}`}><ShieldCheck size={11} />{subStatusLabel}</span>}
-            />
-            <StatRow
-              label={isAr ? "تاريخ التجديد" : "Renewal Date"}
-              value={subEnds}
-              sub={isAr ? "تاريخ انتهاء الفترة الحالية" : "Current period end"}
-            />
-            <StatRow
-              label={isAr ? "نسبة جذب العملاء" : "Lead Conversion"}
-              value={`${conversionRate}%`}
-              sub={isAr ? "من المحادثات إلى عملاء محتملين" : "conversations → leads"}
-            />
-            <StatRow
-              label={isAr ? "تسوية بالذكاء الاصطناعي" : "AI Resolutions"}
-              value={summary.aiResolutionRate > 0 ? `${summary.aiResolutionRate}%` : "—"}
-            />
+            <div className="px-5 pb-4 pt-1">
+              <StatRow
+                label={isAr ? "حالة الاشتراك" : "Status"}
+                value={<span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${subStatusColor}`}><ShieldCheck size={11} />{subStatusLabel}</span>}
+              />
+              <StatRow
+                label={isAr ? "تاريخ التجديد" : "Renewal Date"}
+                value={subEnds}
+                sub={isAr ? "تاريخ انتهاء الفترة الحالية" : "Current period end"}
+              />
+              <StatRow
+                label={isAr ? "نسبة جذب العملاء" : "Lead Conversion"}
+                value={`${conversionRate}%`}
+                sub={isAr ? "من المحادثات إلى عملاء محتملين" : "conversations → leads"}
+              />
+              <StatRow
+                label={isAr ? "تسوية بالذكاء الاصطناعي" : "AI Resolutions"}
+                value={summary.aiResolutionRate > 0 ? `${summary.aiResolutionRate}%` : "—"}
+              />
+            </div>
           </div>
 
           {/* Knowledge Base */}
-          <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1b36] p-5 shadow-sm transition-colors duration-200">
-            <div className="mb-3 flex items-center justify-between">
+          <div className="overflow-hidden rounded-[1.4rem] border border-slate-200 bg-white shadow-sm transition-colors duration-200 dark:border-white/10 dark:bg-[#1a1b36]">
+            <div className="flex items-center justify-between border-b border-violet-100 bg-violet-50/80 px-5 py-4 dark:border-violet-500/20 dark:bg-violet-500/10">
               <div className="flex items-center gap-2">
-                <BookOpen size={16} className="text-violet-500 dark:text-violet-400" />
-                <h3 className="text-sm font-bold text-[#0B0C1E] dark:text-white">{isAr ? "قاعدة المعرفة" : "Knowledge Base"}</h3>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400">
+                  <BookOpen size={14} />
+                </span>
+                <h3 className="text-sm font-black text-[#0B0C1E] dark:text-violet-100">{isAr ? "قاعدة المعرفة" : "Knowledge Base"}</h3>
               </div>
-              <Link href="/dashboard/knowledge" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{isAr ? "إدارة" : "Manage"}</Link>
+              <Link href="/dashboard/knowledge" className="rounded-full bg-white px-3 py-1 text-xs font-bold text-violet-600 shadow-sm transition-colors hover:text-violet-800 dark:bg-violet-500/20 dark:text-violet-200 dark:hover:bg-violet-500/30">{isAr ? "إدارة" : "Manage"}</Link>
             </div>
-            <StatRow
-              label={isAr ? "حالة قاعدة المعرفة" : "Status"}
-              value={<span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${summary.knowledgeDocs > 0 ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400" : "text-slate-500 bg-slate-100 dark:bg-white/10 dark:text-slate-400"}`}>
-                {summary.knowledgeDocs > 0 ? (isAr ? "✓ نشطة" : "✓ Active") : (isAr ? "فارغة" : "Empty")}
-              </span>}
-            />
-            <StatRow
-              label={isAr ? "عدد المستندات" : "Documents"}
-              value={summary.knowledgeDocs.toLocaleString(isAr ? "ar-EG" : "en-US")}
-              sub={isAr ? "مستند في قاعدة المعرفة" : "docs in knowledge base"}
-            />
-            <StatRow
-              label={isAr ? "عدد البوتات" : "AI Bots"}
-              value={summary.bots}
-            />
-            <StatRow
-              label={isAr ? "القنوات النشطة" : "Active Channels"}
-              value={summary.activeChannels}
-            />
+            <div className="px-5 pb-4 pt-1">
+              <StatRow
+                label={isAr ? "حالة قاعدة المعرفة" : "Status"}
+                value={<span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${summary.knowledgeDocs > 0 ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400" : "text-slate-500 bg-slate-100 dark:bg-white/10 dark:text-slate-400"}`}>
+                  {summary.knowledgeDocs > 0 ? (isAr ? "✓ نشطة" : "✓ Active") : (isAr ? "فارغة" : "Empty")}
+                </span>}
+              />
+              <StatRow
+                label={isAr ? "عدد المستندات" : "Documents"}
+                value={summary.knowledgeDocs.toLocaleString(isAr ? "ar-EG" : "en-US")}
+                sub={isAr ? "مستند في قاعدة المعرفة" : "docs in knowledge base"}
+              />
+              <StatRow
+                label={isAr ? "عدد البوتات" : "AI Bots"}
+                value={summary.bots}
+              />
+              <StatRow
+                label={isAr ? "القنوات النشطة" : "Active Channels"}
+                value={summary.activeChannels}
+              />
+            </div>
           </div>
 
           {/* Team */}
-          <div className="rounded-2xl border border-slate-100 dark:border-white/5 p-5 transition-colors duration-200">
-            <div className="mb-3 flex items-center justify-between">
+          <div className="overflow-hidden rounded-[1.4rem] border border-slate-200 bg-white shadow-sm transition-colors duration-200 dark:border-white/10 dark:bg-[#1a1b36]">
+            <div className="flex items-center justify-between border-b border-blue-100 bg-blue-50/80 px-5 py-4 dark:border-blue-500/20 dark:bg-blue-500/10">
               <div className="flex items-center gap-2">
-                <UserCog size={16} className="text-blue-500 dark:text-blue-400" />
-                <h3 className="text-sm font-bold text-[#0B0C1E] dark:text-white">{isAr ? "فريق العمل" : "Team"}</h3>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
+                  <UserCog size={14} />
+                </span>
+                <h3 className="text-sm font-black text-[#0B0C1E] dark:text-blue-100">{isAr ? "فريق العمل" : "Team"}</h3>
               </div>
-              <Link href="/dashboard/support-agents" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{isAr ? "إدارة" : "Manage"}</Link>
+              <Link href="/dashboard/support-agents" className="rounded-full bg-white px-3 py-1 text-xs font-bold text-blue-600 shadow-sm transition-colors hover:text-blue-800 dark:bg-blue-500/20 dark:text-blue-200 dark:hover:bg-blue-500/30">{isAr ? "إدارة" : "Manage"}</Link>
             </div>
-            <StatRow label={isAr ? "إجمالي المستخدمين" : "Total Users"} value={summary.totalUsers} />
-            <StatRow
-              label={isAr ? "المديرون والمشرفون" : "Admins & Managers"}
-              value={summary.adminUsers}
-              sub={isAr ? "owner / admin / manager" : "owner / admin / manager"}
-            />
-            <StatRow
-              label={isAr ? "وكلاء الدعم" : "Support Agents"}
-              value={summary.agentUsers}
-              sub={isAr ? "agent / viewer" : "agent / viewer"}
-            />
+            <div className="px-5 pb-4 pt-1">
+              <StatRow label={isAr ? "إجمالي المستخدمين" : "Total Users"} value={summary.totalUsers} />
+              <StatRow
+                label={isAr ? "المديرون والمشرفون" : "Admins & Managers"}
+                value={summary.adminUsers}
+                sub={isAr ? "owner / admin / manager" : "owner / admin / manager"}
+              />
+              <StatRow
+                label={isAr ? "وكلاء الدعم" : "Support Agents"}
+                value={summary.agentUsers}
+                sub={isAr ? "agent / viewer" : "agent / viewer"}
+              />
+            </div>
           </div>
 
           {/* Performance */}
-          <div className="rounded-2xl border border-slate-100 dark:border-white/5 p-5 transition-colors duration-200">
-            <div className="mb-3 flex items-center gap-2">
-              <TrendingUp size={16} className="text-emerald-500 dark:text-emerald-400" />
-              <h3 className="text-sm font-bold text-[#0B0C1E] dark:text-white">{isAr ? "الأداء والتحويل" : "Performance"}</h3>
+          <div className="overflow-hidden rounded-[1.4rem] border border-slate-200 bg-white shadow-sm transition-colors duration-200 dark:border-white/10 dark:bg-[#1a1b36]">
+            <div className="flex items-center gap-2 border-b border-emerald-100 bg-emerald-50/80 px-5 py-4 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                <TrendingUp size={14} />
+              </span>
+              <h3 className="text-sm font-black text-[#0B0C1E] dark:text-emerald-100">{isAr ? "الأداء والتحويل" : "Performance"}</h3>
             </div>
-            <StatRow label={isAr ? "إجمالي الرسائل" : "Total Messages"} value={summary.messages.toLocaleString(isAr ? "ar-EG" : "en-US")} />
-            <StatRow label={isAr ? "رسائل اليوم" : "Today's Messages"} value={summary.todayMessages} />
-            <StatRow label={isAr ? "نسبة جذب العملاء" : "Lead Conversion"} value={`${conversionRate}%`} />
-            <StatRow
-              label={isAr ? "البشري مقابل AI" : "Human vs AI"}
-              value={`${summary.humanResolutionRate}% / ${summary.aiResolutionRate}%`}
-              sub={isAr ? "بشري / ذكاء اصطناعي" : "human / ai"}
-            />
+            <div className="px-5 pb-4 pt-1">
+              <StatRow label={isAr ? "إجمالي الرسائل" : "Total Messages"} value={summary.messages.toLocaleString(isAr ? "ar-EG" : "en-US")} />
+              <StatRow label={isAr ? "رسائل اليوم" : "Today's Messages"} value={summary.todayMessages} />
+              <StatRow label={isAr ? "نسبة جذب العملاء" : "Lead Conversion"} value={`${conversionRate}%`} />
+              <StatRow
+                label={isAr ? "البشري مقابل AI" : "Human vs AI"}
+                value={`${summary.humanResolutionRate}% / ${summary.aiResolutionRate}%`}
+                sub={isAr ? "بشري / ذكاء اصطناعي" : "human / ai"}
+              />
+            </div>
           </div>
         </div>
       </div>

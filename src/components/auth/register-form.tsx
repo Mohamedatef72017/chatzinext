@@ -568,14 +568,11 @@ export function RegisterForm() {
           {loading ? t.auth.registering : (locale === "en" ? "Register" : "إنشاء حساب")}
         </button>
         
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center text-sm text-slate-500 sm:flex-row">
-          <span>{locale === "en" ? "Already a member?" : "لديك حساب بالفعل؟"}</span>
-          <a
-            href={loginHref}
-            className="inline-flex min-h-10 items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-5 py-2 text-sm font-bold text-primary-700 transition hover:border-primary-300 hover:bg-primary-100 dark:border-primary-500/25 dark:bg-primary-500/10 dark:text-primary-200 dark:hover:bg-primary-500/20"
-          >
-            {locale === "en" ? "Login" : "تسجيل الدخول"}
-          </a>
+        <div className="mt-6 text-center text-sm font-semibold text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-6">
+          {locale === "ar" ? "لديك حساب بالفعل؟ " : "Already have an account? "}
+          <Link href="/login" className="text-primary-600 hover:text-primary-700 hover:underline transition-colors dark:text-primary-400 dark:hover:text-primary-300">
+            {locale === "ar" ? "قم بتسجيل الدخول" : "Log in"}
+          </Link>
         </div>
       </form>
     );
