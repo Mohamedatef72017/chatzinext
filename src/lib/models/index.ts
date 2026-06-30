@@ -40,3 +40,4 @@ export * from "./ticket";
 export * from "./entitlement";
 export * from "./system-log";
 export * from "./knowledge-entity";
+export * from "./speech-setting";

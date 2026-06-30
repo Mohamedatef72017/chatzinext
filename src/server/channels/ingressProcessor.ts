@@ -1,6 +1,6 @@
 import { Bot, Channel, ChannelIdentity, Contact, Conversation, Message, WebhookEvent } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
-import { coreRoutingQueue, defaultJobOptions, makeQueueJobId } from "@/lib/queues";
+import { coreRoutingQueue, defaultJobOptions, makeQueueJobId, mediaUnderstandingQueue } from "@/lib/queues";
 import { logger } from "@/lib/logger";
 import { publishRealtimeEvent } from "@/lib/realtime";
 import { getAdapter } from "./registry";
@@ -20,6 +20,23 @@ type IngressJobPayload = {
   rawHeaders?: Record<string, string>;
   traceId?: string;
 };
+
+/** MIME type sets for deciding whether to enqueue media understanding */
+const IMAGE_MIME_PREFIXES = ["image/"];
+const AUDIO_MIME_PREFIXES = ["audio/"];
+
+function hasMediaAttachments(attachments: any[]): boolean {
+  if (!Array.isArray(attachments) || !attachments.length) return false;
+  return attachments.some((att) => {
+    const type = String(att?.type || att?.mimeType || "");
+    return (
+      IMAGE_MIME_PREFIXES.some((prefix) => type.startsWith(prefix)) ||
+      AUDIO_MIME_PREFIXES.some((prefix) => type.startsWith(prefix)) ||
+      type === "image" ||
+      type === "audio"
+    );
+  });
+}
 
 export async function processIngressJob(payload: IngressJobPayload) {
   await connectToDatabase();
@@ -143,6 +160,40 @@ export async function processIngressJob(payload: IngressJobPayload) {
 
     publishRealtimeEvent(payload.tenantId, "message.created", realtimePayload).catch(() => undefined);
     publishRealtimeEvent(payload.tenantId, "notification.created", realtimePayload).catch(() => undefined);
+
+    // ── Media Understanding: enqueue background analysis for image/audio attachments ──
+    // This runs asynchronously and never blocks the AI reply path.
+    // The media-understanding-worker will analyze attachments and store results
+    // in message.metadata.mediaUnderstanding. The AI worker then reads those results.
+    const attachments = normalized.attachments || [];
+    if (hasMediaAttachments(attachments)) {
+      mediaUnderstandingQueue.add(
+        "understand-media",
+        {
+          tenantId: payload.tenantId,
+          messageId: message._id.toString(),
+          traceId: payload.traceId
+        },
+        {
+          ...defaultJobOptions,
+          // Use a stable job ID to prevent duplicate analysis of the same message
+          jobId: makeQueueJobId("media", message._id.toString()),
+          // Higher priority than default so understanding is ready before AI replies
+          priority: 2,
+          // Short delay to allow coreRouting to start, but media understanding
+          // should complete before AI processing begins (AI queue concurrency is limited)
+          delay: 0
+        }
+      ).catch((err) => {
+        logger.warn("ingress.media_understanding_queue_failed", {
+          tenantId: payload.tenantId,
+          messageId: message._id.toString(),
+          traceId: payload.traceId,
+          error: err instanceof Error ? err.message : String(err)
+        });
+      });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     await coreRoutingQueue.add(
       "route-message",
@@ -279,7 +330,6 @@ async function ensureConversationHasBot(tenantId: string, conversation: any, cha
 }
 
 function applyHandoffKeywords(conversation: any, text: string) {
-  const textLower = text.toLowerCase();
   const isHandoff = isExplicitHumanHandoffRequest(text);
 
   if (isHandoff) {

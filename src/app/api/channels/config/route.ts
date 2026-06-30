@@ -6,6 +6,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { encryptSecret } from "@/lib/crypto";
 import { requirePermission } from "@/server/auth/guards";
 import { permissions } from "@/server/permissions/permissions";
+import { assertFeature, checkFeatureLimit } from "@/lib/billing/entitlement-engine";
+import { FEATURE_KEYS } from "@/lib/billing/feature-registry";
 
 const schema = z.object({
   botId: z.string().min(1),
@@ -15,20 +17,69 @@ const schema = z.object({
   config: z.record(z.unknown()).default({})
 });
 
+/** Map channel type to the specific per-type feature key, if applicable */
+const PER_TYPE_LIMIT_KEY: Partial<Record<string, string>> = {
+  telegram: FEATURE_KEYS.MAX_TELEGRAM_CHANNELS,
+  whatsapp: FEATURE_KEYS.MAX_WHATSAPP_NUMBERS,
+  facebook: FEATURE_KEYS.MAX_FACEBOOK_PAGES,
+  instagram: FEATURE_KEYS.MAX_INSTAGRAM_ACCOUNTS
+};
+
+/** Human-readable channel type names for error messages */
+const CHANNEL_TYPE_LABEL: Record<string, string> = {
+  telegram: "Telegram",
+  whatsapp: "WhatsApp",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  website: "Website",
+  email: "Email",
+  api: "API",
+  webhook: "Webhook"
+};
+
 export async function POST(request: Request) {
   try {
     const session = await requirePermission(permissions.settingsManage);
     const body = schema.parse(await request.json());
+    const tenantId = session.user.tenantId;
     await connectToDatabase();
 
-    const bot = await Bot.findOne({ _id: body.botId, tenantId: session.user.tenantId });
+    const bot = await Bot.findOne({ _id: body.botId, tenantId });
     if (!bot) return NextResponse.json({ error: "البوت غير موجود." }, { status: 404 });
 
-    const existing = await Channel.findOne({
-      tenantId: session.user.tenantId,
-      botId: body.botId,
-      type: body.type
-    });
+    // Check if this channel already exists (upsert case — no new slot consumed)
+    const existing = await Channel.findOne({ tenantId, botId: body.botId, type: body.type });
+
+    if (!existing) {
+      // Creating a new channel — enforce plan limits
+      const totalChannels = await Channel.countDocuments({ tenantId });
+      const totalCheck = await checkFeatureLimit(tenantId, FEATURE_KEYS.MAX_CHANNELS, totalChannels);
+      if (!totalCheck.allowed) {
+        return NextResponse.json(
+          {
+            error: `لقد وصلت إلى الحد الأقصى لعدد القنوات في باقتك (${totalCheck.limit} قناة). يرجى الترقية للمتابعة.`
+          },
+          { status: 403 }
+        );
+      }
+
+      // Check per-type limit if applicable
+      const typeKey = PER_TYPE_LIMIT_KEY[body.type];
+      if (typeKey) {
+        const typeCount = await Channel.countDocuments({ tenantId, type: body.type });
+        const typeCheck = await checkFeatureLimit(tenantId, typeKey, typeCount);
+        if (!typeCheck.allowed) {
+          const typeName = CHANNEL_TYPE_LABEL[body.type] || body.type;
+          return NextResponse.json(
+            {
+              error: `لقد وصلت إلى الحد الأقصى لعدد قنوات ${typeName} في باقتك (${typeCheck.limit}). يرجى الترقية للمتابعة.`
+            },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
     const config = { ...body.config } as Record<string, unknown>;
 
     if (body.type === "telegram") {
@@ -164,10 +215,10 @@ export async function POST(request: Request) {
     }
 
     await Channel.findOneAndUpdate(
-      { tenantId: session.user.tenantId, botId: body.botId, type: body.type },
+      { tenantId, botId: body.botId, type: body.type },
       {
         $set: {
-          tenantId: session.user.tenantId,
+          tenantId,
           botId: body.botId,
           type: body.type,
           name: body.name,
